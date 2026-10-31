@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Opstelling">
+<meta name="theme-color" content="#c8102e">
+<title>Maliskamp · Opstelling Maker</title>
+<style>
+  :root{
+    --bg:#f3f3f5; --card:#ffffff; --card2:#f4f4f6; --line:#e2e2e8;
+    --txt:#1b1b1f; --muted:#6c6c78; --acc:#c8102e; --red:#c8102e; --ok:#1f9d55;
+    --team:#c8102e; --mk:#c8102e; --mkd:#9e0b23;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:16px}
+  body{padding-bottom:calc(80px + env(safe-area-inset-bottom))}
+  header{position:relative;z-index:20;color:#fff;padding:calc(10px + env(safe-area-inset-top)) 14px 10px;
+    background:repeating-linear-gradient(90deg,var(--mk) 0 34px,var(--mkd) 34px 40px);box-shadow:0 2px 10px rgba(0,0,0,.18);border-bottom:4px solid #fff}
+  header .pill{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.45);color:#fff}
+  header .pill.on{background:#fff;color:var(--mk);border-color:#fff}
+  header .seasonrow{color:#ffe3e7}
+  header .seasonrow select{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.45);color:#fff}
+  header .seasonrow select option{color:#111}
+  .logo{width:46px;height:46px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 2px 6px rgba(0,0,0,.25);overflow:hidden}
+  .logo img{width:86%;height:86%;object-fit:contain}
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .brand .club{font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;opacity:.9}
+  .brand .app{font-size:19px;font-weight:800;line-height:1.1}
+  .pitch .wm{position:absolute;left:50%;top:50%;width:22%;transform:translate(-50%,-50%);opacity:.22;pointer-events:none}
+  h1{font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:8px}
+  h1 span{font-size:22px}
+  .teams{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+  .pill{border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:999px;padding:7px 14px;font-weight:600;font-size:14px;white-space:nowrap;cursor:pointer}
+  .pill.on{background:var(--mk);color:#fff;border-color:var(--mk)}
+  .seasonrow{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13px;color:var(--muted)}
+  select,input,textarea{font:inherit;color:var(--txt);background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:9px 10px;width:100%}
+  .seasonrow select{width:auto;padding:5px 8px;font-size:14px}
+  main{padding:14px;max-width:760px;margin:0 auto}
+  .card{background:var(--card);border:1px solid var(--line);border-top:4px solid var(--mk);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+  .card h2{font-size:16px;margin:0 0 10px}
+  .muted{color:var(--muted);font-size:13px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:12px;padding:11px 14px;font:inherit;font-weight:700;cursor:pointer;background:var(--card2);color:var(--txt);border:1px solid var(--line)}
+  .btn.pri{background:var(--mk);color:#fff;border-color:var(--mk);box-shadow:0 3px 0 var(--mkd)}
+  .btn.red{background:transparent;color:var(--red);border-color:#5a2a2c}
+  .btn.sm{padding:7px 10px;font-size:14px;border-radius:10px}
+  .btn.full{width:100%}
+  .row{display:flex;gap:8px;align-items:center}
+  .row>*{flex:1}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  label.f{display:block;font-size:13px;color:var(--muted);margin-bottom:10px}
+  label.f>*{margin-top:4px}
+  nav{position:fixed;bottom:0;left:0;right:0;z-index:30;display:flex;background:#fff;border-top:3px solid var(--mk);box-shadow:0 -2px 10px rgba(0,0,0,.08);padding-bottom:env(safe-area-inset-bottom)}
+  nav button{flex:1;background:none;border:0;color:var(--muted);font:inherit;font-size:11px;padding:8px 0 9px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer}
+  nav button b{font-size:20px;font-weight:400}
+  nav button.on{color:var(--mk);font-weight:700}
+  .list .item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .list .item:last-child{border-bottom:0}
+  .item .grow{flex:1;min-width:0}
+  .item .name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .num{width:30px;height:30px;border-radius:50%;background:var(--team);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex:none}
+  .tags{display:flex;gap:4px}
+  .tag{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:8px;padding:4px 7px;font-size:12px;font-weight:700;cursor:pointer}
+  .tag.on{background:var(--mk);color:#fff;border-color:var(--mk)}
+  .x{background:none;border:0;color:var(--muted);font-size:20px;cursor:pointer;padding:2px 6px}
+  .match{cursor:pointer}
+  .badge{font-size:11px;font-weight:700;padding:3px 7px;border-radius:6px;background:var(--card2);color:var(--muted)}
+  .badge.ok{background:#e3f5ea;color:var(--ok)}
+  .empty{text-align:center;padding:26px 10px;color:var(--muted)}
+  .empty b{display:block;font-size:34px;margin-bottom:6px}
+
+  /* veld */
+  .segs{display:flex;gap:6px;overflow-x:auto;margin-bottom:10px}
+  .segs .pill{font-size:13px;padding:6px 11px}
+  .pitch{position:relative;width:100%;aspect-ratio:68/90;border-radius:14px;overflow:hidden;
+    background:repeating-linear-gradient(0deg,#2d8a4b 0 10%,#289044 10% 20%);border:2px solid #cfe8d6}
+  .pitch .ln{position:absolute;border:2px solid rgba(255,255,255,.75)}
+  .pitch .mid{left:0;right:0;top:50%;border-width:2px 0 0}
+  .pitch .circ{left:50%;top:50%;width:26%;aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%)}
+  .pitch .box{left:22%;right:22%;height:14%}
+  .pitch .box.t{top:-2px}.pitch .box.b{bottom:-2px}
+  .pitch .goal{left:40%;right:40%;height:4%}
+  .pitch .goal.t{top:-2px}.pitch .goal.b{bottom:-2px}
+  .pl{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;width:74px;cursor:pointer;user-select:none}
+  .pl .dot{width:40px;height:40px;border-radius:50%;background:var(--team);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:12px;box-shadow:0 2px 6px rgba(0,0,0,.4);border:2px solid #fff}
+  .pl.k .dot{background:#1b1b1f}
+  .pl.emptyp .dot{background:rgba(0,0,0,.25);color:#fff;border-style:dashed}
+  .pl .nm{color:#fff;margin-top:3px;font-size:12px;font-weight:700;background:rgba(0,0,0,.55);padding:2px 6px;border-radius:6px;max-width:74px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pl.sel .dot,.benchp.sel{outline:3px solid #fff;outline-offset:2px;animation:pulse 1s infinite}
+  @keyframes pulse{50%{outline-color:var(--acc)}}
+  .bench{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .benchp{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 11px;font-weight:600;font-size:14px;cursor:pointer}
+  .hint{font-size:12px;color:var(--muted);margin-top:8px;text-align:center}
+  table.ov{width:100%;border-collapse:collapse;font-size:13px}
+  table.ov th,table.ov td{padding:6px 4px;text-align:center;border-bottom:1px solid var(--line)}
+  table.ov td:first-child,table.ov th:first-child{text-align:left}
+  table.ov .w{color:var(--muted)}
+  table.ov .kp{color:var(--mk);font-weight:700}
+  .bar{height:6px;background:var(--card2);border-radius:3px;overflow:hidden;margin-top:3px}
+  .bar i{display:block;height:100%;background:var(--mk)}
+  .chk{display:flex;flex-wrap:wrap;gap:6px}
+  .chk label{display:flex;align-items:center;gap:6px;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:14px;cursor:pointer}
+  .chk input{width:auto;margin:0}
+  details summary{cursor:pointer;font-weight:700;list-style:none}
+  details summary::-webkit-details-marker{display:none}
+  .toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#1b1b1f;color:#fff;padding:10px 16px;border-radius:12px;font-weight:600;z-index:50;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+  /* stepper + segmented */
+  .set{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .set:last-child{border-bottom:0}
+  .set .lbl{font-weight:600;font-size:15px}
+  .set .lbl small{display:block;color:var(--muted);font-weight:400;font-size:12px}
+  .step{display:flex;align-items:center;background:var(--card2);border:1px solid var(--line);border-radius:12px;flex:none}
+  .step button{width:44px;height:44px;border:0;background:none;color:var(--acc);font-size:24px;font-weight:700;cursor:pointer}
+  .step b{min-width:34px;text-align:center;font-size:19px}
+  .segc{display:flex;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:3px;gap:3px;margin-top:6px}
+  .segc button{flex:1;border:0;background:none;color:var(--muted);font:inherit;font-size:12px;font-weight:700;padding:9px 4px;border-radius:9px;cursor:pointer;line-height:1.2}
+  .segc button.on{background:var(--mk);color:#fff}
+  .bigbtns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+  .bigbtns .btn{padding:16px 10px;flex-direction:column;font-size:15px}
+  .bigbtns .btn b{font-size:24px;font-weight:400}
+  .gk{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:10px;padding:6px 9px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+  .gk.on{background:#1b1b1f;color:#fff;border-color:#1b1b1f}
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+  .tile{background:var(--card);border:1px solid var(--line);border-bottom:4px solid var(--mk);border-radius:14px;padding:12px 8px;text-align:center}
+  .tile b{display:block;font-size:22px;color:var(--mk)}
+  .tile span{font-size:12px;color:var(--muted)}
+  .score{display:flex;align-items:center;gap:8px}
+  .score input{text-align:center;font-size:20px;font-weight:800;width:64px;flex:none}
+  .kslot{display:flex;align-items:center;gap:10px;margin-top:8px}
+  .kslot span{flex:none;width:118px;font-size:13px;color:var(--muted)}
+  .pitch,.bench{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+  .pl{touch-action:none}
+  .benchp{touch-action:none}
+  .pl .dot{position:relative}
+  .pl .mb{position:absolute;top:-7px;right:-12px;background:#fff;color:#1b1b1f;font-style:normal;font-size:10px;font-weight:800;padding:1px 4px;border-radius:7px;border:1px solid #ccc;line-height:1.3}
+  .benchp i{font-style:normal;color:var(--muted);font-size:12px;margin-left:3px}
+  .benchp.low{border-color:var(--mk);background:#fff0f2}
+  .benchp.low i{color:var(--mk);font-weight:800}
+  .tools{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+  .tools .btn{flex:1 1 auto}
+  table.ov .cur{background:#fff0f2}
+  .ghost{position:fixed;z-index:100;pointer-events:none;transform:translate(-50%,-50%) scale(1.15);opacity:.92}
+  .ghost .dot{box-shadow:0 8px 20px rgba(0,0,0,.45)}
+  .dragging{opacity:.35}
+  .drop-hi .dot,.drop-hi.benchp,#benchZone.drop-hi{outline:3px dashed var(--mk);outline-offset:3px}
+  #benchZone{min-height:46px;border-radius:12px;padding:4px}
+  .pl.emptyp .nm{opacity:.75;font-weight:600}
+  /* v4: groter + instellingen */
+  .btn.big{padding:16px;font-size:18px;margin-bottom:10px}
+  .btn.pri2{border:2px solid var(--mk);color:var(--mk);background:#fff}
+  .summary{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:12px;font-size:13px;color:var(--muted);cursor:pointer}
+  .summary b{color:var(--txt)} .summary span{color:var(--mk);font-weight:700;white-space:nowrap}
+  .stabs{display:flex;gap:4px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:4px;margin-bottom:12px;position:sticky;top:6px;z-index:15;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+  .stabs button{flex:1;border:0;background:none;font:inherit;font-size:13px;font-weight:700;color:var(--muted);padding:10px 2px;border-radius:10px;cursor:pointer}
+  .stabs button.on{background:var(--mk);color:#fff}
+  .who{display:flex;flex-wrap:wrap;gap:8px}
+  .whop{border:2px solid var(--line);background:#f6f6f8;color:var(--muted);border-radius:12px;padding:10px 12px;font:inherit;font-size:16px;font-weight:700;cursor:pointer;text-decoration:line-through}
+  .whop.on{border-color:var(--ok);background:#effaf3;color:var(--txt);text-decoration:none}
+  .whop small{font-size:11px;background:var(--mk);color:#fff;border-radius:6px;padding:1px 5px;margin-left:3px;text-decoration:none}
+  .wissel{background:#fff0f2;border-radius:10px;padding:9px 11px;margin-bottom:10px;font-size:15px}
+  .benchtitle{margin-top:14px;font-weight:800;font-size:17px}
+  .benchtitle span{font-weight:400;font-size:12px;color:var(--muted);margin-left:6px}
+  .bench{gap:10px}
+  .benchp{display:flex;align-items:center;gap:9px;padding:8px 14px 8px 8px;font-size:18px;font-weight:700;border-radius:999px;border:2px solid var(--line);background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.06)}
+  .benchp .bd{width:42px;height:42px;border-radius:50%;background:var(--mk);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;border:2px solid #fff;box-shadow:0 0 0 2px var(--mk);flex:none}
+  .benchp i{font-size:14px}
+  .benchp.low{border-color:var(--mk)}
+  .pl{width:96px}
+  .pl .dot{width:52px;height:52px;font-size:14px;border-width:3px}
+  .pl .nm{font-size:14px;max-width:96px;padding:3px 7px;margin-top:4px}
+  .pitch.lg .pl .dot{width:60px;height:60px;font-size:16px}
+  .pitch.lg .pl .nm{font-size:16px}
+  .pitch.sm .pl{width:84px}
+  .pitch.sm .pl .dot{width:46px;height:46px;font-size:13px}
+  .pitch.sm .pl .nm{font-size:13px;max-width:84px}
+  .pl .mb{font-size:12px;top:-8px;right:-14px;padding:1px 5px}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:flex-end;justify-content:center;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+  .modal .box{background:#fff;border-radius:18px;padding:18px;width:100%;max-width:440px;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+  .modal p{margin:0 0 14px;font-size:17px;font-weight:600}
+  .phases{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:4px;margin-bottom:12px}
+  .phases button{border:0;background:none;font:inherit;font-size:12px;font-weight:700;color:var(--muted);padding:9px 2px;border-radius:10px;cursor:pointer;line-height:1.25}
+  .phases button.past{color:var(--ok)}
+  .phases button.on{background:var(--mk);color:#fff}
+  .mhead .mt{font-size:20px;font-weight:800}
+  .bigscore{font-size:40px;font-weight:900;color:var(--mk);text-align:center;margin-top:8px;letter-spacing:2px}
+  .scores{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .sc{background:var(--card2);border-radius:14px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px}
+  .scl{font-weight:700;text-align:center}
+  .sc .step b{font-size:28px;min-width:44px}
+  .badge.live{background:#fff0f2;color:var(--mk)}
+  .pill.now:not(.on){border-color:var(--mk);color:var(--mk)}
+  .tcard{border:1px solid var(--line);border-radius:14px;padding:10px;margin-bottom:10px}
+  .tcard.on{border:2px solid var(--mk);background:#fff8f9}
+  .cloud{font-size:12px;font-weight:800;margin-left:auto;background:rgba(255,255,255,.18);padding:4px 8px;border-radius:8px;cursor:pointer;white-space:nowrap}
+  .cloud:empty{display:none}
+  .card .cloud{background:none;margin:0}
+  .card .cloud.ok{color:var(--ok)} .card .cloud.err{color:var(--mk)}
+  #outdated{position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top));z-index:300;background:#1b1b1f;color:#fff;padding:14px;border-radius:14px;font-weight:700;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.35);cursor:pointer}
+  #print{display:none}
+  @media print{
+    body{background:#fff;color:#000;padding:0}
+    header,nav,main,.toast{display:none!important}
+    #print{display:block;font-family:Arial,sans-serif;color:#000}
+    #print h2{margin:0 0 4px}
+    #print .pg{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:10px}
+    #print .pitch{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+    #print .pl .nm{color:#fff;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+    #print .seg{break-inside:avoid}
+    #print table{border-collapse:collapse;width:100%;font-size:12px;margin-top:14px}
+    #print td,#print th{border:1px solid #999;padding:4px;text-align:center}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><div class="logo" id="logoBox"></div><div><div class="club">Maliskamp</div><div class="app">Opstelling Maker</div></div><span id="cloudDot" class="cloud" data-act="goCloud"></span></div>
+  <div class="teams" id="teams"></div>
+</header>
+<main id="app"></main>
+<div id="print"></div>
+<nav id="nav">
+  <button data-tab="matches"><b>📋</b>Wedstrijden</button>
+  <button data-tab="stats"><b>📊</b>Statistieken</button>
+  <button data-tab="settings"><b>⚙️</b>Instellingen</button>
+</nav>
+
+<script src="firebase-config.js"></script>
+<script>
+/* ===================== Data ===================== */
+const KEY = 'opstellingmaker.v1';
+const uid = () => Math.random().toString(36).slice(2, 10);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+// Formaties per aantal spelers in het veld (incl. keeper). l = spelers per linie (verdediging → aanval)
+const FORMATIONS = {
+  4:  [{n:'Ruit (1-2-1)', k:false, l:[1,2,1]}, {n:'Vierkant (2-2)', k:false, l:[2,2]}],
+  5:  [{n:'1-2-2', l:[2,2]}, {n:'1-1-2-1', l:[1,2,1]}],
+  6:  [{n:'1-1-3-1', l:[1,3,1]}, {n:'1-2-1-2', l:[2,1,2]}, {n:'1-3-2', l:[3,2]}, {n:'1-2-3', l:[2,3]}],
+  7:  [{n:'1-3-3', l:[3,3]}, {n:'1-2-3-1', l:[2,3,1]}, {n:'1-3-2-1', l:[3,2,1]}],
+  8:  [{n:'1-3-3-1', l:[3,3,1]}, {n:'1-3-2-2', l:[3,2,2]}, {n:'1-2-3-2', l:[2,3,2]}],
+  9:  [{n:'1-3-3-2', l:[3,3,2]}, {n:'1-4-3-1', l:[4,3,1]}],
+  10: [{n:'1-4-3-2', l:[4,3,2]}, {n:'1-3-4-2', l:[3,4,2]}],
+  11: [{n:'1-4-3-3', l:[4,3,3]}, {n:'1-4-4-2', l:[4,4,2]}, {n:'1-3-4-3', l:[3,4,3]}, {n:'1-4-2-3-1', l:[4,2,3,1]}, {n:'1-5-3-2', l:[5,3,2]}]
+};
+const CODES = {
+  V: {1:['CV'],2:['LV','RV'],3:['LV','CV','RV'],4:['LB','CV','CV','RB'],5:['LB','CV','CV','CV','RB']},
+  M: {1:['CM'],2:['LM','RM'],3:['LM','CM','RM'],4:['LM','CM','CM','RM'],5:['LM','CM','CM','CM','RM']},
+  A: {1:['SP'],2:['LS','RS'],3:['LA','SP','RA'],4:['LA','SP','SP','RA']}
+};
+const KMODES = [
+  {v:'vast',  t:'Eén kieper', s:'hele wedstrijd'},
+  {v:'helft', t:'Wissel in rust', s:'2 kiepers'},
+  {v:'blok',  t:'Elk wisselmoment', s:'per blok'}
+];
+const LIMITS = {fieldPlayers:[4,11,1], subMoments:[0,12,1], matchMinutes:[10,120,5]};
+
+function getFormation(fp, name){ const list = FORMATIONS[fp] || FORMATIONS[11]; return list.find(f => f.n === name) || list[0]; }
+function positions(fp, name){
+  const f = getFormation(fp, name), keeper = f.k !== false, out = [];
+  if (keeper) out.push({code:'K', line:'K', x:50, y:89});
+  const L = f.l.length, yTop = 14, yBot = keeper ? 67 : 76;
+  f.l.forEach((c, i) => {
+    const line = L === 1 ? 'M' : i === 0 ? 'V' : i === L - 1 ? 'A' : 'M';
+    const y = L === 1 ? 50 : yBot - i * (yBot - yTop) / (L - 1);
+    const m = c >= 5 ? 10 : c === 4 ? 13 : c === 3 ? 18 : 28;
+    const codes = CODES[line][c] || Array(c).fill(line);
+    for (let j = 0; j < c; j++) out.push({code:codes[j], line, x: c === 1 ? 50 : m + j * (100 - 2 * m) / (c - 1), y});
+  });
+  return out;
+}
+const hasKeeper = st => positions(st.fieldPlayers, st.formation)[0].line === 'K';
+
+function defaultSeason(name, fp, formation, subs, minutes){
+  return {id:uid(), name, fieldPlayers:fp, formation, subMoments:subs, matchMinutes:minutes, keeperMode:'vast', players:[], matches:[]};
+}
+function seasonName(){ const d = new Date(), y = d.getFullYear(); return d.getMonth() >= 6 ? `${y}-${y+1}` : `${y-1}-${y}`; }
+function defaultState(){
+  const sn = seasonName();
+  return {teams:[
+    {id:uid(), name:'JO8',  color:'#c8102e', seasons:[defaultSeason(sn, 6, '1-1-3-1', 3, 40)]},
+    {id:uid(), name:'JO15', color:'#c8102e', seasons:[defaultSeason(sn, 11, '1-4-3-3', 3, 70)]}
+  ], active:{team:null, season:{}}};
+}
+function normalize(){
+  S.active = S.active || {team:null, season:{}};
+  S.active.season = S.active.season || {};
+  S.teams.forEach(t => t.seasons.forEach(se => { if (se.fieldPlayers === 6 && se.formation === '1-2-1-2' && !se.f1131){ se.formation = '1-1-3-1'; } se.f1131 = true; }));
+  // elk team = één seizoen (bv. JO8 26/27): teams met meerdere seizoenen opsplitsen
+  const flat = [];
+  S.teams.forEach(t => { (t.seasons.length ? t.seasons : [defaultSeason(seasonName(), 8, '1-3-3-1', 3, 50)]).forEach((se, i) => flat.push({...t, id: i === 0 ? t.id : uid(), seasons:[se]})); });
+  if (flat.length !== S.teams.length){ const cur = S.active.team, cs = S.active.season[cur]; S.teams = flat; const hit = flat.find(t => t.seasons[0].id === cs); if (hit) S.active.team = hit.id; }
+  S.teams.forEach(t => { if (!t.color || ['#f5c518', '#ff7a1a'].includes(t.color)) t.color = '#c8102e'; });
+  S.teams.forEach(t => t.seasons.forEach(se => se.matches.forEach(m => {
+    if (!m.keepers){ m.keepers = {}; if (m.keeperId) m.keepers[0] = m.keeperId; }
+    if (!m.settings.keeperMode) m.settings.keeperMode = se.keeperMode || 'vast';
+    const scored = m.goalsFor !== '' && m.goalsFor != null && m.goalsAgainst !== '' && m.goalsAgainst != null;
+    if (!m.phase){ m.phase = scored && m.segments ? 'done' : 'prep'; if (m.phase !== 'prep') m.cutsLocked = true; }
+    m.goals = m.goals || {};
+    if (!m.segments){ const n = positions(m.settings.fieldPlayers, m.settings.formation).length; m.segments = Array.from({length: m.settings.subMoments + 1}, () => Array(n).fill(null)); }
+  })));
+}
+
+let S;
+try { S = JSON.parse(localStorage.getItem(KEY)); } catch(e){ S = null; }
+if (!S || !Array.isArray(S.teams) || !S.teams.length) S = defaultState();
+normalize();
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} if (typeof cloudPush === 'function') cloudPush(); };
+
+// Clublogo: eigen upload (bewaard op apparaat) of logo.png in de repo
+const LOGO_KEY = 'opstellingmaker.logo';
+let logoSrc = null;
+function renderLogo(){ const b = document.getElementById('logoBox'); if (b) b.innerHTML = logoSrc ? `<img src="${logoSrc}" alt="Maliskamp">` : '<span style="font-size:24px">⚽</span>'; }
+function loadLogo(){
+  const own = localStorage.getItem(LOGO_KEY);
+  if (own){ logoSrc = own; render(); return; }
+  const t = new Image();
+  t.onload = () => { logoSrc = 'logo.png'; render(); };
+  t.onerror = () => { logoSrc = null; render(); };
+  t.src = 'logo.png';
+}
+
+const ui = {tab:'matches', matchId:null, seg:0, sel:null, open:{}};
+const team = () => S.teams.find(t => t.id === S.active.team) || S.teams[0];
+const season = () => team().seasons[0];
+function guestOf(id){ for (const mm of season().matches){ const g = (mm.guests || []).find(g => g.id === id); if (g) return g; } return null; }
+const player = id => season().players.find(p => p.id === id) || guestOf(id);
+const pname = id => { const p = player(id); return p ? p.name : '?'; };
+const isGK = p => (p.pref || []).includes('K');
+const match = () => season().matches.find(m => m.id === ui.matchId);
+
+/* ===================== Opstelling berekenen ===================== */
+function shuffled(a){ a = a.slice(); for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function segTimes(st){
+  const n = st.subMoments + 1;
+  if (Array.isArray(st.cuts) && st.cuts.length === n - 1){
+    const b = [0, ...st.cuts, st.matchMinutes];
+    return Array.from({length:n}, (_, i) => [b[i], b[i + 1]]);
+  }
+  const len = st.matchMinutes / n;
+  return Array.from({length:n}, (_, i) => [Math.round(i * len), Math.round((i + 1) * len)]);
+}
+// Kiepersloten: vast = 1, helft = 2, blok = aantal blokken
+function keeperSlots(st){
+  const times = segTimes(st), n = times.length;
+  if (st.keeperMode === 'blok') return times.map((t, i) => ({label:`Blok ${i+1} · ${t[0]}'–${t[1]}'`, segs:[i]}));
+  if (st.keeperMode === 'helft' && n > 1){
+    const half = st.matchMinutes / 2;
+    let h = times.findIndex(t => t[0] >= half); if (h <= 0) h = Math.ceil(n / 2);
+    return [{label:`1e helft · 0'–${times[h-1][1]}'`, segs:[...Array(h).keys()]},
+            {label:`2e helft · ${times[h][0]}'–${st.matchMinutes}'`, segs:[...Array(n - h).keys()].map(i => i + h)}];
+  }
+  return [{label:'Hele wedstrijd', segs:[...Array(n).keys()]}];
+}
+// Posities van deze wedstrijd (met eventueel zelf verschoven plekken)
+function matchPositions(m){
+  const pos = positions(m.settings.fieldPlayers, m.settings.formation);
+  const o = m.posOverride || {};
+  return pos.map((p, i) => o[i] ? {...p, x:o[i].x, y:o[i].y} : p);
+}
+// Minuten per speler in blok 0..upto (incl.)
+function playedUpTo(m, upto){
+  const times = segTimes(m.settings), res = {};
+  m.present.forEach(id => res[id] = 0);
+  (m.segments || []).forEach((lu, s) => {
+    if (s > upto) return;
+    lu.forEach(id => { if (id && id in res) res[id] += times[s][1] - times[s][0]; });
+  });
+  return res;
+}
+
+// from = eerste blok dat (opnieuw) berekend wordt; eerdere blokken blijven staan
+// Vult de blokken vanaf 'from' opnieuw eerlijk in (alleen gebruikt tijdens een actieve wedstrijd)
+function generate(m, mix, from){
+  from = from || 0;
+  const st = m.settings;
+  const pos = positions(st.fieldPlayers, st.formation);
+  const times = segTimes(st), nSeg = times.length;
+  const present = m.present.filter(id => player(id));
+  const order = mix ? shuffled(present) : present.slice();
+  const mins = {}, benchedLast = {}, playedCodes = {};
+  order.forEach(id => { mins[id] = 0; benchedLast[id] = false; playedCodes[id] = new Set(); });
+  const keep = from > 0 && m.segments ? m.segments.slice(0, from).map(lu => lu.slice()) : [];
+  from = keep.length;
+  let prev = null;
+  keep.forEach((lu, s) => {
+    order.forEach(id => {
+      const i = lu.indexOf(id);
+      if (i >= 0){ mins[id] += times[s][1] - times[s][0]; playedCodes[id].add(pos[i].code); benchedLast[id] = false; }
+      else benchedLast[id] = true;
+    });
+    prev = lu;
+  });
+  const segs = keep;
+  for (let s = from; s < nSeg; s++){
+    const segLen = times[s][1] - times[s][0];
+    const lineup = Array(pos.length).fill(null);
+    const here = order.filter(id => avail(m, id, s));
+    const chosen = here.map((id, i) => ({id, i}))
+      .sort((a, b) => (mins[a.id] - mins[b.id]) || ((benchedLast[b.id] ? 1 : 0) - (benchedLast[a.id] ? 1 : 0)) || (a.i - b.i))
+      .slice(0, pos.length).map(o => o.id);
+    const rest = [];
+    chosen.forEach(id => {
+      const pi = prev ? prev.indexOf(id) : -1;
+      if (pi >= 0 && lineup[pi] === null){ lineup[pi] = id; return; }
+      rest.push(id);
+    });
+    rest.forEach(id => {
+      const pref = player(id).pref || [];
+      let best = -1, bestScore = -99;
+      lineup.forEach((v, i) => {
+        if (v !== null) return;
+        let sc = 0;
+        if (pref.includes(pos[i].line)) sc += 3;
+        if (!playedCodes[id].has(pos[i].code)) sc += 1;
+        if (sc > bestScore){ bestScore = sc; best = i; }
+      });
+      if (best >= 0) lineup[best] = id;
+    });
+    order.forEach(id => {
+      const i = lineup.indexOf(id);
+      if (i >= 0){ mins[id] += segLen; playedCodes[id].add(pos[i].code); benchedLast[id] = false; }
+      else benchedLast[id] = true;
+    });
+    segs.push(lineup);
+    prev = lineup;
+  }
+  m.segments = segs;
+}
+// Lege plekken vanaf blok 'from' opvullen met de reserve die het minst gespeeld heeft
+function fillHoles(m, from){
+  const times = segTimes(m.settings);
+  for (let s = from; s < m.segments.length; s++){
+    const lu = m.segments[s];
+    if (isEmptySeg(lu)) continue; // nog niet ingevulde blokken met rust laten
+    lu.forEach((x, i) => {
+      if (x) return;
+      const up = playedUpTo(m, s - 1);
+      const b = benchIds(m, s).sort((a, c) => (up[a] || 0) - (up[c] || 0))[0];
+      if (b) lu[i] = b;
+    });
+  }
+}
+
+function stats(m){
+  const pos = matchPositions(m), times = segTimes(m.settings), res = {};
+  m.present.filter(id => player(id)).forEach(id => res[id] = {mins:0, per:[]});
+  (m.segments || []).forEach((lu, s) => {
+    const len = times[s][1] - times[s][0];
+    Object.keys(res).forEach(id => {
+      const i = lu.indexOf(id);
+      res[id].per.push(i >= 0 ? pos[i].code : null);
+      if (i >= 0) res[id].mins += len;
+    });
+  });
+  return res;
+}
+
+/* ===================== UI-bouwstenen ===================== */
+const app = document.getElementById('app');
+function stepper(label, sub, k, val, scope){
+  return `<div class="set"><div class="lbl">${label}${sub ? `<small>${sub}</small>` : ''}</div>
+    <div class="step"><button data-act="step" data-k="${k}" data-d="-1" data-scope="${scope}">−</button><b>${val}</b><button data-act="step" data-k="${k}" data-d="1" data-scope="${scope}">+</button></div></div>`;
+}
+function kmodeSeg(st, scope){
+  return `<div class="segc">${KMODES.map(o => `<button class="${st.keeperMode === o.v ? 'on' : ''}" data-act="kmode" data-v="${o.v}" data-scope="${scope}">${o.t}<br><span style="font-weight:400;font-size:11px">${o.s}</span></button>`).join('')}</div>`;
+}
+function settingsBlock(st, scope){
+  const blocks = st.subMoments + 1, len = Math.round(st.matchMinutes / blocks);
+  return `
+    ${stepper('⚽ Spelers in het veld', `${st.fieldPlayers} tegen ${st.fieldPlayers}, incl. kieper`, 'fieldPlayers', st.fieldPlayers, scope)}
+    ${stepper('🔁 Wisselmomenten', `${blocks} blokken van ±${len} min`, 'subMoments', st.subMoments, scope)}
+    ${stepper('⏱️ Speelduur', 'minuten totaal', 'matchMinutes', st.matchMinutes, scope)}
+    <div class="set"><div class="lbl">📐 Formatie</div><select data-act="formation" data-scope="${scope}" style="width:auto;flex:none">${FORMATIONS[st.fieldPlayers].map(f => `<option ${f.n === st.formation ? 'selected' : ''}>${esc(f.n)}</option>`).join('')}</select></div>
+`;
+}
+function settingsLine(st){
+  return `${st.fieldPlayers} tegen ${st.fieldPlayers} · ${esc(st.formation)} · ${st.matchMinutes} min · ${st.subMoments} wisselmoment${st.subMoments === 1 ? '' : 'en'}`;
+}
+const fmtDate = (d, o) => d ? new Date(d + 'T12:00').toLocaleDateString('nl-NL', o || {weekday:'short', day:'numeric', month:'short'}) : 'Geen datum';
+const hasScore = m => m.goalsFor !== '' && m.goalsFor != null && m.goalsAgainst !== '' && m.goalsAgainst != null;
+function matchTitle(m){ const t = team().name, o = m.opponent || 'Tegenstander'; return m.home === false ? `${o} – ${t}` : `${t} – ${o}`; }
+
+function shortSeason(n){ const r = String(n || '').match(/(\d{2})?(\d{2})\s*[-\/]\s*(\d{2})?(\d{2})/); return r ? `${r[2]}/${r[4]}` : (n || ''); }
+function nextSeason(n){ const r = String(n || '').match(/(\d{4})\s*[-\/]\s*(\d{4})/); return r ? `${+r[1] + 1}-${+r[2] + 1}` : seasonName(); }
+const teamLabel = t => `${t.name} ${shortSeason(t.seasons[0].name)}`.trim();
+const sortedTeams = () => S.teams.slice().sort((a, b) => (b.seasons[0].name || '').localeCompare(a.seasons[0].name || '') || a.name.localeCompare(b.name, 'nl', {numeric:true}));
+function renderHeader(){
+  const t = team();
+  document.documentElement.style.setProperty('--team', t.color || '#c8102e');
+  renderLogo();
+  document.getElementById('teams').innerHTML =
+    sortedTeams().map(x => `<button class="pill ${x.id === t.id ? 'on' : ''}" data-act="team" data-id="${x.id}">${esc(teamLabel(x))}</button>`).join('');
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === ui.tab));
+}
+function render(){
+  renderHeader();
+  app.innerHTML = ({matches: ui.matchId ? viewMatch : viewMatches, stats: viewStats, settings: viewSettings}[ui.tab] || viewMatches)();
+}
+
+/* ===================== Schermen ===================== */
+function viewMatches(){
+  const se = season(), t = team();
+  const list = se.matches.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  return `
+  ${!se.players.length ? `<div class="card empty"><b>👋</b>Begin met spelers toevoegen voor ${esc(t.name)}.<br><br><button class="btn pri" data-act="goPlayers">👥 Spelers toevoegen</button></div>` : ''}
+  <button class="btn pri full big" data-act="newMatch" ${se.players.length ? '' : 'disabled style="opacity:.5"'}>＋ Nieuwe wedstrijd</button>
+  <div class="summary" data-act="goSettings2">
+    <div><b>${esc(teamLabel(t))}</b> · ${settingsLine(se)} · ${se.players.length} spelers</div><span>⚙️ wijzigen</span>
+  </div>
+  <div class="card list">
+    <h2>Wedstrijden</h2>
+    ${list.length ? list.map(m => `
+      <div class="item match" data-act="openMatch" data-id="${m.id}">
+        <div class="grow">
+          <div class="name">${esc(matchTitle(m))}</div>
+          <div class="muted">${fmtDate(m.date)} · ${m.present.length} spelers</div>
+        </div>
+        ${hasScore(m) ? `<b>${m.home === false ? `${esc(m.goalsAgainst)}-${esc(m.goalsFor)}` : `${esc(m.goalsFor)}-${esc(m.goalsAgainst)}`}</b>` : ''}
+        <span class="badge ${m.phase === 'done' ? 'ok' : m.phase === 'live' ? 'live' : ''}">${phaseName(m.phase)}</span>
+      </div>`).join('') : `<div class="empty"><b>📋</b>Nog geen wedstrijden dit seizoen.</div>`}
+  </div>`;
+}
+
+function pitchHTML(m, s, interactive, badges){
+  const pos = matchPositions(m);
+  const lu = m.segments ? m.segments[s] : Array(pos.length).fill(null);
+  const up = (interactive || badges) && m.segments ? playedUpTo(m, s) : null;
+  const size = pos.length <= 7 ? 'lg' : pos.length <= 9 ? 'md' : 'sm';
+  return `<div class="pitch ${size}" ${interactive ? 'id="livePitch"' : ''}>
+    <div class="ln mid"></div><div class="ln circ"></div>
+    <div class="ln box t"></div><div class="ln box b"></div>
+    <div class="ln goal t"></div><div class="ln goal b"></div>
+    ${logoSrc ? `<img class="wm" src="${logoSrc}" alt="">` : ''}
+    ${pos.map((p, i) => {
+      const id = lu[i], sel = interactive && ui.sel && ui.sel.type === 'f' && ui.sel.i === i;
+      return `<div class="pl ${p.line === 'K' ? 'k' : ''} ${id ? '' : 'emptyp'} ${sel ? 'sel' : ''}" style="left:${p.x}%;top:${p.y}%" ${interactive ? `data-act="tapField" data-drag="f" data-i="${i}"` : ''}>
+        <div class="dot">${p.line === 'K' ? '🧤' : p.code}${up && id ? `<i class="mb">${Math.round(up[id])}'</i>` : ''}</div><div class="nm">${id ? esc(pname(id)) : (interactive ? 'sleep hier' : '—')}</div></div>`;
+    }).join('')}
+  </div>`;
+}
+
+const avail = (m, id, s) => m.present.includes(id) && !!player(id) && !(m.out && m.out[id] != null && s >= m.out[id]);
+const benchIds = (m, s) => m.present.filter(id => avail(m, id, s) && !m.segments[s].includes(id));
+const isIn = (m, id) => m.present.includes(id) && !(m.out && m.out[id] != null);
+const isEmptySeg = lu => !lu || lu.every(x => !x);
+
+const PHASES = [['prep', '📝 Voorbereiding'], ['live', '▶️ Actief'], ['post', '🏁 Na wedstrijd'], ['done', '✅ Klaar']];
+const phaseName = ph => (PHASES.find(p => p[0] === ph) || PHASES[0])[1];
+function scoreLine(m){
+  if (!hasScore(m)) return '';
+  return m.home === false ? `${esc(m.goalsAgainst)} – ${esc(m.goalsFor)}` : `${esc(m.goalsFor)} – ${esc(m.goalsAgainst)}`;
+}
+
+function viewMatch(){
+  const m = match();
+  if (!m){ ui.matchId = null; return viewMatches(); }
+  const se = season(), ph = m.phase || 'prep';
+  if (ph === 'prep' && !m.cutsLocked){ // in de voorbereiding volgt de wedstrijd de instellingen
+    let changed = false;
+    ['fieldPlayers', 'formation', 'subMoments', 'matchMinutes'].forEach(k => { if (m.settings[k] !== se[k]){ m.settings[k] = se[k]; changed = true; } });
+    if (changed){ delete m.settings.cuts; delete m.posOverride; fitSegments(m); save(); }
+  }
+  const st = m.settings, times = segTimes(st);
+  if (ui.seg >= times.length) ui.seg = 0;
+  const roster = [...se.players, ...(m.guests || [])];
+  const nIn = roster.filter(p => isIn(m, p.id)).length;
+  const last = times.length - 1;
+  const editable = ph !== 'done';
+  const cur = m.cur || 0;
+
+  const phaseBar = `<div class="phases">${PHASES.map(([k, l], i) => `<button class="${k === ph ? 'on' : ''} ${PHASES.findIndex(p => p[0] === ph) > i ? 'past' : ''}" data-act="phase" data-v="${k}">${l}</button>`).join('')}</div>`;
+
+  const header = `
+  <div class="card mhead">
+    <div class="mt">${esc(matchTitle(m))}</div>
+    <div class="muted">${fmtDate(m.date, {weekday:'long', day:'numeric', month:'long'})} · ${settingsLine(st)}</div>
+    ${hasScore(m) && ph !== 'prep' ? `<div class="bigscore">${scoreLine(m)}</div>` : ''}
+  </div>`;
+
+  // ---- opstelling
+  const up = playedUpTo(m, ui.seg), stt = stats(m);
+  const bench = benchIds(m, ui.seg).sort((a, b) => up[a] - up[b]);
+  const lu = m.segments[ui.seg];
+  const minUp = Math.min(...bench.map(id => up[id]));
+  const lineupCard = `
+    <div class="card">
+      <h2>${ph === 'live' ? '▶️ Live opstelling' : ph === 'prep' ? '📋 Opstelling maken' : '📋 Opstelling'}</h2>
+      ${ph === 'prep' ? `<div class="muted" style="margin-bottom:10px">Zet per blok je spelers neer: eerst de start, dan de 1e wissel, de 2e wissel, enz. Bij een nieuw blok wordt het vorige overgenomen.</div>` : ''}
+      <div class="segs">${times.map((t, i) => `<button class="pill ${i === ui.seg ? 'on' : ''} ${ph === 'live' && i === cur ? 'now' : ''}" data-act="seg" data-i="${i}">${ph === 'live' && i === cur ? '● ' : ''}${i === 0 ? 'Start' : `${i}e wissel`} · ${t[0]}'–${t[1]}'</button>`).join('')}</div>
+      ${ui.seg > 0 ? (() => {
+        const prevLu = m.segments[ui.seg - 1];
+        const ins = lu.filter(id => id && !prevLu.includes(id)), outs = prevLu.filter(id => id && !lu.includes(id));
+        return `<div class="wissel">🔁 Op ${times[ui.seg][0]}': <b style="color:var(--ok)">erin</b> ${ins.map(id => esc(pname(id))).join(', ') || '–'} · <b style="color:var(--red)">eruit</b> ${outs.map(id => esc(pname(id))).join(', ') || '–'}</div>`;
+      })() : ''}
+      ${pitchHTML(m, ui.seg, editable, true)}
+      ${editable ? `
+      <div class="benchtitle">🪑 Reserves <span>minuten gespeeld t/m dit blok</span></div>
+      <div class="bench" id="benchZone">${bench.length ? bench.map(id => {
+        const p = player(id);
+        return `<div class="benchp ${ui.sel && ui.sel.type === 'b' && ui.sel.id === id ? 'sel' : ''} ${up[id] === minUp && bench.length > 1 ? 'low' : ''}" data-act="tapBench" data-drag="b" data-id="${id}"><span class="bd">${esc(p.number || p.name.charAt(0).toUpperCase())}</span><span class="bn">${esc(p.name)}</span><i>${Math.round(up[id])}'</i></div>`;
+      }).join('') : '<span class="muted" style="padding:8px">Geen reserves · sleep een speler hierheen om hem eruit te halen</span>'}</div>
+      <div class="hint">Sleep een reserve op een plek of speler, of tik op twee spelers om te wisselen.</div>
+      <div class="tools">
+        ${ui.seg > 0 ? `<button class="btn sm" data-act="copyPrev">📋 Neem vorige over</button>` : ''}
+        ${ph === 'live' && ui.seg < last ? `<button class="btn sm" data-act="regenRest">🔄 Rest eerlijk verdelen</button>` : ''}
+        ${ph === 'live' ? `<button class="btn sm" data-act="splitSeg">✂️ Extra wissel</button>` : ''}
+        <button class="btn sm" data-act="clearSeg">🧹 Leeg</button>
+        ${m.posOverride && Object.keys(m.posOverride).length ? `<button class="btn sm" data-act="resetPos">↩️ Posities terug</button>` : ''}
+      </div>
+      ${ph === 'live' && ui.seg < last ? `<div class="muted" style="margin-top:6px;font-size:12px">🔄 laat alles t/m dit blok staan en verdeelt de blokken erna opnieuw eerlijk.</div>` : ''}` : ''}
+      ${ph === 'live' ? (cur < last
+        ? `<button class="btn pri full big" style="margin-top:12px" data-act="nextSeg">⏭️ Wissel doorvoeren (${times[cur + 1][0]}')</button>`
+        : `<button class="btn pri full big" style="margin-top:12px" data-act="phase" data-v="post">🏁 Wedstrijd afgelopen</button>`) : ''}
+    </div>`;
+
+  const minutesCard = `
+    <div class="card">
+      <h2>⏱️ Speeltijd</h2>
+      <table class="ov">
+        <tr><th>Speler</th>${times.map((t, i) => `<th class="${i === ui.seg ? 'cur' : ''}">${i + 1}</th>`).join('')}<th>${ph === 'done' || ph === 'post' ? 'Min' : 'Nu'}</th>${ph === 'done' || ph === 'post' ? '' : '<th>Tot.</th>'}</tr>
+        ${Object.entries(stt).sort((a, b) => (ph === 'done' || ph === 'post') ? (b[1].mins - a[1].mins) : ((up[a[0]] - up[b[0]]) || (a[1].mins - b[1].mins))).map(([id, r]) => {
+          const shown = (ph === 'done' || ph === 'post') ? r.mins : up[id];
+          return `<tr>
+          <td>${esc(pname(id))}${isIn(m, id) ? '' : ' <span class="muted">(weg)</span>'}<div class="bar"><i style="width:${Math.round(shown / st.matchMinutes * 100)}%"></i></div></td>
+          ${r.per.map((c, i) => `<td class="${i === ui.seg ? 'cur ' : ''}${c ? (c === 'K' ? 'kp' : '') : 'w'}">${c ? (c === 'K' ? '🧤' : c) : (avail(m, id, i) ? 'W' : '–')}</td>`).join('')}
+          <td><b>${Math.round(shown)}'</b></td>${ph === 'done' || ph === 'post' ? '' : `<td class="muted">${Math.round(r.mins)}'</td>`}</tr>`;
+        }).join('')}
+      </table>
+      <div class="muted" style="margin-top:8px">${ph === 'done' || ph === 'post' ? 'W = reserve' : `Nu = gespeeld t/m blok ${ui.seg + 1} · Tot. = met de planning erbij · W = reserve · minst gespeeld bovenaan`}</div>
+    </div>`;
+
+  const presenceCard = `
+  <div class="card">
+    <details data-key="who" ${(ui.open.who ?? ph === 'prep') ? 'open' : ''}>
+    <summary>👥 Wie zijn er? <span class="muted" style="font-weight:400">${nIn} van ${roster.length}</span></summary>
+    <div class="who" style="margin-top:10px">
+      ${roster.map(p => { const on = isIn(m, p.id); return `<button class="whop ${on ? 'on' : ''}" data-act="togglePresent" data-id="${p.id}">${on ? '✅' : '❌'} ${esc(p.name)}${p.guest ? ' <small>invaller</small>' : ''}</button>`; }).join('') || '<span class="muted">Nog geen spelers – voeg ze toe bij Instellingen.</span>'}
+    </div>
+    <div class="muted" style="margin-top:6px">Tik op een naam om iemand af of aan te melden.${ph === 'live' ? ' Tijdens de wedstrijd geldt dat vanaf het huidige blok; zijn plek wordt opgevuld door de reserve met de minste minuten.' : ''}</div>
+    <div class="row" style="margin-top:10px"><input id="guestName" placeholder="Invaller (naam)" list="otherNames" style="flex:3"><button class="btn sm" style="flex:none" data-act="addGuest">＋ Invaller</button></div>
+    <datalist id="otherNames">${S.teams.flatMap(t => t.id === team().id ? [] : t.seasons[t.seasons.length - 1].players.map(p => `<option value="${esc(p.name)}">`)).join('')}</datalist>
+    ${(m.guests || []).length ? `<div class="muted" style="margin-top:8px">Invallers: ${m.guests.map(g => `${esc(g.name)} <button class="x" style="font-size:16px" data-act="delGuest" data-id="${g.id}">×</button>`).join(' ')}</div>` : ''}
+    </details>
+  </div>`;
+
+  const infoCard = `
+  <div class="card">
+    <div class="grid2">
+      <label class="f">Tegenstander<input data-m="opponent" value="${esc(m.opponent)}" placeholder="bv. VV Oranje"></label>
+      <label class="f">Datum<input type="date" data-m="date" value="${esc(m.date)}"></label>
+    </div>
+    <div class="segc"><button class="${m.home !== false ? 'on' : ''}" data-act="home" data-v="1">🏠 Thuis</button><button class="${m.home === false ? 'on' : ''}" data-act="home" data-v="0">🚌 Uit</button></div>
+    <div class="muted" style="margin-top:10px">⚙️ ${settingsLine(st)} · <a href="#" data-act="goSettings2">wijzigen bij Instellingen</a></div>
+  </div>`;
+
+  // ---- na de wedstrijd
+  const goals = m.goals || {};
+  const scorerTotal = Object.values(goals).reduce((a, b) => a + b, 0);
+  const played = Object.entries(stt).filter(([id, r]) => r.mins > 0 || isIn(m, id)).map(([id]) => id);
+  const scoreStep = (k, label) => `<div class="sc"><div class="scl">${label}</div><div class="step"><button data-act="score" data-k="${k}" data-d="-1">−</button><b>${m[k] === '' || m[k] == null ? 0 : m[k]}</b><button data-act="score" data-k="${k}" data-d="1">+</button></div></div>`;
+  const postCard = `
+  <div class="card">
+    <h2>🏁 Eindstand</h2>
+    <div class="scores">
+      ${m.home === false ? scoreStep('goalsAgainst', esc(m.opponent || 'Tegenstander')) + scoreStep('goalsFor', esc(team().name)) : scoreStep('goalsFor', esc(team().name)) + scoreStep('goalsAgainst', esc(m.opponent || 'Tegenstander'))}
+    </div>
+  </div>
+  <div class="card">
+    <h2>⚽ Doelpuntenmakers</h2>
+    <div class="muted" style="margin-bottom:6px">Tik + bij wie er scoorde. ${scorerTotal} van ${+m.goalsFor || 0} doelpunt${(+m.goalsFor || 0) === 1 ? '' : 'en'} toegewezen.</div>
+    ${played.map(id => `<div class="set"><div class="lbl">${esc(pname(id))} ${'⚽'.repeat(Math.min(goals[id] || 0, 6))}</div><div class="step"><button data-act="goal" data-id="${id}" data-d="-1">−</button><b>${goals[id] || 0}</b><button data-act="goal" data-id="${id}" data-d="1">+</button></div></div>`).join('')}
+    ${scorerTotal !== (+m.goalsFor || 0) ? `<div class="muted" style="color:var(--red);margin-top:8px">Let op: het aantal doelpuntenmakers (${scorerTotal}) klopt niet met de eindstand (${+m.goalsFor || 0}).</div>` : ''}
+  </div>
+  <button class="btn pri full big" data-act="saveDone">✅ Opslaan als gespeeld</button>`;
+
+  const doneCard = `
+  <div class="card">
+    <h2>⚽ Doelpuntenmakers</h2>
+    ${Object.entries(goals).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]).map(([id, n]) => `<div class="set"><div class="lbl">${esc(pname(id))}</div><b>${'⚽'.repeat(Math.min(n, 6))} ${n}</b></div>`).join('') || '<div class="muted">Geen doelpuntenmakers ingevuld.</div>'}
+  </div>`;
+
+  let body;
+  if (ph === 'prep') body = `${infoCard}${presenceCard}${lineupCard}${minutesCard}
+    <button class="btn pri full big" data-act="phase" data-v="live">▶️ Start wedstrijd</button>
+    <div class="grid2" style="margin-bottom:12px"><button class="btn" data-act="share">📤 Delen</button><button class="btn" data-act="print">🖨️ Printen</button></div>`;
+  else if (ph === 'live') body = `${lineupCard}${minutesCard}${presenceCard}`;
+  else if (ph === 'post') body = `${postCard}<div style="height:12px"></div>${lineupCard}${minutesCard}`;
+  else body = `${doneCard}${minutesCard}${lineupCard}
+    <div class="grid2" style="margin-bottom:12px"><button class="btn" data-act="share">📤 Delen</button><button class="btn" data-act="print">🖨️ Printen</button></div>
+    <button class="btn full" style="margin-bottom:12px" data-act="phase" data-v="post">✏️ Uitslag of doelpunten aanpassen</button>`;
+
+  return `
+  <div class="row" style="margin-bottom:12px"><button class="btn sm" style="flex:none" data-act="back">‹ Terug</button><div></div></div>
+  ${phaseBar}${header}${body}
+  <button class="btn red full" data-act="delMatch">Wedstrijd verwijderen</button>`;
+}
+
+function viewPlayers(){
+  const se = season();
+  const others = [];
+  S.teams.forEach(t => t.seasons.forEach(s => { if (s.id !== se.id && s.players.length) others.push({t, s}); }));
+  return `
+  <div class="card">
+    <h2>➕ Speler toevoegen aan ${esc(team().name)}</h2>
+    <div class="row"><input id="newName" placeholder="Naam speler" style="flex:3" enterkeyhint="done"><input id="newNum" placeholder="#" inputmode="numeric" style="flex:1"></div>
+    <button class="btn pri full" style="margin-top:10px" data-act="addPlayer">Speler toevoegen</button>
+    <details style="margin-top:12px"><summary class="muted">📝 Meerdere namen tegelijk plakken</summary>
+      <textarea id="bulk" rows="5" style="margin-top:8px" placeholder="Eén naam per regel"></textarea>
+      <button class="btn sm" style="margin-top:6px" data-act="bulk">Alles toevoegen</button>
+    </details>
+    ${others.length ? `<details style="margin-top:8px"><summary class="muted">📥 Overnemen uit ander team/seizoen</summary>
+      <div class="row" style="margin-top:8px"><select id="copyFrom">${others.map(o => `<option value="${o.s.id}">${esc(o.t.name)} · ${esc(o.s.name)} (${o.s.players.length})</option>`).join('')}</select><button class="btn sm" style="flex:none" data-act="copyPlayers">Overnemen</button></div>
+    </details>` : ''}
+  </div>
+  <div class="card list">
+    <h2>👥 Selectie ${esc(team().name)} (${se.players.length})</h2>
+    <div class="muted" style="margin-bottom:4px">V/M/A = voorkeur verdediging/middenveld/aanval (optioneel)</div>
+    ${se.players.length ? se.players.map(p => `
+      <div class="item" style="flex-wrap:wrap">
+        <div class="num">${esc(p.number || '•')}</div>
+        <div class="grow"><input value="${esc(p.name)}" data-p="name" data-id="${p.id}" style="padding:6px 8px"></div>
+        <button class="x" data-act="delPlayer" data-id="${p.id}">×</button>
+        <div style="flex-basis:100%;display:flex;gap:6px;padding-left:40px">
+          <div class="tags">${['V','M','A'].map(l => `<button class="tag ${(p.pref || []).includes(l) ? 'on' : ''}" data-act="pref" data-id="${p.id}" data-l="${l}">${l}</button>`).join('')}</div>
+        </div>
+      </div>`).join('') : `<div class="empty"><b>👥</b>Nog geen spelers. Voeg ze hierboven toe.</div>`}
+  </div>`;
+}
+
+function viewStats(){
+  const se = season(), t = team();
+  const done = se.matches.filter(m => m.phase === 'done' && m.segments);
+  const rows = {};
+  se.players.forEach(p => rows[p.id] = {p, matches:0, mins:0, possible:0, kmins:0, bench:0, blocks:0, pos:{}, goals:0});
+  let w = 0, d = 0, l = 0, gf = 0, ga = 0, scored = 0;
+  done.forEach(m => {
+    const pos = matchPositions(m), times = segTimes(m.settings);
+    m.present.forEach(id => {
+      const r = rows[id]; if (!r) return;
+      r.goals += (m.goals || {})[id] || 0;
+      r.matches++; r.possible += m.settings.matchMinutes;
+      m.segments.forEach((lu, s) => {
+        const len = times[s][1] - times[s][0], i = lu.indexOf(id);
+        r.blocks++;
+        if (i >= 0){ r.mins += len; const c = pos[i].code; r.pos[c] = (r.pos[c] || 0) + 1; if (pos[i].line === 'K') r.kmins += len; }
+        else r.bench++;
+      });
+    });
+    if (hasScore(m)){
+      const a = +m.goalsFor, b = +m.goalsAgainst;
+      scored++; gf += a; ga += b; a > b ? w++ : a === b ? d++ : l++;
+    }
+  });
+  const list = Object.values(rows).sort((a, b) => b.mins - a.mins);
+  const maxMin = Math.max(1, ...list.map(r => r.mins));
+  const keepers = list.filter(r => r.kmins > 0).sort((a, b) => b.kmins - a.kmins);
+  const pct = r => r.possible ? Math.round(r.mins / r.possible * 100) : 0;
+  const avgPct = (() => { const a = list.filter(r => r.possible); return a.length ? Math.round(a.reduce((s, r) => s + pct(r), 0) / a.length) : 0; })();
+
+  if (!done.length) return `<div class="card empty"><b>📊</b>Nog geen statistieken voor ${esc(t.name)} ${esc(se.name)}.<br>Statistieken tellen mee zodra een wedstrijd is opgeslagen als ✅ gespeeld.</div>`;
+  return `
+  <div class="tiles">
+    <div class="tile"><b>${done.length}</b><span>wedstrijden</span></div>
+    <div class="tile"><b>${scored ? `${w}-${d}-${l}` : '–'}</b><span>W-G-V</span></div>
+    <div class="tile"><b>${scored ? `${gf}:${ga}` : '–'}</b><span>doelpunten</span></div>
+  </div>
+  <div class="card">
+    <h2>⏱️ Speeltijd per speler</h2>
+    <div class="muted" style="margin-bottom:8px">% = deel van de minuten in wedstrijden waarbij de speler aanwezig was. Gemiddeld ${avgPct}%.</div>
+    <table class="ov">
+      <tr><th>Speler</th><th>Wed</th><th>Min</th><th>%</th><th>⚽</th><th>🧤</th><th>Bank</th></tr>
+      ${list.map(r => {
+        const top = Object.entries(r.pos).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([c]) => c === 'K' ? '🧤' : c).join(' · ');
+        return `<tr>
+          <td>${esc(r.p.name)}<div class="bar"><i style="width:${Math.round(r.mins / maxMin * 100)}%"></i></div>${top ? `<div class="muted" style="font-size:11px;margin-top:2px">${top}</div>` : ''}</td>
+          <td>${r.matches}</td><td><b>${Math.round(r.mins)}'</b></td>
+          <td style="color:${pct(r) < avgPct - 10 ? 'var(--red)' : 'inherit'}">${r.possible ? pct(r) + '%' : '–'}</td>
+          <td><b>${r.goals || ''}</b></td><td class="kp">${r.kmins ? Math.round(r.kmins) + "'" : ''}</td><td class="w">${r.bench}×</td></tr>`;
+      }).join('')}
+    </table>
+    <div class="muted" style="margin-top:8px">Bank = aantal blokken op de bank. Rood = duidelijk minder speeltijd dan gemiddeld.</div>
+  </div>
+  ${list.some(r => r.goals) ? `<div class="card">
+    <h2>⚽ Topscorers</h2>
+    ${list.filter(r => r.goals).sort((a, b) => b.goals - a.goals).map(r => `<div class="set"><div class="lbl">${esc(r.p.name)}</div><b>${r.goals}</b></div>`).join('')}
+  </div>` : ''}
+  ${keepers.length ? `<div class="card">
+    <h2>🧤 In de goal dit seizoen</h2>
+    ${keepers.map(r => `<div class="set"><div class="lbl">${esc(r.p.name)}</div><b>${Math.round(r.kmins)} min</b></div>`).join('')}
+  </div>` : ''}
+  <div class="card list">
+    <h2>📋 Uitslagen</h2>
+    ${done.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '')).map(m => `<div class="item match" data-act="openMatch" data-id="${m.id}"><div class="grow"><div class="name">${esc(matchTitle(m))}</div><div class="muted">${fmtDate(m.date)}</div></div><b>${hasScore(m) ? (m.home === false ? `${esc(m.goalsAgainst)}-${esc(m.goalsFor)}` : `${esc(m.goalsFor)}-${esc(m.goalsAgainst)}`) : '–'}</b></div>`).join('')}
+  </div>`;
+}
+
+function viewSettings(){
+  const se = season(), t = team();
+  const tabs = [['team', '⚙️ Opstelling'], ['spelers', '👥 Spelers'], ['teams', '🛡️ Teams'], ['meer', '💾 Meer']];
+  const st = ui.stab || 'team';
+  let body = '';
+  if (st === 'team') body = `
+  <div class="card">
+    <h2>⚙️ Opstelling ${esc(teamLabel(t))}</h2>
+    ${settingsBlock(se, 'season')}
+    <div class="muted" style="margin-top:8px">Geldt voor nieuwe wedstrijden en wedstrijden waarvan de opstelling nog niet gemaakt is.</div>
+    <div style="margin-top:12px">${pitchHTML({settings:se, segments:null}, 0, false)}</div>
+  </div>`;
+  else if (st === 'spelers') body = viewPlayers();
+  else if (st === 'teams') body = `
+  <div class="card list">
+    <h2>🛡️ Teams</h2>
+    <div class="muted" style="margin-bottom:6px">Elk team hoort bij één seizoen, bijv. <b>JO8 26/27</b>. Voor een nieuw seizoen kopieer je het team.</div>
+    ${sortedTeams().map(x => { const ls = x.seasons[0]; const on = x.id === t.id; return `
+      <div class="tcard ${on ? 'on' : ''}">
+        <div class="row" style="gap:8px">
+          <input type="color" value="${esc(x.color || '#c8102e')}" data-t="color" data-id="${x.id}" style="width:44px;height:40px;padding:2px;flex:none">
+          <input value="${esc(x.name)}" data-t="name" data-id="${x.id}" style="flex:2" aria-label="Teamnaam">
+          <input value="${esc(ls.name)}" data-ts="name" data-id="${x.id}" style="flex:2" aria-label="Seizoen">
+        </div>
+        <div class="muted" style="margin:6px 0 8px">${esc(teamLabel(x))} · ${ls.fieldPlayers} tegen ${ls.fieldPlayers} · ${ls.players.length} spelers · ${ls.matches.length} wedstrijden${on ? ' · <b style="color:var(--mk)">actief</b>' : ''}</div>
+        <div class="tools" style="margin-top:0">
+          ${on ? '' : `<button class="btn sm" data-act="team" data-id="${x.id}">✔️ Kiezen</button>`}
+          <button class="btn sm" data-act="copyTeam" data-id="${x.id}">📋 Kopie nieuw seizoen</button>
+          <button class="btn sm" data-act="resetSeason" data-id="${x.id}">🔄 Reset</button>
+          <button class="btn sm red" data-act="delTeam" data-id="${x.id}">🗑️ Weg</button>
+        </div>
+      </div>`; }).join('')}
+  </div>
+  <div class="card">
+    <h2>＋ Nieuw team</h2>
+    <div class="row"><input id="newTeam" placeholder="Teamnaam, bv. JO10-2" style="flex:3"><input id="newTeamSeason" value="${esc(seasonName())}" style="flex:2" aria-label="Seizoen"></div>
+    <div class="set"><div class="lbl">Spelers in het veld</div><div class="step"><button data-act="ntStep" data-d="-1">−</button><b id="ntFp">${ui.ntFp || 8}</b><button data-act="ntStep" data-d="1">+</button></div></div>
+    <button class="btn pri full" data-act="addTeam">＋ Team toevoegen</button>
+    <div class="muted" style="margin-top:8px">📋 <b>Kopie nieuw seizoen</b> neemt spelers en instellingen mee, zonder wedstrijden. 🔄 <b>Reset</b> wist alle wedstrijden en statistieken van dat team, de spelers blijven.</div>
+  </div>`;
+  else body = `
+  <div class="card">
+    <h2>🏷️ Clublogo</h2>
+    <div class="row" style="align-items:center"><div class="logo" style="width:64px;height:64px;flex:none;border:1px solid var(--line)">${logoSrc ? `<img src="${logoSrc}" alt="">` : '⚽'}</div>
+      <div class="muted">${logoSrc ? 'Logo staat erin. Het komt in de kop, midden op het veld en op de print.' : 'Nog geen logo. Kies een afbeelding van het Maliskamp-logo, of zet <b>logo.png</b> in je GitHub-repo.'}</div></div>
+    <div class="grid2" style="margin-top:10px"><button class="btn pri" data-act="logoPick">📷 Logo kiezen</button>${localStorage.getItem(LOGO_KEY) ? '<button class="btn" data-act="logoDel">Verwijderen</button>' : ''}</div>
+    <input type="file" id="logoFile" accept="image/*" style="display:none">
+  </div>
+  ${cloudCard()}
+  <div class="card">
+    <h2>💾 Back-up</h2>
+    <div class="muted" style="margin-bottom:10px">Alles wordt op dit apparaat bewaard. Met een back-up zet je je gegevens over naar een ander apparaat.</div>
+    <div class="grid2"><button class="btn" data-act="export">⬇️ Exporteren</button><button class="btn" data-act="import">⬆️ Importeren</button></div>
+    <input type="file" id="importFile" accept=".json,application/json" style="display:none">
+  </div>`;
+  return `<div class="stabs">${tabs.map(([k, l]) => `<button class="${k === st ? 'on' : ''}" data-act="stab" data-v="${k}">${l}</button>`).join('')}</div>${body}`;
+}
+
+
+/* ===================== Eigen pop-ups (werken ook als web-app op beginscherm) ===================== */
+function sheet(html){
+  return new Promise(res => {
+    const d = document.createElement('div'); d.className = 'modal';
+    d.innerHTML = `<div class="box">${html}</div>`;
+    document.body.appendChild(d);
+    const inp = d.querySelector('input');
+    const done = ok => { d.remove(); res(ok ? (inp ? inp.value : true) : (inp ? null : false)); };
+    d.addEventListener('click', e => { e.stopPropagation(); const b = e.target.closest('[data-r]'); if (b) done(b.dataset.r === 'ok'); else if (e.target === d) done(false); });
+    inp && inp.addEventListener('keydown', e => { if (e.key === 'Enter') done(true); });
+    setTimeout(() => inp && inp.focus(), 60);
+  });
+}
+const ask = (msg, ok) => sheet(`<p>${esc(msg)}</p><div class="grid2"><button class="btn" data-r="no">Annuleren</button><button class="btn pri" data-r="ok">${esc(ok || 'Ja')}</button></div>`);
+const tell = msg => sheet(`<p>${esc(msg)}</p><button class="btn pri full" data-r="ok">OK</button>`);
+const askText = (msg, val) => sheet(`<p>${esc(msg)}</p><input value="${esc(val)}" style="font-size:18px"><div class="grid2" style="margin-top:12px"><button class="btn" data-r="no">Annuleren</button><button class="btn pri" data-r="ok">OK</button></div>`);
+const askNum = (msg, val) => sheet(`<p>${esc(msg)}</p><input type="number" inputmode="numeric" value="${esc(val)}" style="font-size:22px;text-align:center"><div class="grid2" style="margin-top:12px"><button class="btn" data-r="no">Annuleren</button><button class="btn pri" data-r="ok">OK</button></div>`);
+
+/* ===================== Acties ===================== */
+function toast(msg){ document.querySelectorAll('.toast').forEach(x => x.remove()); const d = document.createElement('div'); d.className = 'toast'; d.textContent = msg; document.body.appendChild(d); setTimeout(() => d.remove(), 1800); }
+const commit = () => { save(); render(); };
+const go = tab => { ui.tab = tab; ui.matchId = null; ui.sel = null; render(); window.scrollTo(0, 0); };
+
+function newMatch(){
+  const se = season();
+  const m = {id:uid(), opponent:'', date:new Date().toISOString().slice(0, 10), home:true,
+    present: se.players.map(p => p.id), keepers:{}, goalsFor:'', goalsAgainst:'',
+    settings:{fieldPlayers:se.fieldPlayers, formation:se.formation, subMoments:se.subMoments, matchMinutes:se.matchMinutes, keeperMode:se.keeperMode},
+    segments:Array.from({length: se.subMoments + 1}, () => Array(positions(se.fieldPlayers, se.formation).length).fill(null)),
+    phase:'prep', cur:0, goals:{}};
+  se.matches.push(m);
+  ui.open = {}; ui.matchId = m.id; ui.seg = 0; ui.sel = null; commit(); window.scrollTo(0, 0);
+}
+async function saveDone(m){
+  const tot = Object.values(m.goals || {}).reduce((a, b) => a + b, 0);
+  if (m.goalsFor === '' || m.goalsFor == null){ m.goalsFor = 0; m.goalsAgainst = m.goalsAgainst || 0; }
+  if (tot !== +m.goalsFor && !await ask(`Er zijn ${tot} doelpuntenmakers ingevuld bij ${m.goalsFor} doelpunt(en). Toch opslaan?`, 'Opslaan')) return;
+  m.phase = 'done'; m.cutsLocked = true; ui.seg = 0; ui.sel = null; commit(); window.scrollTo(0, 0);
+  toast('Wedstrijd opgeslagen als gespeeld ✅');
+}
+function swap(m, a, b){
+  const lu = m.segments[ui.seg];
+  if (a.type === 'f' && b.type === 'f') [lu[a.i], lu[b.i]] = [lu[b.i], lu[a.i]];
+  else if (a.type === 'bz' || b.type === 'bz'){ const f = a.type === 'f' ? a : b; if (f.type === 'f') lu[f.i] = null; }
+  else { const f = a.type === 'f' ? a : b, bn = a.type === 'b' ? a : b; lu[f.i] = bn.id; }
+  m.edited = true;
+}
+function fitSegments(m){
+  const n = m.settings.subMoments + 1, len = positions(m.settings.fieldPlayers, m.settings.formation).length;
+  const segs = (m.segments || []).slice(0, n).map(lu => { lu = lu.slice(0, len); while (lu.length < len) lu.push(null); return lu; });
+  while (segs.length < n) segs.push(segs.length ? segs[segs.length - 1].slice() : Array(len).fill(null));
+  m.segments = segs;
+}
+function regenIfNeeded(m){
+  if (!m || !m.segments) return;
+  if (m.manual){ fitSegments(m); toast('Blokken aangepast'); }
+  else { generate(m, false); toast('Opstelling bijgewerkt'); }
+}
+function addPlayerFromForm(){
+  const se = season(), n = document.getElementById('newName').value.trim();
+  if (!n){ document.getElementById('newName').focus(); return; }
+  se.players.push({id:uid(), name:n, number:document.getElementById('newNum').value.trim(), pref:[]});
+  commit(); toast(`${n} toegevoegd`); document.getElementById('newName').focus();
+}
+
+document.addEventListener('click', async e => {
+  const el = e.target.closest('[data-act],[data-tab]');
+  if (drag.suppress){ drag.suppress = false; if (e.target.closest('[data-drag],#livePitch,#benchZone')) return; }
+  if (!el || el.tagName === 'SELECT' || (el.tagName === 'INPUT')) return;
+  if (el.dataset.tab){ go(el.dataset.tab); return; }
+  const act = el.dataset.act, id = el.dataset.id, se = season(), m = match();
+  const tgt = el.dataset.scope === 'match' ? m && m.settings : se;
+  switch (act){
+    case 'team': S.active.team = id; ui.matchId = null; ui.sel = null; commit(); break;
+    case 'goSettings': ui.stab = 'teams'; go('settings'); setTimeout(() => document.getElementById('newTeam')?.focus(), 50); break;
+    case 'goSettings2': e.preventDefault(); ui.stab = 'team'; go('settings'); break;
+    case 'goPlayers': ui.stab = 'spelers'; go('settings'); break;
+    case 'stab': ui.stab = el.dataset.v; render(); break;
+    case 'togglePresent': {
+      const pid = el.dataset.id, from = m.phase === 'live' ? (m.cur || 0) : 0;
+      if (isIn(m, pid)){
+        const played = from > 0 && m.segments.slice(0, from).some(lu => lu.includes(pid));
+        if (played){ m.out = m.out || {}; m.out[pid] = from; }
+        else m.present = m.present.filter(x => x !== pid);
+        m.segments.forEach((lu, s) => { if (s >= from) lu.forEach((x, i) => { if (x === pid) lu[i] = null; }); });
+        if (m.phase === 'live'){ fillHoles(m, from); toast(`${pname(pid)} is eruit – plek opgevuld`); }
+      } else {
+        if (m.out && m.out[pid] != null) delete m.out[pid];
+        if (!m.present.includes(pid)) m.present.push(pid);
+        if (m.phase === 'live') toast(`${pname(pid)} staat bij de reserves`);
+      }
+      commit(); break;
+    }
+    case 'phase': {
+      const v = el.dataset.v;
+      if (v === 'done'){ await saveDone(m); break; }
+      if (v !== 'prep') m.cutsLocked = true;
+      if (v === 'live'){ m.cur = m.cur || 0; ui.seg = m.cur; if (m.phase === 'prep') toast('Wedstrijd gestart – succes! ⚽'); }
+      if (v === 'post' && (m.goalsFor === '' || m.goalsFor == null)){ m.goalsFor = 0; m.goalsAgainst = 0; }
+      m.phase = v; ui.sel = null; commit(); window.scrollTo(0, 0); break;
+    }
+    case 'nextSeg': {
+      const n = m.segments.length;
+      if ((m.cur || 0) >= n - 1) break;
+      m.cur = (m.cur || 0) + 1; ui.seg = m.cur; ui.sel = null;
+      if (isEmptySeg(m.segments[m.cur])) m.segments[m.cur] = m.segments[m.cur - 1].slice();
+      commit(); toast(`Wissel doorgevoerd – blok ${m.cur + 1} loopt`); window.scrollTo(0, 0); break;
+    }
+    case 'score': { const k = el.dataset.k; m[k] = Math.max(0, (+m[k] || 0) + (+el.dataset.d)); commit(); break; }
+    case 'goal': {
+      m.goals = m.goals || {}; const gid = el.dataset.id;
+      m.goals[gid] = Math.max(0, (m.goals[gid] || 0) + (+el.dataset.d));
+      const tot = Object.values(m.goals).reduce((a, b) => a + b, 0);
+      if (tot > (+m.goalsFor || 0)) m.goalsFor = tot;
+      commit(); break;
+    }
+    case 'saveDone': await saveDone(m); break;
+    case 'addGuest': {
+      const n = document.getElementById('guestName').value.trim();
+      if (!n){ document.getElementById('guestName').focus(); return; }
+      const g = {id:uid(), name:n, number:'', pref:[], guest:true};
+      m.guests = m.guests || []; m.guests.push(g); m.present.push(g.id);
+      commit(); toast(`${n} doet mee als invaller`); break;
+    }
+    case 'delGuest': {
+      m.guests = (m.guests || []).filter(g => g.id !== id); m.present = m.present.filter(x => x !== id);
+      m.segments = m.segments.map(lu => lu.map(x => x === id ? null : x)); if (m.phase === 'live') fillHoles(m, m.cur || 0);
+      commit(); break;
+    }
+    case 'newMatch': newMatch(); break;
+    case 'openMatch': ui.open = {}; ui.tab = 'matches'; ui.matchId = id; ui.seg = 0; ui.sel = null; render(); window.scrollTo(0, 0); break;
+    case 'back': ui.matchId = null; ui.sel = null; render(); break;
+    case 'step': {
+      const k = el.dataset.k, [mn, mx, stp] = LIMITS[k];
+      tgt[k] = Math.max(mn, Math.min(mx, tgt[k] + (+el.dataset.d) * stp));
+      if (k === 'fieldPlayers') tgt.formation = FORMATIONS[tgt[k]][0].n;
+      if (k !== 'fieldPlayers') delete tgt.cuts;
+      if (el.dataset.scope === 'match'){ if (k === 'fieldPlayers') delete m.posOverride; regenIfNeeded(m); }
+      commit(); break;
+    }
+    case 'kmode':
+      tgt.keeperMode = el.dataset.v;
+      if (el.dataset.scope === 'match'){ m.keepers = {}; regenIfNeeded(m); }
+      commit(); break;
+    case 'home': m.home = el.dataset.v === '1'; commit(); break;
+    case 'gen': case 'mix':
+      if (m.segments && m.edited && !await ask('Je handmatige wissels worden overschreven. Doorgaan?')) return;
+      m.manual = false; generate(m, act === 'mix'); ui.seg = 0; ui.sel = null; ui.open.setup = false; commit();
+      if (act === 'mix') toast('Nieuwe verdeling gemaakt');
+      break;
+    case 'seg': {
+      ui.seg = +el.dataset.i; ui.sel = null;
+      if (ui.seg > 0 && isEmptySeg(m.segments[ui.seg]) && !isEmptySeg(m.segments[ui.seg - 1])){ m.segments[ui.seg] = m.segments[ui.seg - 1].slice(); save(); toast('Vorig blok overgenomen – pas de wissels aan'); }
+      render(); break;
+    }
+    case 'manual': {
+      if (m.segments && !await ask('Je huidige opstelling wordt leeggemaakt. Zelf opnieuw beginnen?')) return;
+      const len = positions(m.settings.fieldPlayers, m.settings.formation).length;
+      m.segments = Array.from({length: m.settings.subMoments + 1}, () => Array(len).fill(null));
+      m.manual = true; m.edited = true; ui.seg = 0; ui.sel = null; ui.open.setup = false; commit();
+      toast('Sleep spelers van de bank naar het veld'); break;
+    }
+    case 'copyPrev': m.segments[ui.seg] = m.segments[ui.seg - 1].slice(); m.edited = true; commit(); toast('Vorig blok overgenomen'); break;
+    case 'clearSeg': m.segments[ui.seg] = m.segments[ui.seg].map(() => null); m.edited = true; commit(); break;
+    case 'regenRest': generate(m, false, ui.seg + 1); m.edited = true; commit(); toast(`Blok ${ui.seg + 2} t/m ${m.segments.length} opnieuw eerlijk verdeeld`); break;
+    case 'resetPos': delete m.posOverride; commit(); break;
+    case 'splitSeg': {
+      const t = segTimes(m.settings)[ui.seg];
+      if (t[1] - t[0] < 2){ await tell('Dit blok is te kort om te splitsen.'); return; }
+      const sug = Math.round((t[0] + t[1]) / 2);
+      const v = await askNum(`Op welke minuut wil je een extra wissel? (tussen ${t[0] + 1} en ${t[1] - 1})`, sug);
+      if (v === null) return;
+      const min = parseInt(v);
+      if (!(min > t[0] && min < t[1])){ await tell(`Kies een minuut tussen ${t[0] + 1} en ${t[1] - 1}.`); return; }
+      const all = segTimes(m.settings);
+      m.settings.cuts = [...all.slice(1).map(x => x[0]), min].sort((a, b) => a - b);
+      m.settings.subMoments++;
+      m.segments.splice(ui.seg + 1, 0, m.segments[ui.seg].slice());
+      if (m.settings.keeperMode === 'blok'){ const k = {}; Object.entries(m.keepers).forEach(([i, v]) => { i = +i; k[i > ui.seg ? i + 1 : i] = v; }); m.keepers = k; }
+      ui.seg++; m.edited = true; commit(); toast(`Extra wissel op ${min}' – zet de wissel nu op het veld`); break;
+    }
+    case 'tapField': case 'tapBench': {
+      const t = act === 'tapField' ? {type:'f', i:+el.dataset.i} : {type:'b', id};
+      if (!ui.sel){ ui.sel = t; render(); break; }
+      const same = ui.sel.type === t.type && (t.type === 'f' ? ui.sel.i === t.i : ui.sel.id === t.id);
+      if (same || (ui.sel.type === 'b' && t.type === 'b')){ ui.sel = same ? null : t; render(); break; }
+      swap(m, ui.sel, t); ui.sel = null; commit(); break;
+    }
+    case 'delMatch': if (await ask('Deze wedstrijd verwijderen?')){ se.matches = se.matches.filter(x => x.id !== m.id); ui.matchId = null; commit(); } break;
+    case 'share': shareMatch(m); break;
+    case 'print': buildPrint(m); setTimeout(() => window.print(), 50); break;
+
+    case 'addPlayer': addPlayerFromForm(); break;
+    case 'bulk': {
+      const names = document.getElementById('bulk').value.split(/\n|,/).map(s => s.trim()).filter(Boolean);
+      names.forEach(n => se.players.push({id:uid(), name:n, number:'', pref:[]}));
+      commit(); toast(`${names.length} spelers toegevoegd`); break;
+    }
+    case 'copyPlayers': {
+      const from = S.teams.flatMap(t => t.seasons).find(s => s.id === document.getElementById('copyFrom').value);
+      if (!from) return;
+      const have = new Set(se.players.map(p => p.name.toLowerCase()));
+      let c = 0;
+      from.players.forEach(p => { if (!have.has(p.name.toLowerCase())){ se.players.push({...p, id:uid(), pref:[...(p.pref || [])]}); c++; } });
+      commit(); toast(`${c} spelers overgenomen`); break;
+    }
+    case 'pref': {
+      const p = player(id), l = el.dataset.l; p.pref = p.pref || [];
+      p.pref = p.pref.includes(l) ? p.pref.filter(x => x !== l) : [...p.pref, l];
+      commit(); break;
+    }
+    case 'delPlayer': {
+      const p = player(id);
+      if (!await ask(`${p.name} verwijderen?`)) return;
+      se.players = se.players.filter(x => x.id !== id);
+      se.matches.forEach(mm => { mm.present = mm.present.filter(x => x !== id); if (mm.segments) mm.segments = mm.segments.map(lu => lu.map(x => x === id ? null : x)); });
+      commit(); break;
+    }
+    case 'ntStep': ui.ntFp = Math.max(4, Math.min(11, (ui.ntFp || 8) + (+el.dataset.d))); document.getElementById('ntFp').textContent = ui.ntFp; break;
+    case 'addTeam': {
+      const n = document.getElementById('newTeam').value.trim(); if (!n){ document.getElementById('newTeam').focus(); return; }
+      const fp = ui.ntFp || 8;
+      const colors = ['#c8102e', '#1b1b1f', '#9e0b23', '#2563eb', '#1f9d55'];
+      const sn = (document.getElementById('newTeamSeason').value || '').trim() || seasonName();
+      const t = {id:uid(), name:n, color:colors[S.teams.length % colors.length], seasons:[defaultSeason(sn, fp, FORMATIONS[fp][0].n, 3, fp <= 6 ? 40 : fp <= 8 ? 50 : 70)]};
+      S.teams.push(t); S.active.team = t.id; commit(); toast(`${teamLabel(t)} toegevoegd`); break;
+    }
+    case 'delTeam': {
+      const t = S.teams.find(x => x.id === id);
+      if (S.teams.length === 1){ await tell('Je hebt minstens één team nodig. Maak eerst een nieuw team aan en verwijder daarna dit team.'); return; }
+      if (!await ask(`${teamLabel(t)} met alle spelers en wedstrijden verwijderen?`, 'Verwijderen')) return;
+      S.teams = S.teams.filter(x => x.id !== id); if (S.active.team === id) S.active.team = sortedTeams()[0].id; commit(); break;
+    }
+    case 'copyTeam': {
+      const t = S.teams.find(x => x.id === id), os = t.seasons[0];
+      const sn = await askText(`Kopie van ${teamLabel(t)} maken. Voor welk seizoen?`, nextSeason(os.name));
+      if (!sn) return;
+      const nn = await askText('Teamnaam in het nieuwe seizoen (bv. JO9 als je team een jaar ouder wordt):', t.name);
+      if (!nn) return;
+      const ns = defaultSeason(sn.trim(), os.fieldPlayers, os.formation, os.subMoments, os.matchMinutes);
+      ns.players = os.players.map(p => ({...p, id:uid(), pref:[...(p.pref || [])]}));
+      const c = {id:uid(), name:nn.trim(), color:t.color, seasons:[ns]};
+      S.teams.push(c); S.active.team = c.id; commit(); toast(`${teamLabel(c)} aangemaakt met ${ns.players.length} spelers`); break;
+    }
+    case 'resetSeason': {
+      const t = S.teams.find(x => x.id === id), ts = t.seasons[0];
+      if (!await ask(`Seizoen van ${teamLabel(t)} resetten? Alle ${ts.matches.length} wedstrijden en statistieken worden gewist. De spelers en instellingen blijven.`, 'Resetten')) return;
+      ts.matches = []; if (S.active.team === t.id) ui.matchId = null; commit(); toast(`${teamLabel(t)} is gereset`); break;
+    }
+    case 'export': {
+      const blob = new Blob([JSON.stringify(S, null, 2)], {type:'application/json'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = `opstelling-backup-${new Date().toISOString().slice(0, 10)}.json`; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000); break;
+    }
+    case 'import': document.getElementById('importFile').click(); break;
+    case 'logoPick': document.getElementById('logoFile').click(); break;
+    case 'logoDel': localStorage.removeItem(LOGO_KEY); loadLogo(); break;
+    case 'goCloud': ui.stab = 'meer'; go('settings'); break;
+    case 'cloudConnect': {
+      const code = document.getElementById('cloudCode').value.trim().toLowerCase(), pin = document.getElementById('cloudPin').value.trim();
+      if (code.length < 4 || pin.length < 4){ await tell('Teamcode en pincode moeten allebei minstens 4 tekens lang zijn.'); return; }
+      let api, remote, cid;
+      try {
+        setCloudStatus('busy');
+        api = await firebaseApi();
+        cid = await sha('opstelling|' + code + '|' + pin);
+        remote = await api.get(cid);
+      } catch(err){ console.error(err); setCloudStatus('err'); await tell('Verbinden lukt niet. Controleer firebase-config.js en de Firestore-regels (zie FIREBASE.md). Melding: ' + (err.message || err)); return; }
+      if (remote && (remote.version || 0) > DATA_VERSION){ showOutdated(); await tell('Online staat een nieuwere versie. Ververs eerst de app.'); return; }
+      if (remote){
+        if (!await ask(`Voor "${code}" staan al gegevens online. Die worden nu op dit apparaat geladen en vervangen wat hier staat.`, 'Laden')){ setCloudStatus('off'); return; }
+        cloud.force = true;
+      } else {
+        if (!await ask(`Nieuwe online opslag "${code}" aanmaken met de gegevens van dit apparaat?`, 'Aanmaken')){ setCloudStatus('off'); return; }
+      }
+      localStorage.setItem(CLOUD_KEY, JSON.stringify({code, id:cid}));
+      await cloudStart(); render(); toast('Verbonden ☁️'); break;
+    }
+    case 'cloudOff': {
+      if (!await ask('Dit apparaat loskoppelen? De gegevens blijven online en op dit apparaat staan, maar worden niet meer gedeeld.', 'Loskoppelen')) return;
+      localStorage.removeItem(CLOUD_KEY); if (cloud.unsub) cloud.unsub(); cloud.unsub = null; cloud.id = null; cloud.api = null; setCloudStatus('off'); render(); break;
+    }
+  }
+});
+
+document.addEventListener('change', e => {
+  const el = e.target, se = season(), m = match();
+    if (el.id === 'logoFile'){
+    const f = el.files[0]; if (!f) return;
+    const img = new Image();
+    img.onload = () => {
+      const max = 320, sc = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas'); c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      try { localStorage.setItem(LOGO_KEY, c.toDataURL('image/png')); } catch(_){ tell('Afbeelding is te groot.'); return; }
+      URL.revokeObjectURL(img.src); loadLogo(); toast('Logo opgeslagen');
+    };
+    img.src = URL.createObjectURL(f);
+    return;
+  }
+  if (el.id === 'importFile'){
+    const f = el.files[0]; if (!f) return;
+    f.text().then(async txt => {
+      try { const d = JSON.parse(txt); if (!Array.isArray(d.teams)) throw 0;
+        if (!await ask('Huidige gegevens vervangen door de back-up?')) return;
+        S = d; normalize(); commit(); toast('Back-up geladen');
+      } catch(_){ await tell('Dit is geen geldig back-upbestand.'); }
+    });
+    return;
+  }
+  if (el.dataset.act === 'formation'){
+    const tgt = el.dataset.scope === 'match' ? m.settings : se;
+    tgt.formation = el.value; if (el.dataset.scope === 'match'){ delete m.posOverride; regenIfNeeded(m); } commit(); return;
+  }
+  if (el.dataset.m){
+    const k = el.dataset.m;
+    if (k === 'keeper'){ m.keepers[el.dataset.slot] = el.value; if (m.segments){ generate(m, false); toast('Kieper aangepast'); } }
+    else m[k] = el.value;
+    commit(); return;
+  }
+  if (el.dataset.s){ se[el.dataset.s] = el.value.trim() || se[el.dataset.s]; commit(); return; }
+  if (el.dataset.p){ const p = player(el.dataset.id); p[el.dataset.p] = el.value.trim() || p.name; commit(); return; }
+  if (el.dataset.ts){ const t = S.teams.find(x => x.id === el.dataset.id); t.seasons[0].name = el.value.trim() || t.seasons[0].name; commit(); return; }
+  if (el.dataset.t){ const t = S.teams.find(x => x.id === el.dataset.id); t[el.dataset.t] = el.value.trim() || t[el.dataset.t]; commit(); return; }
+});
+
+document.addEventListener('toggle', e => { const k = e.target.dataset && e.target.dataset.key; if (k) ui.open[k] = e.target.open; }, true);
+
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  if (e.target.id === 'newName' || e.target.id === 'newNum'){ e.preventDefault(); addPlayerFromForm(); return; }
+  const map = {newTeam:'addTeam', newSeason:'addSeason'};
+  if (map[e.target.id]) document.querySelector(`[data-act="${map[e.target.id]}"]`).click();
+});
+
+
+/* ===================== Online samenwerken (Firebase) ===================== */
+const DATA_VERSION = 5;               // ophogen als de opbouw van de gegevens verandert
+const FIREBASE_SDK = '10.12.2';
+const CLOUD_KEY = 'opstellingmaker.cloud';
+const DEVICE = (() => { let d = localStorage.getItem('opstellingmaker.device'); if (!d){ d = uid() + uid(); try { localStorage.setItem('opstellingmaker.device', d); } catch(e){} } return d; })();
+const cloud = {api:null, id:null, code:'', status:'off', timer:null, lastPush:0, lastRemote:0, outdated:false, pending:null, unsub:null, force:false};
+const cloudCfg = () => { try { return JSON.parse(localStorage.getItem(CLOUD_KEY)) || null; } catch(e){ return null; } };
+const cloudAvailable = () => !!(window.__cloudApi || window.FIREBASE_CONFIG);
+async function sha(t){ const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
+let fbApiPromise = null;
+function firebaseApi(){
+  if (window.__cloudApi) return Promise.resolve(window.__cloudApi);
+  if (!window.FIREBASE_CONFIG) return Promise.resolve(null);
+  if (fbApiPromise) return fbApiPromise;
+  fbApiPromise = (async () => {
+    const base = `https://www.gstatic.com/firebasejs/${FIREBASE_SDK}/`;
+    const [{initializeApp}, fs] = await Promise.all([import(base + 'firebase-app.js'), import(base + 'firebase-firestore.js')]);
+    const db = fs.getFirestore(initializeApp(window.FIREBASE_CONFIG));
+    const ref = id => fs.doc(db, 'clubs', id);
+    return {
+      get: async id => { const s = await fs.getDoc(ref(id)); return s.exists() ? s.data() : null; },
+      set: (id, v) => fs.setDoc(ref(id), v),
+      listen: (id, cb, err) => fs.onSnapshot(ref(id), s => cb(s.exists() ? s.data() : null), err)
+    };
+  })();
+  fbApiPromise.catch(() => fbApiPromise = null);
+  return fbApiPromise;
+}
+function setCloudStatus(st){
+  cloud.status = st;
+  const el = document.getElementById('cloudDot');
+  if (el){ el.textContent = {ok:'☁️ ✓', busy:'☁️ …', err:'☁️ ⚠️', old:'⬆️ ververs', off:''}[st] || ''; el.className = 'cloud ' + st; }
+}
+async function cloudStart(){
+  const c = cloudCfg();
+  if (!c || !cloudAvailable()){ setCloudStatus('off'); return; }
+  try {
+    cloud.api = await firebaseApi();
+    if (!cloud.api){ setCloudStatus('off'); return; }
+    cloud.id = c.id; cloud.code = c.code;
+    if (cloud.unsub) cloud.unsub();
+    setCloudStatus('busy');
+    cloud.unsub = cloud.api.listen(cloud.id, applyRemote, e => { console.error(e); setCloudStatus('err'); });
+  } catch(e){ console.error(e); setCloudStatus('err'); }
+}
+function applyRemote(r){
+  if (!r){ cloudPush(true); return; }                       // nog leeg: gegevens van dit apparaat uploaden
+  if ((r.version || 0) > DATA_VERSION){ cloud.outdated = true; setCloudStatus('old'); showOutdated(); return; }
+  if (!cloud.force){
+    if (r.by === DEVICE){ if (!cloud.timer) setCloudStatus('ok'); return; } // eigen wijziging
+    if (cloud.timer) return;                                 // eigen wijziging onderweg: die wint
+    if (r.updated <= cloud.lastRemote) return;
+  }
+  cloud.force = false;
+  cloud.lastRemote = r.updated || 0;
+  let d; try { d = JSON.parse(r.data); } catch(e){ return; }
+  const apply = () => {
+    d.active = S.active;                                     // welk team je bekijkt blijft per apparaat
+    S = d; normalize();
+    try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){}
+    render(); setCloudStatus('ok');
+  };
+  const a = document.activeElement;
+  if ((a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) || drag.el || document.querySelector('.modal')) cloud.pending = apply;
+  else apply();
+}
+function flushPending(){ if (cloud.pending && !drag.el && !document.querySelector('.modal')){ const f = cloud.pending; cloud.pending = null; f(); } }
+document.addEventListener('focusout', () => setTimeout(flushPending, 50));
+function cloudPush(now){
+  if (!cloud.api || !cloud.id || cloud.outdated) return;
+  clearTimeout(cloud.timer); setCloudStatus('busy');
+  cloud.timer = setTimeout(async () => {
+    const t = Date.now(); cloud.lastPush = t;
+    const payload = {data: JSON.stringify({...S, active:null}), version: DATA_VERSION, updated: t, by: DEVICE};
+    cloud.timer = null;
+    try { await cloud.api.set(cloud.id, payload); if (!cloud.timer) setCloudStatus('ok'); }
+    catch(e){ console.error(e); setCloudStatus('err'); }
+  }, now ? 0 : 700);
+}
+function showOutdated(){
+  if (document.getElementById('outdated')) return;
+  const d = document.createElement('div'); d.id = 'outdated';
+  d.innerHTML = '⬆️ Er is een nieuwere versie van de app. Tik hier om te verversen.';
+  d.onclick = () => location.reload();
+  document.body.appendChild(d);
+}
+function cloudCard(){
+  const c = cloudCfg();
+  if (!cloudAvailable()) return `
+  <div class="card">
+    <h2>☁️ Samenwerken met andere trainers</h2>
+    <div class="muted">Nog niet ingesteld. Maak een (gratis) Firebase-project aan en zet je gegevens in <b>firebase-config.js</b> in je GitHub-repo. Zie de handleiding <b>FIREBASE.md</b>.</div>
+  </div>`;
+  if (c) return `
+  <div class="card">
+    <h2>☁️ Samenwerken</h2>
+    <div class="set"><div class="lbl">Teamcode<small>${esc(c.code)}</small></div><b class="cloud ${cloud.status}">${{ok:'✓ Opgeslagen', busy:'… Bezig', err:'⚠️ Geen verbinding', old:'⬆️ Ververs de app', off:'—'}[cloud.status]}</b></div>
+    <div class="muted" style="margin:8px 0">Alles wordt automatisch online bewaard. Andere trainers openen dezelfde app en vullen dezelfde teamcode en pincode in.</div>
+    <button class="btn full" data-act="cloudOff">Loskoppelen op dit apparaat</button>
+  </div>`;
+  return `
+  <div class="card">
+    <h2>☁️ Samenwerken</h2>
+    <div class="muted" style="margin-bottom:10px">Vul een teamcode en pincode in. Iedereen die dezelfde combinatie invult, werkt in dezelfde gegevens. Bedenk iets dat niet makkelijk te raden is.</div>
+    <div class="grid2"><input id="cloudCode" placeholder="Teamcode, bv. maliskamp-trainers" autocapitalize="off" autocomplete="off"><input id="cloudPin" placeholder="Pincode" inputmode="numeric" autocomplete="off"></div>
+    <button class="btn pri full" style="margin-top:10px" data-act="cloudConnect">☁️ Verbinden</button>
+  </div>`;
+}
+
+/* ===================== Slepen ===================== */
+const drag = {src:null, ghost:null, active:false, sx:0, sy:0, el:null, hi:null, suppress:false};
+function dropTarget(x, y){
+  if (drag.ghost) drag.ghost.style.display = 'none';
+  const under = document.elementFromPoint(x, y);
+  if (drag.ghost) drag.ghost.style.display = '';
+  if (!under) return null;
+  const f = under.closest('[data-drag="f"]');
+  if (f) return {type:'f', i:+f.dataset.i, el:f};
+  const b = under.closest('[data-drag="b"]');
+  if (b) return {type:'b', id:b.dataset.id, el:b};
+  const bz = under.closest('#benchZone');
+  if (bz) return {type:'bz', el:bz};
+  const pitch = under.closest('#livePitch');
+  if (pitch){
+    const r = pitch.getBoundingClientRect();
+    return {type:'pitch', x:Math.max(6, Math.min(94, (x - r.left) / r.width * 100)), y:Math.max(5, Math.min(95, (y - r.top) / r.height * 100)), el:null};
+  }
+  return null;
+}
+document.addEventListener('pointerdown', e => {
+  const el = e.target.closest('[data-drag]');
+  if (!el || e.button > 0) return;
+  if (e.pointerType === 'mouse') e.preventDefault();
+  drag.el = el; drag.sx = e.clientX; drag.sy = e.clientY; drag.active = false;
+  drag.src = el.dataset.drag === 'f' ? {type:'f', i:+el.dataset.i} : {type:'b', id:el.dataset.id};
+});
+document.addEventListener('pointermove', e => {
+  if (!drag.el) return;
+  if (!drag.active){
+    if (Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) < 8) return;
+    const m = match();
+    drag.active = true; ui.sel = null;
+    document.querySelectorAll('.sel').forEach(x => x.classList.remove('sel'));
+    drag.ghost = drag.el.cloneNode(true);
+    drag.ghost.classList.add('ghost'); drag.ghost.removeAttribute('data-drag'); drag.ghost.removeAttribute('data-act');
+    document.body.appendChild(drag.ghost);
+    drag.el.classList.add('dragging');
+  }
+  e.preventDefault();
+  if (e.clientY < 90) window.scrollBy(0, -14); else if (e.clientY > window.innerHeight - 110) window.scrollBy(0, 14);
+  drag.ghost.style.left = e.clientX + 'px'; drag.ghost.style.top = e.clientY + 'px';
+  const t = dropTarget(e.clientX, e.clientY);
+  const hiEl = t && t.el && t.el !== drag.el ? t.el : null;
+  if (drag.hi !== hiEl){ drag.hi && drag.hi.classList.remove('drop-hi'); hiEl && hiEl.classList.add('drop-hi'); drag.hi = hiEl; }
+}, {passive:false});
+function endDrag(e, cancel){
+  if (!drag.el) return;
+  const wasActive = drag.active, src = drag.src;
+  drag.hi && drag.hi.classList.remove('drop-hi');
+  const t = wasActive && !cancel ? dropTarget(e.clientX, e.clientY) : null;
+  drag.ghost && drag.ghost.remove();
+  drag.el.classList.remove('dragging');
+  drag.el = null; drag.ghost = null; drag.active = false; drag.hi = null;
+  if (!wasActive) return;
+  drag.suppress = true; setTimeout(() => drag.suppress = false, 400);
+  const m = match(); if (!m || !m.segments || !t) { render(); return; }
+  const lu = m.segments[ui.seg];
+  if (t.type === 'pitch'){
+    if (src.type === 'f'){ m.posOverride = m.posOverride || {}; m.posOverride[src.i] = {x:t.x, y:t.y}; }
+    else {
+      // bankspeler op het veld losgelaten: naar dichtstbijzijnde lege plek
+      const pos = matchPositions(m);
+      let best = -1, bd = 1e9;
+      pos.forEach((p, i) => { if (lu[i]) return; const d = Math.hypot(p.x - t.x, p.y - t.y); if (d < bd){ bd = d; best = i; } });
+      if (best >= 0) lu[best] = src.id; else { toast('Sleep op een speler om te wisselen'); render(); return; }
+    }
+  } else if (t.type === 'f' && src.type === 'f' && t.i === src.i){ render(); return; }
+  else if (t.type === 'b' && src.type === 'b'){ render(); return; }
+  else if (t.type === 'bz' && src.type === 'b'){ render(); return; }
+  else swap(m, src, t);
+  m.edited = true; save(); render();
+}
+document.addEventListener('pointerup', e => endDrag(e, false));
+document.addEventListener('pointercancel', e => endDrag(e, true));
+
+function shareMatch(m){
+  const pos = matchPositions(m), times = segTimes(m.settings);
+  let txt = `⚽ ${matchTitle(m)}${m.date ? ' (' + fmtDate(m.date, {}) + ')' : ''}\nFormatie ${m.settings.formation}\n`;
+  m.segments.forEach((lu, s) => {
+    txt += `\nBlok ${s + 1} (${times[s][0]}'–${times[s][1]}')\n`;
+    pos.forEach((p, i) => { if (lu[i]) txt += `${p.line === 'K' ? '🧤 Kieper' : p.code}: ${pname(lu[i])}\n`; });
+    const b = benchIds(m, s); if (b.length) txt += `Bank: ${b.map(pname).join(', ')}\n`;
+  });
+  if (navigator.share) navigator.share({title:matchTitle(m), text:txt}).catch(() => {});
+  else navigator.clipboard?.writeText(txt).then(() => toast('Gekopieerd naar klembord'), () => alert(txt));
+}
+function buildPrint(m){
+  const times = segTimes(m.settings), stt = stats(m);
+  document.getElementById('print').innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px">${logoSrc ? `<img src="${logoSrc}" style="width:54px;height:54px;object-fit:contain">` : ''}<div><div style="font-weight:800;letter-spacing:.1em;color:#c8102e">MALISKAMP</div><h2>${esc(matchTitle(m))}</h2></div></div>
+    <div>${m.date ? fmtDate(m.date, {weekday:'long', day:'numeric', month:'long', year:'numeric'}) : ''} · ${settingsLine(m.settings)}</div>
+    <div class="pg">${m.segments.map((lu, s) => `<div class="seg"><b>Blok ${s + 1} · ${times[s][0]}'–${times[s][1]}'</b>${pitchHTML(m, s, false)}<div style="font-size:12px;margin-top:4px">Bank: ${benchIds(m, s).map(id => esc(pname(id))).join(', ') || '–'}</div></div>`).join('')}</div>
+    <table><tr><th>Speler</th>${times.map((t, i) => `<th>Blok ${i + 1}</th>`).join('')}<th>Minuten</th></tr>
+    ${Object.entries(stt).map(([id, r]) => `<tr><td style="text-align:left">${esc(pname(id))}</td>${r.per.map(c => `<td>${c || 'W'}</td>`).join('')}<td>${Math.round(r.mins)}'</td></tr>`).join('')}</table>`;
+}
+
+if (!S.active.team) S.active.team = S.teams[0].id;
+render();
+loadLogo();
+cloudStart();
+</script>
+</body>
+</html>
