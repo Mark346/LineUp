@@ -197,6 +197,24 @@
   .card .cloud{background:none;margin:0}
   .card .cloud.ok{color:var(--ok)} .card .cloud.err{color:var(--mk)}
   #outdated{position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top));z-index:300;background:#1b1b1f;color:#fff;padding:14px;border-radius:14px;font-weight:700;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.35);cursor:pointer}
+  .diag{margin-top:10px;background:#fff6e5;border:1px solid #f3d38a;border-radius:10px;padding:10px;font-size:13px}
+  /* v8: kleinere rondjes, wisselmomenten onder elkaar, vaste fasebalk */
+  .pl{width:84px}
+  .pl .dot{width:42px;height:42px;font-size:12px;border-width:2px}
+  .pl .nm{font-size:12px;max-width:84px;padding:2px 6px;margin-top:3px}
+  .pitch.lg .pl .dot{width:48px;height:48px;font-size:13px}
+  .pitch.lg .pl .nm{font-size:13px}
+  .pitch.sm .pl{width:74px}
+  .pitch.sm .pl .dot{width:36px;height:36px;font-size:11px}
+  .pitch.sm .pl .nm{font-size:11px;max-width:74px}
+  .pl .mb{font-size:10px;top:-7px;right:-12px;padding:0 4px}
+  .benchp{font-size:16px;padding:6px 12px 6px 6px;gap:7px}
+  .benchp .bd{width:32px;height:32px;font-size:13px}
+  .segs{flex-direction:column;overflow:visible;gap:6px}
+  .segs .pill{width:100%;text-align:left;font-size:15px;padding:10px 14px;border-radius:12px;display:flex;justify-content:space-between}
+  .phases{position:sticky;top:0;z-index:25;margin:-14px -14px 12px;padding:calc(6px + env(safe-area-inset-top)) 10px 6px;border-radius:0;border:0;border-bottom:1px solid var(--line);box-shadow:0 3px 10px rgba(0,0,0,.08)}
+  .phases{grid-template-columns:34px repeat(4,1fr)}
+  .phases .pback{font-size:24px;color:var(--txt);padding:4px 0}
   #print{display:none}
   @media print{
     body{background:#fff;color:#000;padding:0}
@@ -225,7 +243,9 @@
   <button data-tab="settings"><b>⚙️</b>Instellingen</button>
 </nav>
 
-<script src="firebase-config.js"></script>
+<script>window.onerror = function(msg){ window.__cfgError = String(msg || "onbekende fout"); return true; };</script>
+<script src="firebase-config.js" onerror="window.__cfgMissing=true"></script>
+<script>window.onerror = null; try { if (!window.FIREBASE_CONFIG && typeof firebaseConfig !== "undefined") window.FIREBASE_CONFIG = firebaseConfig; } catch(e){}</script>
 <script>
 /* ===================== Data ===================== */
 const KEY = 'opstellingmaker.v1';
@@ -569,7 +589,7 @@ function viewMatch(){
   const editable = ph !== 'done';
   const cur = m.cur || 0;
 
-  const phaseBar = `<div class="phases">${PHASES.map(([k, l], i) => `<button class="${k === ph ? 'on' : ''} ${PHASES.findIndex(p => p[0] === ph) > i ? 'past' : ''}" data-act="phase" data-v="${k}">${l}</button>`).join('')}</div>`;
+  const phaseBar = `<div class="phases"><button class="pback" data-act="back" aria-label="Terug">‹</button>${PHASES.map(([k, l], i) => `<button class="${k === ph ? 'on' : ''} ${PHASES.findIndex(p => p[0] === ph) > i ? 'past' : ''}" data-act="phase" data-v="${k}">${l}</button>`).join('')}</div>`;
 
   const header = `
   <div class="card mhead">
@@ -587,7 +607,7 @@ function viewMatch(){
     <div class="card">
       <h2>${ph === 'live' ? '▶️ Live opstelling' : ph === 'prep' ? '📋 Opstelling maken' : '📋 Opstelling'}</h2>
       ${ph === 'prep' ? `<div class="muted" style="margin-bottom:10px">Zet per blok je spelers neer: eerst de start, dan de 1e wissel, de 2e wissel, enz. Bij een nieuw blok wordt het vorige overgenomen.</div>` : ''}
-      <div class="segs">${times.map((t, i) => `<button class="pill ${i === ui.seg ? 'on' : ''} ${ph === 'live' && i === cur ? 'now' : ''}" data-act="seg" data-i="${i}">${ph === 'live' && i === cur ? '● ' : ''}${i === 0 ? 'Start' : `${i}e wissel`} · ${t[0]}'–${t[1]}'</button>`).join('')}</div>
+      <div class="segs">${times.map((t, i) => `<button class="pill ${i === ui.seg ? 'on' : ''} ${ph === 'live' && i === cur ? 'now' : ''}" data-act="seg" data-i="${i}"><span>${ph === 'live' && i === cur ? '● ' : ''}${i === 0 ? 'Start' : `${i}e wissel`}</span><span>${t[0]}'–${t[1]}'</span></button>`).join('')}</div>
       ${ui.seg > 0 ? (() => {
         const prevLu = m.segments[ui.seg - 1];
         const ins = lu.filter(id => id && !prevLu.includes(id)), outs = prevLu.filter(id => id && !lu.includes(id));
@@ -691,7 +711,6 @@ function viewMatch(){
     <button class="btn full" style="margin-bottom:12px" data-act="phase" data-v="post">✏️ Uitslag of doelpunten aanpassen</button>`;
 
   return `
-  <div class="row" style="margin-bottom:12px"><button class="btn sm" style="flex:none" data-act="back">‹ Terug</button><div></div></div>
   ${phaseBar}${header}${body}
   <button class="btn red full" data-act="delMatch">Wedstrijd verwijderen</button>`;
 }
@@ -1283,6 +1302,9 @@ function cloudCard(){
   <div class="card">
     <h2>☁️ Samenwerken met andere trainers</h2>
     <div class="muted">Nog niet ingesteld. Maak een (gratis) Firebase-project aan en zet je gegevens in <b>firebase-config.js</b> in je GitHub-repo. Zie de handleiding <b>FIREBASE.md</b>.</div>
+    <div class="diag">🔍 ${window.__cfgMissing ? '<b>firebase-config.js is niet gevonden.</b> Staat het bestand in dezelfde map als index.html, met precies deze naam (kleine letters)?'
+      : window.__cfgError ? '<b>firebase-config.js bevat een fout:</b> ' + esc(window.__cfgError) + '. Controleer of je alleen het deel tussen { } hebt geplakt, met alle komma\'s en aanhalingstekens.'
+      : '<b>firebase-config.js is gevonden, maar er staat nog geen koppeling in</b> (nog <code>null</code>?). Of je ziet nog de oude versie: wacht een minuut en ververs.'}</div>
   </div>`;
   if (c) return `
   <div class="card">
