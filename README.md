@@ -1,4 +1,4 @@
-# ⚽ Maliskamp · Opstelling Maker
+# ⚡ LineUp
 
 Maak opstellingen met eerlijk verdeelde speeltijd voor meerdere teams (bijv. JO8 en JO15).
 
@@ -23,6 +23,7 @@ Maak opstellingen met eerlijk verdeelde speeltijd voor meerdere teams (bijv. JO8
 ## Samenwerken met meerdere trainers
 Zie **FIREBASE.md** voor het (gratis) koppelen aan Firebase. Bestanden:
 - `index.html` – de app (bij updates alleen dit bestand vervangen)
+- `manifest.webmanifest`, `icon.svg`, `icon-180.png`, `icon-192.png`, `icon-512.png` – naam en icoon voor op het beginscherm
 - `firebase-config.js` – jouw Firebase-gegevens (laten staan bij updates)
 - `firestore.rules` – beveiligingsregels om in de Firebase-console te plakken
 
