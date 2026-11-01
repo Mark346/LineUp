@@ -215,6 +215,9 @@
   .phases{position:sticky;top:0;z-index:25;margin:-14px -14px 12px;padding:calc(6px + env(safe-area-inset-top)) 10px 6px;border-radius:0;border:0;border-bottom:1px solid var(--line);box-shadow:0 3px 10px rgba(0,0,0,.08)}
   .phases{grid-template-columns:34px repeat(4,1fr)}
   .phases .pback{font-size:24px;color:var(--txt);padding:4px 0}
+  .subrow{display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center;margin-top:6px}
+  .subrow select{padding:10px 6px;font-size:15px}
+  .modal .box{max-height:85vh;overflow:auto}
   #print{display:none}
   @media print{
     body{background:#fff;color:#000;padding:0}
@@ -317,6 +320,7 @@ function normalize(){
     const scored = m.goalsFor !== '' && m.goalsFor != null && m.goalsAgainst !== '' && m.goalsAgainst != null;
     if (!m.phase){ m.phase = scored && m.segments ? 'done' : 'prep'; if (m.phase !== 'prep') m.cutsLocked = true; }
     m.goals = m.goals || {};
+    if (m.settings.base === undefined) m.settings.base = Array.isArray(m.settings.cuts) ? null : m.settings.subMoments + 1;
     if (!m.segments){ const n = positions(m.settings.fieldPlayers, m.settings.formation).length; m.segments = Array.from({length: m.settings.subMoments + 1}, () => Array(n).fill(null)); }
   })));
 }
@@ -489,7 +493,7 @@ function settingsBlock(st, scope){
   const blocks = st.subMoments + 1, len = Math.round(st.matchMinutes / blocks);
   return `
     ${stepper('⚽ Spelers in het veld', `${st.fieldPlayers} tegen ${st.fieldPlayers}, incl. kieper`, 'fieldPlayers', st.fieldPlayers, scope)}
-    ${stepper('🔁 Wisselmomenten', `${blocks} blokken van ±${len} min`, 'subMoments', st.subMoments, scope)}
+    ${stepper('🔁 Wisselmomenten', `${blocksText(blocks)} van ±${len} min`, 'subMoments', st.subMoments, scope)}
     ${stepper('⏱️ Speelduur', 'minuten totaal', 'matchMinutes', st.matchMinutes, scope)}
     <div class="set"><div class="lbl">📐 Formatie</div><select data-act="formation" data-scope="${scope}" style="width:auto;flex:none">${FORMATIONS[st.fieldPlayers].map(f => `<option ${f.n === st.formation ? 'selected' : ''}>${esc(f.n)}</option>`).join('')}</select></div>
 `;
@@ -580,6 +584,7 @@ function viewMatch(){
     let changed = false;
     ['fieldPlayers', 'formation', 'subMoments', 'matchMinutes'].forEach(k => { if (m.settings[k] !== se[k]){ m.settings[k] = se[k]; changed = true; } });
     if (changed){ delete m.settings.cuts; delete m.posOverride; fitSegments(m); save(); }
+    if (m.settings.base !== se.subMoments + 1){ m.settings.base = se.subMoments + 1; save(); }
   }
   const st = m.settings, times = segTimes(st);
   if (ui.seg >= times.length) ui.seg = 0;
@@ -607,7 +612,7 @@ function viewMatch(){
     <div class="card">
       <h2>${ph === 'live' ? '▶️ Live opstelling' : ph === 'prep' ? '📋 Opstelling maken' : '📋 Opstelling'}</h2>
       ${ph === 'prep' ? `<div class="muted" style="margin-bottom:10px">Zet per blok je spelers neer: eerst de start, dan de 1e wissel, de 2e wissel, enz. Bij een nieuw blok wordt het vorige overgenomen.</div>` : ''}
-      <div class="segs">${times.map((t, i) => `<button class="pill ${i === ui.seg ? 'on' : ''} ${ph === 'live' && i === cur ? 'now' : ''}" data-act="seg" data-i="${i}"><span>${ph === 'live' && i === cur ? '● ' : ''}${i === 0 ? 'Start' : `${i}e wissel`}</span><span>${t[0]}'–${t[1]}'</span></button>`).join('')}</div>
+      <div class="segs">${times.map((t, i) => `<button class="pill ${i === ui.seg ? 'on' : ''} ${ph === 'live' && i === cur ? 'now' : ''}" data-act="seg" data-i="${i}"><span>${ph === 'live' && i === cur ? '● ' : ''}${blockLabel(m, i)}</span><span>${t[0]}'–${t[1]}'</span></button>`).join('')}</div>
       ${ui.seg > 0 ? (() => {
         const prevLu = m.segments[ui.seg - 1];
         const ins = lu.filter(id => id && !prevLu.includes(id)), outs = prevLu.filter(id => id && !lu.includes(id));
@@ -624,7 +629,9 @@ function viewMatch(){
       <div class="tools">
         ${ui.seg > 0 ? `<button class="btn sm" data-act="copyPrev">📋 Neem vorige over</button>` : ''}
         ${ph === 'live' && ui.seg < last ? `<button class="btn sm" data-act="regenRest">🔄 Rest eerlijk verdelen</button>` : ''}
-        ${ph === 'live' ? `<button class="btn sm" data-act="splitSeg">✂️ Extra wissel</button>` : ''}
+        <button class="btn sm" data-act="addSub">＋ Wisselmoment</button>
+        ${ui.seg > 0 ? `<button class="btn sm" data-act="delSub">🗑️ Wisselmoment weg</button>` : ''}
+        ${ph === 'prep' && m.cutsLocked ? `<button class="btn sm" data-act="resetSubs">↩️ Standaard wisselmomenten</button>` : ''}
         <button class="btn sm" data-act="clearSeg">🧹 Leeg</button>
         ${m.posOverride && Object.keys(m.posOverride).length ? `<button class="btn sm" data-act="resetPos">↩️ Posities terug</button>` : ''}
       </div>
@@ -900,7 +907,7 @@ function newMatch(){
   const se = season();
   const m = {id:uid(), opponent:'', date:new Date().toISOString().slice(0, 10), home:true,
     present: se.players.map(p => p.id), keepers:{}, goalsFor:'', goalsAgainst:'',
-    settings:{fieldPlayers:se.fieldPlayers, formation:se.formation, subMoments:se.subMoments, matchMinutes:se.matchMinutes, keeperMode:se.keeperMode},
+    settings:{fieldPlayers:se.fieldPlayers, formation:se.formation, subMoments:se.subMoments, matchMinutes:se.matchMinutes, keeperMode:se.keeperMode, base:se.subMoments + 1},
     segments:Array.from({length: se.subMoments + 1}, () => Array(positions(se.fieldPlayers, se.formation).length).fill(null)),
     phase:'prep', cur:0, goals:{}};
   se.matches.push(m);
@@ -1037,8 +1044,28 @@ document.addEventListener('click', async e => {
     }
     case 'copyPrev': m.segments[ui.seg] = m.segments[ui.seg - 1].slice(); m.edited = true; commit(); toast('Vorig blok overgenomen'); break;
     case 'clearSeg': m.segments[ui.seg] = m.segments[ui.seg].map(() => null); m.edited = true; commit(); break;
-    case 'regenRest': generate(m, false, ui.seg + 1); m.edited = true; commit(); toast(`Blok ${ui.seg + 2} t/m ${m.segments.length} opnieuw eerlijk verdeeld`); break;
+    case 'regenRest': generate(m, false, ui.seg + 1); m.edited = true; commit(); toast('De rest van de wedstrijd is opnieuw eerlijk verdeeld'); break;
     case 'resetPos': delete m.posOverride; commit(); break;
+    case 'addSub': {
+      const times = segTimes(m.settings), b = m.phase === 'live' ? (m.cur || 0) : ui.seg;
+      let def = Math.round((times[b][0] + times[b][1]) / 2);
+      if (times.some(t => t[0] === def)) def = times[b][0] + 1;
+      const r = await subDialog(m, def);
+      if (!r) return;
+      addSubMoment(m, r.min, r.s, r.pairs);
+      commit(); window.scrollTo(0, 0);
+      toast(r.pairs.length ? `Wissel op ${r.min}' toegevoegd` : `Wisselmoment op ${r.min}' toegevoegd – zet de wissel op het veld`); break;
+    }
+    case 'delSub': {
+      const t = segTimes(m.settings)[ui.seg];
+      const happened = m.phase === 'live' && ui.seg <= (m.cur || 0);
+      if (!await ask(`Wisselmoment op ${t[0]}' (${blockLabel(m, ui.seg)}) weghalen?${happened ? ' Deze wissel is al gebeurd: de spelers van het blok ervoor tellen dan door tot ' + t[1] + "'." : ' De opstelling van het blok ervoor loopt dan door.'}`, 'Weghalen')) return;
+      removeSubMoment(m, ui.seg); commit(); toast('Wisselmoment weggehaald'); break;
+    }
+    case 'resetSubs': {
+      if (!await ask('Terug naar de standaard wisselmomenten uit Instellingen?', 'Ja')) return;
+      m.cutsLocked = false; delete m.settings.cuts; m.settings.subMoments = -1; ui.seg = 0; commit(); break;
+    }
     case 'splitSeg': {
       const t = segTimes(m.settings)[ui.seg];
       if (t[1] - t[0] < 2){ await tell('Dit blok is te kort om te splitsen.'); return; }
@@ -1209,6 +1236,85 @@ document.addEventListener('keydown', e => {
   if (map[e.target.id]) document.querySelector(`[data-act="${map[e.target.id]}"]`).click();
 });
 
+
+/* ===================== Wisselmomenten per wedstrijd ===================== */
+function periodName(k, base){ if (base === 2) return `${k + 1}e helft`; if (base === 4) return `${k + 1}e kwart`; return k === 0 ? 'Start' : `${k}e wissel`; }
+function blockLabel(m, s){
+  const st = m.settings, times = segTimes(st), base = st.base || times.length;
+  if (base !== 2 && base !== 4) return s === 0 ? 'Start' : `${s}e wissel`;
+  const plen = st.matchMinutes / base, start = times[s][0];
+  const k = Math.min(base - 1, Math.floor((start + 0.001) / plen));
+  return start === Math.round(k * plen) ? periodName(k, base) : `${periodName(k, base)} · wissel ${start}'`;
+}
+function blocksText(n){ return n === 2 ? '2 helften' : n === 4 ? '4 kwarten' : `${n} blokken`; }
+function addSubMoment(m, min, s, pairs){
+  const times = segTimes(m.settings);
+  if (!m.settings.base) m.settings.base = m.cutsLocked ? null : times.length;
+  m.settings.cuts = [...times.slice(1).map(t => t[0]), min].sort((a, b) => a - b);
+  m.settings.subMoments++;
+  const lu = m.segments[s].slice();
+  pairs.forEach(p => {
+    if (p.out){ const i = lu.indexOf(p.out); if (i >= 0) lu[i] = p.in || null; }
+    else if (p.in){ const i = lu.indexOf(null); if (i >= 0) lu[i] = p.in; }
+  });
+  m.segments.splice(s + 1, 0, lu);
+  if (m.out) Object.keys(m.out).forEach(id => { if (m.out[id] > s) m.out[id]++; });
+  if (m.phase === 'live' && (m.cur || 0) >= s) m.cur = (m.cur || 0) + 1;
+  m.cutsLocked = true; m.edited = true; ui.seg = s + 1; ui.sel = null;
+}
+function removeSubMoment(m, s){
+  const times = segTimes(m.settings);
+  if (!m.settings.base) m.settings.base = m.cutsLocked ? null : times.length;
+  m.settings.cuts = times.slice(1).map(t => t[0]).filter(c => c !== times[s][0]);
+  m.settings.subMoments--;
+  m.segments.splice(s, 1);
+  if (m.out) Object.keys(m.out).forEach(id => { if (m.out[id] > s) m.out[id]--; });
+  if (m.phase === 'live' && (m.cur || 0) >= s) m.cur = Math.max(0, (m.cur || 0) - 1);
+  m.cutsLocked = true; m.edited = true; ui.seg = Math.max(0, s - 1); ui.sel = null;
+}
+// Dialoog: minuut + wie eruit / wie erin (alleen logische keuzes)
+function subDialog(m, defMin){
+  return new Promise(res => {
+    const times = segTimes(m.settings);
+    const blockOf = min => times.findIndex(t => min > t[0] && min < t[1]);
+    const d = document.createElement('div'); d.className = 'modal';
+    d.innerHTML = `<div class="box"><p>🔁 Wisselmoment toevoegen</p>
+      <label class="f">Op welke minuut?<input type="number" inputmode="numeric" id="sdMin" value="${defMin}" style="font-size:22px;text-align:center"></label>
+      <div class="muted" id="sdInfo" style="margin-bottom:8px"></div>
+      <div id="sdRows"></div>
+      <button class="btn sm" id="sdAdd" style="margin-top:8px">＋ Nog een wissel</button>
+      <div class="grid2" style="margin-top:14px"><button class="btn" data-r="no">Annuleren</button><button class="btn pri" data-r="ok">Toevoegen</button></div></div>`;
+    document.body.appendChild(d);
+    let pairs = [{out:'', in:''}], lastS = blockOf(defMin);
+    const minVal = () => parseInt(d.querySelector('#sdMin').value);
+    const draw = () => {
+      const s = blockOf(minVal()), info = d.querySelector('#sdInfo'), rows = d.querySelector('#sdRows');
+      d.querySelector('#sdAdd').style.display = s < 0 ? 'none' : '';
+      if (s < 0){ info.innerHTML = `<span style="color:var(--mk)">Kies een minuut tussen 1 en ${m.settings.matchMinutes - 1} waarop nog geen wisselmoment is.</span>`; rows.innerHTML = ''; return; }
+      info.textContent = `Valt in ${blockLabel(m, s)} (${times[s][0]}'–${times[s][1]}'). Kies wie eruit gaat en wie erin komt.`;
+      const field = m.segments[s].filter(Boolean), bench = benchIds(m, s);
+      rows.innerHTML = pairs.map((p, i) => {
+        const outs = field.filter(id => id === p.out || !pairs.some(q => q.out === id));
+        const ins = bench.filter(id => id === p.in || !pairs.some(q => q.in === id));
+        return `<div class="subrow">
+          <select data-i="${i}" data-k="out"><option value="">⬇️ Eruit…</option>${outs.map(id => `<option value="${id}" ${id === p.out ? 'selected' : ''}>${esc(pname(id))}</option>`).join('')}</select>
+          <b>⇄</b>
+          <select data-i="${i}" data-k="in"><option value="">⬆️ Erin…</option>${ins.map(id => `<option value="${id}" ${id === p.in ? 'selected' : ''}>${esc(pname(id))}</option>`).join('')}</select>
+        </div>`;
+      }).join('') + (bench.length ? '' : '<div class="muted">Er zitten geen reserves op de bank.</div>');
+    };
+    d.querySelector('#sdMin').addEventListener('input', () => { const s = blockOf(minVal()); if (s !== lastS){ pairs = [{out:'', in:''}]; lastS = s; } draw(); });
+    d.addEventListener('change', e => { e.stopPropagation(); const sel = e.target.closest('select[data-i]'); if (!sel) return; pairs[+sel.dataset.i][sel.dataset.k] = sel.value; draw(); });
+    d.addEventListener('click', e => {
+      e.stopPropagation();
+      if (e.target.id === 'sdAdd'){ pairs.push({out:'', in:''}); draw(); return; }
+      const b = e.target.closest('[data-r]');
+      if (b && b.dataset.r === 'ok'){ const min = minVal(), s = blockOf(min); if (s < 0) return; d.remove(); res({min, s, pairs: pairs.filter(p => p.out || p.in)}); }
+      else if (b || e.target === d){ d.remove(); res(null); }
+    });
+    draw();
+  });
+}
 
 /* ===================== Online samenwerken (Firebase) ===================== */
 const DATA_VERSION = 5;               // ophogen als de opbouw van de gegevens verandert
@@ -1402,7 +1508,7 @@ function shareMatch(m){
   const pos = matchPositions(m), times = segTimes(m.settings);
   let txt = `⚽ ${matchTitle(m)}${m.date ? ' (' + fmtDate(m.date, {}) + ')' : ''}\nFormatie ${m.settings.formation}\n`;
   m.segments.forEach((lu, s) => {
-    txt += `\nBlok ${s + 1} (${times[s][0]}'–${times[s][1]}')\n`;
+    txt += `\n${blockLabel(m, s)} (${times[s][0]}'–${times[s][1]}')\n`;
     pos.forEach((p, i) => { if (lu[i]) txt += `${p.line === 'K' ? '🧤 Kieper' : p.code}: ${pname(lu[i])}\n`; });
     const b = benchIds(m, s); if (b.length) txt += `Bank: ${b.map(pname).join(', ')}\n`;
   });
@@ -1414,8 +1520,8 @@ function buildPrint(m){
   document.getElementById('print').innerHTML = `
     <div style="display:flex;align-items:center;gap:12px">${logoSrc ? `<img src="${logoSrc}" style="width:54px;height:54px;object-fit:contain">` : ''}<div><div style="font-weight:800;letter-spacing:.1em;color:#c8102e">MALISKAMP</div><h2>${esc(matchTitle(m))}</h2></div></div>
     <div>${m.date ? fmtDate(m.date, {weekday:'long', day:'numeric', month:'long', year:'numeric'}) : ''} · ${settingsLine(m.settings)}</div>
-    <div class="pg">${m.segments.map((lu, s) => `<div class="seg"><b>Blok ${s + 1} · ${times[s][0]}'–${times[s][1]}'</b>${pitchHTML(m, s, false)}<div style="font-size:12px;margin-top:4px">Bank: ${benchIds(m, s).map(id => esc(pname(id))).join(', ') || '–'}</div></div>`).join('')}</div>
-    <table><tr><th>Speler</th>${times.map((t, i) => `<th>Blok ${i + 1}</th>`).join('')}<th>Minuten</th></tr>
+    <div class="pg">${m.segments.map((lu, s) => `<div class="seg"><b>${blockLabel(m, s)} · ${times[s][0]}'–${times[s][1]}'</b>${pitchHTML(m, s, false)}<div style="font-size:12px;margin-top:4px">Bank: ${benchIds(m, s).map(id => esc(pname(id))).join(', ') || '–'}</div></div>`).join('')}</div>
+    <table><tr><th>Speler</th>${times.map((t, i) => `<th>${blockLabel(m, i)}</th>`).join('')}<th>Minuten</th></tr>
     ${Object.entries(stt).map(([id, r]) => `<tr><td style="text-align:left">${esc(pname(id))}</td>${r.per.map(c => `<td>${c || 'W'}</td>`).join('')}<td>${Math.round(r.mins)}'</td></tr>`).join('')}</table>`;
 }
 
