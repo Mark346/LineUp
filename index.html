@@ -267,6 +267,17 @@
   .wordmark span{background:linear-gradient(90deg,var(--acc),#a6ff4d 60%,var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent;padding-right:4px}
   .wordmark .speed{width:20px;height:14px;margin-right:6px;flex:none;background:linear-gradient(90deg,transparent,var(--acc)) 6px 1px/14px 2.5px no-repeat,linear-gradient(90deg,transparent,var(--acc)) 0 6px/20px 3px no-repeat,linear-gradient(90deg,transparent,var(--acc)) 8px 11px/12px 2.5px no-repeat;border-radius:2px}
   .brand .club{display:flex;align-items:center}
+  .swatches{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+  .sw{aspect-ratio:1;border-radius:14px;border:2px solid transparent;background:var(--sw);cursor:pointer;box-shadow:0 4px 12px color-mix(in srgb,var(--sw) 35%,transparent);position:relative}
+  .sw.on{border-color:#fff;box-shadow:0 0 0 3px color-mix(in srgb,var(--sw) 55%,transparent),0 0 18px color-mix(in srgb,var(--sw) 60%,transparent)}
+  .sw.on::after{content:"";position:absolute;inset:30%;border-radius:50%;background:#07090f;opacity:.75}
+  header .pill.tpill{display:inline-flex;align-items:center;gap:7px}
+  .tdot{width:9px;height:9px;border-radius:50%;background:var(--tc);box-shadow:0 0 8px var(--tc);flex:none}
+  body[data-theme="neon"] header .pill.tpill.on{background:var(--tc);border-color:var(--tc);color:var(--tct);box-shadow:0 0 18px color-mix(in srgb,var(--tc) 50%,transparent)}
+  header .pill.tpill.on .tdot{background:var(--tct);box-shadow:none;opacity:.6}
+  header::before{content:"";position:absolute;inset:0;background:radial-gradient(500px 160px at 85% 0%,color-mix(in srgb,var(--team) 22%,transparent),transparent 70%);pointer-events:none}
+  .crumb .tbadge{width:42px;height:42px;font-size:13px}
+  .brand,.teams{position:relative}
   @media print{
     body{background:#fff;color:#000;padding:0}
     header,nav,main,.toast{display:none!important}
@@ -424,6 +435,7 @@ function normalize(){
   S.teams.forEach(t => { (t.seasons.length ? t.seasons : [defaultSeason(seasonName(), 8, '1-3-3-1', 3, 50)]).forEach((se, i) => flat.push({...t, id: i === 0 ? t.id : uid(), seasons:[se]})); });
   if (flat.length !== S.teams.length){ const cur = S.active.team, cs = S.active.season[cur]; S.teams = flat; const hit = flat.find(t => t.seasons[0].id === cs); if (hit) S.active.team = hit.id; }
   S.teams.forEach(t => { if (t.club === undefined) t.club = 'Maliskamp'; });
+  if (!S.pal1){ const old = ['#c8102e', '#1b1b1f', '#9e0b23', '#2563eb', '#1f9d55', '#f5c518', '#ff7a1a']; const pal = ['#c6ff3d', '#22d3ee', '#ff8a1f', '#8b5cf6', '#ff4d8d', '#34f5a4']; S.teams.forEach((t, i) => { if (!t.color || old.includes(t.color)) t.color = pal[i % pal.length]; }); S.pal1 = true; }
   S.teams.forEach(t => { if (!t.color || ['#f5c518', '#ff7a1a'].includes(t.color)) t.color = '#c8102e'; });
   S.teams.forEach(t => t.seasons.forEach(se => se.matches.forEach(m => {
     if (!m.keepers){ m.keepers = {}; if (m.keeperId) m.keepers[0] = m.keeperId; }
@@ -641,13 +653,13 @@ const teamLabel = t => `${t.name} ${shortSeason(t.seasons[0].name)}`.trim();
 const sortedTeams = () => S.teams.slice().sort((a, b) => (b.seasons[0].name || '').localeCompare(a.seasons[0].name || '') || a.name.localeCompare(b.name, 'nl', {numeric:true}));
 function renderHeader(){
   const t = team();
-  document.documentElement.style.setProperty('--team', t.color || '#c8102e');
+  document.documentElement.style.setProperty('--team', teamColor(t)); document.documentElement.style.setProperty('--team-on', onColor(teamColor(t)));
   renderLogo();
   const cn = document.getElementById('clubName'); if (cn) cn.textContent = t.club || '';
   document.title = (t.club ? t.club + ' · ' : '') + 'LineUp';
   document.getElementById('teams').innerHTML = iconize(
     `<button class="pill addt" data-act="newTeamSheet" aria-label="Nieuw team">＋</button>` +
-    sortedTeams().map(x => `<button class="pill ${x.id === t.id ? 'on' : ''}" data-act="team" data-id="${x.id}">${esc(teamLabel(x))}</button>`).join(''));
+    sortedTeams().map(x => `<button class="pill tpill ${x.id === t.id ? 'on' : ''}" style="--tc:${teamColor(x)};--tct:${onColor(teamColor(x))}" data-act="team" data-id="${x.id}"><i class="tdot"></i>${esc(teamLabel(x))}</button>`).join(''));
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === ui.tab));
 }
 function render(){
@@ -863,6 +875,17 @@ function viewPlayers(){
   const others = [];
   S.teams.forEach(t => t.seasons.forEach(s => { if (s.id !== se.id && s.players.length) others.push({t, s}); }));
   return `
+  <div class="card list">
+    <h2>👥 Selectie ${esc(team().name)} (${se.players.length})</h2>
+    ${usePos() ? `<div class="muted" style="margin-bottom:4px">🎯 Kies per speler zijn 1e, 2e en 3e voorkeurspositie (posities uit formatie ${esc(se.formation)}).</div>` : `<div class="muted" style="margin-bottom:4px">Voorkeursposities per speler staan uit. Zet ze aan bij <a href="#" data-act="stab" data-v="team">⚙️ Opstelling</a>.</div>`}
+    ${se.players.length ? se.players.map(p => `
+      <div class="item" style="flex-wrap:wrap">
+        <div class="num">${esc(p.number || '•')}</div>
+        <div class="grow"><input value="${esc(p.name)}" data-p="name" data-id="${p.id}" style="padding:6px 8px"></div>
+        <button class="x" data-act="delPlayer" data-id="${p.id}">×</button>
+        ${usePos() ? `<div class="pprow">${[0, 1, 2].map(k => `<label><span>${k + 1}e keus</span><select data-pp="${k}" data-id="${p.id}"><option value="">–</option>${posCodes(se).map(c => `<option value="${c}" ${(p.pos || [])[k] === c ? 'selected' : ''}>${c} · ${POS_NAMES[c]}</option>`).join('')}</select></label>`).join('')}</div>` : ''}
+      </div>`).join('') : `<div class="empty"><b>👥</b>Nog geen spelers. Voeg ze hieronder toe.</div>`}
+  </div>
   <div class="card">
     <h2>➕ Speler toevoegen aan ${esc(team().name)}</h2>
     <div class="row"><input id="newName" placeholder="Naam speler" style="flex:3" enterkeyhint="done"><input id="newNum" placeholder="#" inputmode="numeric" style="flex:1"></div>
@@ -874,17 +897,6 @@ function viewPlayers(){
     ${others.length ? `<details style="margin-top:8px"><summary class="muted">📥 Overnemen uit ander team/seizoen</summary>
       <div class="row" style="margin-top:8px"><select id="copyFrom">${others.map(o => `<option value="${o.s.id}">${esc(o.t.name)} · ${esc(o.s.name)} (${o.s.players.length})</option>`).join('')}</select><button class="btn sm" style="flex:none" data-act="copyPlayers">Overnemen</button></div>
     </details>` : ''}
-  </div>
-  <div class="card list">
-    <h2>👥 Selectie ${esc(team().name)} (${se.players.length})</h2>
-    ${usePos() ? `<div class="muted" style="margin-bottom:4px">🎯 Kies per speler zijn 1e, 2e en 3e voorkeurspositie (posities uit formatie ${esc(se.formation)}).</div>` : `<div class="muted" style="margin-bottom:4px">Voorkeursposities per speler staan uit. Zet ze aan bij <a href="#" data-act="stab" data-v="team">⚙️ Opstelling</a>.</div>`}
-    ${se.players.length ? se.players.map(p => `
-      <div class="item" style="flex-wrap:wrap">
-        <div class="num">${esc(p.number || '•')}</div>
-        <div class="grow"><input value="${esc(p.name)}" data-p="name" data-id="${p.id}" style="padding:6px 8px"></div>
-        <button class="x" data-act="delPlayer" data-id="${p.id}">×</button>
-        ${usePos() ? `<div class="pprow">${[0, 1, 2].map(k => `<label><span>${k + 1}e keus</span><select data-pp="${k}" data-id="${p.id}"><option value="">–</option>${posCodes(se).map(c => `<option value="${c}" ${(p.pos || [])[k] === c ? 'selected' : ''}>${c} · ${POS_NAMES[c]}</option>`).join('')}</select></label>`).join('')}</div>` : ''}
-      </div>`).join('') : `<div class="empty"><b>👥</b>Nog geen spelers. Voeg ze hierboven toe.</div>`}
   </div>`;
 }
 
@@ -966,7 +978,7 @@ function teamInfoCard(x){
       <label class="f">📅 Seizoen<input value="${esc(ls.name)}" data-ts="name" data-id="${x.id}"></label>
     </div>
     <datalist id="clubNames">${clubList().map(c => `<option value="${esc(c)}">`).join('')}</datalist>
-    <label class="f">🎨 Teamkleur (voor print en clubkleur)<input type="color" value="${esc(x.color || '#c8102e')}" data-t="color" data-id="${x.id}" style="height:44px;padding:3px"></label>
+    <div class="f">🎨 Teamkleur<div class="muted" style="margin:2px 0 8px">Zie je terug bovenin en bij het team.</div>${colorPicker(x)}</div>
     <div class="muted">${ls.players.length} spelers · ${ls.matches.length} wedstrijden · ${ls.matches.filter(m => m.phase === 'done').length} gespeeld</div>
   </div>
   <div class="card">
@@ -988,7 +1000,7 @@ function settingsHome(){
     <div class="tlist">
     ${sortedTeams().map(x => { const ls = x.seasons[0]; return `
       <button class="trow ${x.id === t.id ? 'on' : ''}" data-act="sOpen" data-id="${x.id}">
-        <span class="tbadge">${esc(x.name.replace(/[^0-9A-Za-z]/g, '').slice(0, 4) || '⚽')}</span>
+        <span class="tbadge" style="background:${teamColor(x)};color:${onColor(teamColor(x))}">${esc(x.name.replace(/[^0-9A-Za-z]/g, '').slice(0, 4) || '⚽')}</span>
         <span class="tinfo"><b>${esc(teamLabel(x))}</b><small>${esc(x.club || 'Geen club')} · ${ls.fieldPlayers} tegen ${ls.fieldPlayers} · ${ls.players.length} spelers · ${ls.matches.length} wedstr.</small></span>
         <span class="tgo">›</span>
       </button>`; }).join('')}
@@ -1008,7 +1020,6 @@ function settingsHome(){
 }
 
 function viewSettings(){
-  if (!ui.sOpen) return settingsHome();
   const se = season(), t = team();
   const tabs = [['team', '⚙️ Opstelling'], ['spelers', '👥 Spelers'], ['stats', '📊 Statistiek'], ['info', '🛡️ Team']];
   const st = tabs.some(x => x[0] === ui.stab) ? ui.stab : 'team';
@@ -1028,10 +1039,10 @@ function viewSettings(){
   </div>`;
   else if (st === 'spelers') body = viewPlayers();
   else if (st === 'stats') body = viewStats();
-  else body = teamInfoCard(t);
+  else body = teamInfoCard(t) + `<div class="sgroup">App</div>${cloudCard()}`;
   return `
   <div class="crumb">
-    <button class="cback" data-act="sHome" aria-label="Alle teams">‹</button>
+    <span class="tbadge" style="background:${teamColor(t)};color:${onColor(teamColor(t))}">${esc(t.name.replace(/[^0-9A-Za-z]/g, '').slice(0, 4) || '⚽')}</span>
     <div class="cinfo"><small>${esc(t.club || 'Team')} · instellingen</small><b>${esc(teamLabel(t))}</b></div>
   </div>
   <div class="stabs">${tabs.map(([k, l]) => `<button class="${k === st ? 'on' : ''}" data-act="stab" data-v="${k}">${l}</button>`).join('')}</div>${body}`;
@@ -1057,8 +1068,7 @@ const askText = (msg, val) => sheet(`<p>${esc(msg)}</p><input value="${esc(val)}
 const askNum = (msg, val) => sheet(`<p>${esc(msg)}</p><input type="number" inputmode="numeric" value="${esc(val)}" style="font-size:22px;text-align:center"><div class="grid2" style="margin-top:12px"><button class="btn" data-r="no">Annuleren</button><button class="btn pri" data-r="ok">OK</button></div>`);
 
 function createTeam(n, club, sn){
-  const colors = ['#c8102e', '#1b1b1f', '#9e0b23', '#2563eb', '#1f9d55'];
-  const t = {id:uid(), name:n.trim(), club:(club || '').trim(), color:colors[S.teams.length % colors.length], seasons:[defaultSeason((sn || '').trim() || seasonName(), 8, FORMATIONS[8][0].n, 3, 60)]};
+  const t = {id:uid(), name:n.trim(), club:(club || '').trim(), color:nextTeamColor(), seasons:[defaultSeason((sn || '').trim() || seasonName(), 8, FORMATIONS[8][0].n, 3, 60)]};
   const k = applyKnvb(t.seasons[0], t.name);
   S.teams.push(t); S.active.team = t.id; ui.matchId = null; commit(); window.scrollTo(0, 0);
   toast(`${teamLabel(t)} toegevoegd · KNVB ${k.label}: ${k.t}`);
@@ -1145,11 +1155,12 @@ document.addEventListener('click', async e => {
   const tgt = el.dataset.scope === 'match' ? m && m.settings : se;
   switch (act){
     case 'team': S.active.team = id; ui.matchId = null; ui.sel = null; commit(); break;
-    case 'goSettings': ui.sOpen = false; go('settings'); setTimeout(() => document.getElementById('newTeam')?.focus(), 50); break;
+    case 'goSettings': { const r = await newTeamDialog(); if (r) createTeam(r.name, r.club, r.season); break; }
     case 'goSettings2': e.preventDefault(); ui.sOpen = true; ui.stab = 'team'; go('settings'); break;
     case 'goPlayers': ui.sOpen = true; ui.stab = 'spelers'; go('settings'); break;
     case 'sOpen': S.active.team = id; ui.sOpen = true; ui.stab = 'team'; ui.matchId = null; commit(); window.scrollTo(0, 0); break;
-    case 'sHome': ui.sOpen = false; render(); window.scrollTo(0, 0); break;
+    case 'sHome': ui.sOpen = true; render(); window.scrollTo(0, 0); break;
+    case 'teamColor': { const tt = S.teams.find(x => x.id === id); tt.color = el.dataset.c; commit(); break; }
     case 'stab': e.preventDefault(); ui.stab = el.dataset.v; render(); break;
     case 'togglePresent': {
       const pid = el.dataset.id, from = m.phase === 'live' ? (m.cur || 0) : 0;
@@ -1323,7 +1334,7 @@ document.addEventListener('click', async e => {
       const t = S.teams.find(x => x.id === id);
       if (S.teams.length === 1){ await tell('Je hebt minstens één team nodig. Maak eerst een nieuw team aan en verwijder daarna dit team.'); return; }
       if (!await ask(`${teamLabel(t)} met alle spelers en wedstrijden verwijderen?`, 'Verwijderen')) return;
-      S.teams = S.teams.filter(x => x.id !== id); if (S.active.team === id) S.active.team = sortedTeams()[0].id; ui.sOpen = false; commit(); break;
+      S.teams = S.teams.filter(x => x.id !== id); if (S.active.team === id) S.active.team = sortedTeams()[0].id; commit(); break;
     }
     case 'copyTeam': {
       const t = S.teams.find(x => x.id === id), os = t.seasons[0];
@@ -1360,7 +1371,7 @@ document.addEventListener('click', async e => {
       toast(noPos ? `Klaar – ${noPos} speler(s) zonder voorkeurspositie` : 'Hele wedstrijd opgesteld ⚡'); break;
     }
     case 'knvb': { const k = applyKnvb(se, team().name); commit(); toast(`KNVB ${k.label}: ${k.t}`); break; }
-    case 'goCloud': ui.sOpen = false; go('settings'); setTimeout(() => document.getElementById('cloudCode')?.scrollIntoView({block:'center'}), 60); break;
+    case 'goCloud': ui.sOpen = true; ui.stab = 'info'; go('settings'); setTimeout(() => (document.getElementById('cloudCode') || document.querySelector('.sgroup'))?.scrollIntoView({block:'center'}), 60); break;
     case 'cloudConnect': {
       const code = document.getElementById('cloudCode').value.trim().toLowerCase(), pin = document.getElementById('cloudPin').value.trim();
       if (code.length < 4 || pin.length < 4){ await tell('Teamcode en pincode moeten allebei minstens 4 tekens lang zijn.'); return; }
@@ -1458,6 +1469,23 @@ document.addEventListener('keydown', e => {
 
 
 const clubList = () => [...new Set(S.teams.map(t => (t.club || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'nl'));
+
+/* ===================== Teamkleuren ===================== */
+const PALETTE = [
+  {c:'#c6ff3d', n:'Lime'}, {c:'#34f5a4', n:'Mint'}, {c:'#22d3ee', n:'Cyaan'}, {c:'#3b82f6', n:'Blauw'},
+  {c:'#8b5cf6', n:'Violet'}, {c:'#e879f9', n:'Roze'}, {c:'#ff4d8d', n:'Magenta'}, {c:'#ff4d4d', n:'Rood'},
+  {c:'#ff8a1f', n:'Oranje'}, {c:'#ffc83d', n:'Goud'}, {c:'#14b8a6', n:'Teal'}, {c:'#e8ecf4', n:'Wit'}
+];
+function onColor(hex){
+  const h = String(hex || '#c6ff3d').replace('#', ''); if (h.length < 6) return '#07090f';
+  const [r, g, b] = [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16) / 255).map(v => v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4));
+  return .2126 * r + .7152 * g + .0722 * b > .35 ? '#07090f' : '#ffffff';
+}
+const teamColor = t => (t && t.color) || PALETTE[0].c;
+function nextTeamColor(){ const used = S.teams.map(t => t.color); return (PALETTE.find(p => !used.includes(p.c)) || PALETTE[S.teams.length % PALETTE.length]).c; }
+function colorPicker(x){
+  return `<div class="swatches">${PALETTE.map(p => `<button class="sw ${teamColor(x) === p.c ? 'on' : ''}" style="--sw:${p.c}" data-act="teamColor" data-id="${x.id}" data-c="${p.c}" title="${p.n}" aria-label="${p.n}"></button>`).join('')}</div>`;
+}
 
 /* ===================== KNVB-standaard per leeftijd ===================== */
 // Bron: KNVB-richtlijnen speelvormen en speeltijden (O7 t/m O19, senioren)
