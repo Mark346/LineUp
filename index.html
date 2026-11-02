@@ -7,14 +7,14 @@
 <meta name="apple-mobile-web-app-title" content="LineUp">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="application-name" content="LineUp">
-<link rel="manifest" href="manifest.webmanifest?v=3">
-<link rel="icon" type="image/svg+xml" href="icon.svg?v=3">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=3">
-<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=3">
-<link rel="apple-touch-icon-precomposed" sizes="180x180" href="apple-touch-icon.png?v=3">
-<meta name="theme-color" content="#07090f">
+<link rel="manifest" href="manifest.webmanifest?v=4">
+<link rel="icon" type="image/svg+xml" href="icon.svg?v=4">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=4">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=4">
+<link rel="apple-touch-icon-precomposed" sizes="180x180" href="apple-touch-icon.png?v=4">
+<meta name="theme-color" content="#050505">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,700;0,800;0,900;1,800;1,900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700;800;900&family=Saira:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <title>LineUp</title>
 <style>
   /* ===================== Thema's ===================== */
@@ -297,6 +297,82 @@
   nav#nav button.on{background:var(--acc);color:var(--on-acc)}
   body{padding-bottom:calc(24px + env(safe-area-inset-bottom))}
   .toast{bottom:calc(24px + env(safe-area-inset-bottom))}
+  /* ===================== Broadcast-stijl ===================== */
+  :root, body[data-theme="broadcast"]{
+    --bg:#050505; --bg2:none; --surf:#101010; --surf2:#1b1b1b; --solid:#0c0c0c; --line:rgba(255,255,255,.10);
+    --txt:#ffffff; --muted:#a3a3a3; --acc:#ff5a1f; --acc2:#ff2d55; --on-acc:#ffffff;
+    --hdr:#050505; --hdr-txt:#fff; --hdr-glow:none; --pitch1:#16341f; --pitch2:#1a3c24; --pline:rgba(255,255,255,.7); --kp:#ff5a1f;
+    --ok:#3ee08f; --red:#ff4d6d; --shadow:none; --blur:none; --radius:8px;
+    --font:"Saira",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; --disp:"Saira Condensed","Saira",sans-serif;
+    --soft:rgba(255,90,31,.14);
+  }
+  body[data-theme="broadcast"]{background:#050505}
+  header{border-bottom:1px solid var(--line)}
+  header::before{display:none}
+  .card,.tile,.summary,.trow,.tcard{border-radius:8px}
+  h2,.benchtitle,.sgroup,.mt,.stabs button,.phases button,nav#nav button,.pill,.btn,.mbig .mbt b,.mph,.badge,.segs .pill,.whop,table.ov th{font-family:var(--disp);text-transform:uppercase;letter-spacing:.02em}
+  .card h2{font-size:19px;font-weight:900}
+  .mhead .mt{font-size:26px;text-transform:uppercase}
+  /* schuine accentvlakken met rechte tekst */
+  nav#nav button.on, header .pill.tpill.on, .phases button.on, .segc button.on, .stabs button.on, .btn.pri, .mbig, .segs .pill.on, .tag.on, .sw.on{
+    position:relative;isolation:isolate;background:transparent!important;color:#fff!important;box-shadow:none!important;border-color:transparent!important}
+  nav#nav button.on::before, header .pill.tpill.on::before, .phases button.on::before, .segc button.on::before, .stabs button.on::before, .btn.pri::before, .mbig::before, .segs .pill.on::before, .tag.on::before{
+    content:"";position:absolute;inset:0;z-index:-1;background:var(--acc);transform:skewX(-12deg);border-radius:3px}
+  nav#nav{border-radius:6px;background:#111;border-color:var(--line)}
+  nav#nav button{border-radius:3px;color:#cfcfcf}
+  header .pill{border-radius:4px}
+  header .pill.tpill:not(.on){background:#151515;border-color:var(--line);color:#e6e6e6}
+  .pill{border-radius:6px}
+  .btn{border-radius:6px}
+  .btn.big{border-radius:6px;font-size:20px;font-weight:900}
+  .mbig{border-radius:0;padding:14px 18px;margin-left:6px;margin-right:6px;width:calc(100% - 12px);animation:none!important}
+  .mbig .mph{background:#050505;color:#fff;border-radius:3px}
+  .mbig.live .mph::before{background:#fff;box-shadow:none}
+  .phases{background:rgba(5,5,5,.94);border-bottom:1px solid var(--line)}
+  .phases button{border-radius:3px}
+  .phases button.past{color:#ffb08f}
+  .stabs{border-radius:6px;background:rgba(12,12,12,.94)}
+  .segs .pill{border-radius:4px}
+  .segs .pill.on{color:#fff}
+  .pill.now:not(.on){border-color:var(--acc);color:var(--acc)}
+  /* veld */
+  .pitch{border-radius:6px;box-shadow:none;background:repeating-linear-gradient(0deg,var(--pitch1) 0 10%,var(--pitch2) 10% 20%)}
+  .pl .dot{background:#fff!important;color:#050505!important;box-shadow:0 0 0 3px var(--acc)!important;font-family:var(--disp);font-weight:900}
+  .pl.k .dot{background:#141414!important;color:#fff!important;box-shadow:0 0 0 3px var(--acc)!important}
+  .pl.emptyp .dot{background:rgba(0,0,0,.35)!important;color:#fff!important;box-shadow:0 0 0 2px rgba(255,255,255,.6)!important}
+  .pl .nm{background:var(--acc);color:#fff;border-radius:3px;font-family:var(--disp);font-weight:800;text-transform:uppercase;letter-spacing:.02em;-webkit-backdrop-filter:none;backdrop-filter:none}
+  .pl.emptyp .nm{background:rgba(0,0,0,.55)}
+  .pl .mb{border-radius:3px;background:#fff;color:#050505}
+  /* bank, lijsten */
+  .benchp{border-radius:6px;background:#161616}
+  .benchp .bd{background:var(--acc);color:#fff;border-radius:4px;font-family:var(--disp)}
+  .benchp.low{border-color:var(--acc);background:rgba(255,90,31,.10)}
+  .num,.tbadge{background:var(--acc)!important;color:#fff!important;border-radius:4px;font-family:var(--disp)}
+  .bar i{background:var(--acc)}
+  .tile b,.bigscore{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:var(--acc);font-family:var(--disp)}
+  .whop.on{border-color:rgba(255,255,255,.35);background:#1b1b1b}
+  .wissel{background:rgba(255,90,31,.12);border-left:0;border-radius:4px}
+  table.ov .cur{background:rgba(255,90,31,.12)}
+  .switch.on{background:rgba(255,90,31,.2)}
+  .switch.on i{box-shadow:none}
+  .knvb{background:rgba(255,90,31,.10);border-color:rgba(255,90,31,.4)}
+  .modal .box{border-radius:10px}
+  .toast{border-radius:4px;background:#fff;color:#050505;font-family:var(--disp);font-weight:800;text-transform:uppercase}
+  /* woordmerk */
+  .wordmark{font-family:var(--disp);font-weight:900}
+  .wordmark span{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:var(--acc)}
+  .wordmark .speed{background:linear-gradient(90deg,transparent,var(--acc)) 6px 1px/14px 2.5px no-repeat,linear-gradient(90deg,transparent,var(--acc)) 0 6px/20px 3px no-repeat,linear-gradient(90deg,transparent,var(--acc)) 8px 11px/12px 2.5px no-repeat}
+  .logo{box-shadow:none;border-radius:6px}
+  .logo .mark{border-radius:6px}
+  /* scorebalk */
+  nav#nav button{font-size:13px;gap:5px;padding:10px 2px;letter-spacing:0}
+  nav#nav button b .ic{width:15px;height:15px}
+  .benchtitle span{text-transform:none;letter-spacing:0;font-family:var(--font)}
+  .scorebug{display:flex;align-items:stretch;height:36px;margin:-2px 0 12px;font-family:var(--disp);font-weight:900;font-size:19px;text-transform:uppercase;width:max-content;max-width:100%}
+  .scorebug .sbt{background:#fff;color:#050505;padding:0 12px;display:flex;align-items:center}
+  .scorebug .sbs{background:var(--acc);color:#fff;padding:0 14px;display:flex;align-items:center;white-space:nowrap}
+  .scorebug .sbst{background:#1d1d1d;color:#fff;padding:0 12px;display:flex;align-items:center;gap:7px;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .scorebug .sbdot{width:8px;height:8px;border-radius:50%;background:var(--acc2);animation:blink 1s infinite;flex:none}
   @media print{
     body{background:#fff;color:#000;padding:0}
     header,nav,main,.toast{display:none!important}
@@ -313,7 +389,7 @@
 </style>
 </head>
 <body>
-<script>document.body.dataset.theme = "neon";</script>
+<script>document.body.dataset.theme = "broadcast";</script>
 <header>
   <div class="brand"><div class="logo" id="logoBox"></div><div><div class="club" id="clubName"></div><div class="app wordmark"><i class="speed"></i>Line<span>Up</span></div></div><span id="cloudDot" class="cloud" data-act="goCloud"></span></div>
   <div class="teams" id="teams"></div>
@@ -384,7 +460,7 @@ function iconize(html){
   }).join('');
 }
 const stripEmo = t => String(t).replace(EMO_RE, '').replace(/\s{2,}/g, ' ').trim();
-const LOGO_MARK = `<svg viewBox="0 0 512 512" class="mark" aria-label="LineUp"><defs><linearGradient id="lu-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e0ff5c"/><stop offset=".55" stop-color="#a6ff4d"/><stop offset="1" stop-color="#22d3ee"/></linearGradient><linearGradient id="lu-s" gradientUnits="userSpaceOnUse" x1="20" y1="0" x2="210" y2="0"><stop offset="0" stop-color="#c6ff3d" stop-opacity="0"/><stop offset=".6" stop-color="#c6ff3d" stop-opacity=".8"/><stop offset="1" stop-color="#e8ff8a"/></linearGradient><radialGradient id="lu-bg" cx=".25" cy=".15" r="1.05"><stop offset="0" stop-color="#1a2536"/><stop offset=".6" stop-color="#0b0f18"/><stop offset="1" stop-color="#07090f"/></radialGradient><radialGradient id="lu-glow" cx=".63" cy=".5" r=".42"><stop offset="0" stop-color="#c6ff3d" stop-opacity=".38"/><stop offset="1" stop-color="#c6ff3d" stop-opacity="0"/></radialGradient><clipPath id="lu-ball"><circle cx="322" cy="256" r="116"/></clipPath></defs><rect width="512" height="512" rx="112" fill="url(#lu-bg)"/><rect width="512" height="512" rx="112" fill="url(#lu-glow)"/><g stroke="url(#lu-s)" stroke-linecap="round" fill="none"><path d="M70 180H196" stroke-width="20"/><path d="M30 256H186" stroke-width="28"/><path d="M84 332H200" stroke-width="20"/></g><g transform="rotate(-18 322 256)"><circle cx="322" cy="256" r="116" fill="url(#lu-g)"/><g clip-path="url(#lu-ball)" fill="#0b0f18" stroke="#0b0f18" stroke-width="9" stroke-linejoin="round"><polygon points="322.0,214.0 361.9,243.0 346.7,290.0 297.3,290.0 282.1,243.0"/><path d="M322.0 214.0L322.0 170.0"/><path d="M361.9 243.0L403.8 229.4"/><path d="M346.7 290.0L372.5 325.6"/><path d="M297.3 290.0L271.5 325.6"/><path d="M282.1 243.0L240.2 229.4"/><path d="M322.0 170.0L266.7 180.0"/><path d="M322.0 170.0L377.3 180.0"/><path d="M403.8 229.4L377.3 180.0"/><path d="M403.8 229.4L411.4 285.0"/><path d="M372.5 325.6L411.4 285.0"/><path d="M372.5 325.6L322.0 350.0"/><path d="M271.5 325.6L322.0 350.0"/><path d="M271.5 325.6L232.6 285.0"/><path d="M240.2 229.4L232.6 285.0"/><path d="M240.2 229.4L266.7 180.0"/><polygon points="374.9,183.2 363.3,147.4 393.7,125.3 424.1,147.4 412.5,183.2"/><polygon points="407.6,283.8 438.0,261.7 468.5,283.8 456.8,319.6 419.2,319.6"/><polygon points="322.0,346.0 352.4,368.1 340.8,403.9 303.2,403.9 291.6,368.1"/><polygon points="236.4,283.8 224.8,319.6 187.2,319.6 175.5,283.8 206.0,261.7"/><polygon points="269.1,183.2 231.5,183.2 219.9,147.4 250.3,125.3 280.7,147.4"/></g></g><path d="M244 194a116 116 0 0 1 52-40" stroke="#fff" stroke-opacity=".6" stroke-width="10" stroke-linecap="round" fill="none"/></svg>`;
+const LOGO_MARK = `<svg viewBox="0 0 512 512" class="mark" aria-label="LineUp"><defs><linearGradient id="lu-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#f1f1f1"/></linearGradient><linearGradient id="lu-s" gradientUnits="userSpaceOnUse" x1="20" y1="0" x2="210" y2="0"><stop offset="0" stop-color="#ff5a1f" stop-opacity="0"/><stop offset=".6" stop-color="#ff5a1f" stop-opacity=".85"/><stop offset="1" stop-color="#ff7a3d"/></linearGradient><radialGradient id="lu-bg" cx=".25" cy=".15" r="1.05"><stop offset="0" stop-color="#1a1a1a"/><stop offset=".6" stop-color="#0a0a0a"/><stop offset="1" stop-color="#050505"/></radialGradient><radialGradient id="lu-glow" cx=".63" cy=".5" r=".42"><stop offset="0" stop-color="#ff5a1f" stop-opacity=".30"/><stop offset="1" stop-color="#ff5a1f" stop-opacity="0"/></radialGradient><clipPath id="lu-ball"><circle cx="322" cy="256" r="116"/></clipPath></defs><rect width="512" height="512" rx="112" fill="url(#lu-bg)"/><rect width="512" height="512" rx="112" fill="url(#lu-glow)"/><g stroke="url(#lu-s)" stroke-linecap="round" fill="none"><path d="M70 180H196" stroke-width="20"/><path d="M30 256H186" stroke-width="28"/><path d="M84 332H200" stroke-width="20"/></g><circle cx="322" cy="256" r="125" fill="#ff5a1f"/><g transform="rotate(-18 322 256)"><circle cx="322" cy="256" r="116" fill="url(#lu-g)"/><g clip-path="url(#lu-ball)" fill="#0a0a0a" stroke="#0a0a0a" stroke-width="9" stroke-linejoin="round"><polygon points="322.0,214.0 361.9,243.0 346.7,290.0 297.3,290.0 282.1,243.0"/><path d="M322.0 214.0L322.0 170.0"/><path d="M361.9 243.0L403.8 229.4"/><path d="M346.7 290.0L372.5 325.6"/><path d="M297.3 290.0L271.5 325.6"/><path d="M282.1 243.0L240.2 229.4"/><path d="M322.0 170.0L266.7 180.0"/><path d="M322.0 170.0L377.3 180.0"/><path d="M403.8 229.4L377.3 180.0"/><path d="M403.8 229.4L411.4 285.0"/><path d="M372.5 325.6L411.4 285.0"/><path d="M372.5 325.6L322.0 350.0"/><path d="M271.5 325.6L322.0 350.0"/><path d="M271.5 325.6L232.6 285.0"/><path d="M240.2 229.4L232.6 285.0"/><path d="M240.2 229.4L266.7 180.0"/><polygon points="374.9,183.2 363.3,147.4 393.7,125.3 424.1,147.4 412.5,183.2"/><polygon points="407.6,283.8 438.0,261.7 468.5,283.8 456.8,319.6 419.2,319.6"/><polygon points="322.0,346.0 352.4,368.1 340.8,403.9 303.2,403.9 291.6,368.1"/><polygon points="236.4,283.8 224.8,319.6 187.2,319.6 175.5,283.8 206.0,261.7"/><polygon points="269.1,183.2 231.5,183.2 219.9,147.4 250.3,125.3 280.7,147.4"/></g></g></svg>`;
 
 /* ===================== Data ===================== */
 const KEY = 'opstellingmaker.v1';
@@ -679,7 +755,7 @@ function renderHeader(){
   document.title = (t.club ? t.club + ' · ' : '') + 'LineUp';
   document.getElementById('teams').innerHTML = iconize(
     `<button class="pill addt" data-act="newTeamSheet" aria-label="Nieuw team">＋</button>` +
-    sortedTeams().map(x => `<button class="pill tpill ${x.id === t.id ? 'on' : ''}" style="--tc:${teamColor(x)};--tct:${onColor(teamColor(x))}" data-act="team" data-id="${x.id}"><i class="tdot"></i>${esc(teamLabel(x))}</button>`).join(''));
+    sortedTeams().map(x => `<button class="pill tpill ${x.id === t.id ? 'on' : ''}" data-act="team" data-id="${x.id}">${esc(teamLabel(x))}</button>`).join(''));
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === ui.tab));
 }
 function render(){
@@ -751,6 +827,20 @@ function scoreLine(m){
   return m.home === false ? `${esc(m.goalsAgainst)} – ${esc(m.goalsFor)}` : `${esc(m.goalsFor)} – ${esc(m.goalsAgainst)}`;
 }
 
+// scorebalk zoals bij een tv-uitzending
+function abbr(name){
+  const w = String(name || '').replace(/[^A-Za-zÀ-ÿ0-9 ]/g, ' ').split(/\s+/).filter(x => x && !/^(vv|sv|fc|rkvv|rksv|vc|sc|rkv|vcs|svv|asv|rkc|cvv|hvv|jo\d+|mo\d+|o\d+)$/i.test(x));
+  return ((w[0] || name || '???').slice(0, 3)).toUpperCase();
+}
+function scoreBug(m){
+  const t = team(), me = abbr(t.club || t.name), op = abbr(m.opponent || 'TEG');
+  const gf = hasScore(m) ? +m.goalsFor : null, ga = hasScore(m) ? +m.goalsAgainst : null;
+  const left = m.home === false ? op : me, right = m.home === false ? me : op;
+  const sc = gf === null ? 'VS' : (m.home === false ? `${ga} – ${gf}` : `${gf} – ${ga}`);
+  const st = m.phase === 'live' ? `<i class="sbdot"></i>LIVE · ${esc(blockLabel(m, m.cur || 0))}` : m.phase === 'post' ? 'AFGELOPEN' : 'EINDSTAND';
+  return `<div class="scorebug"><span class="sbt">${esc(left)}</span><span class="sbs">${sc}</span><span class="sbt">${esc(right)}</span><span class="sbst">${st}</span></div>`;
+}
+
 function viewMatch(){
   const m = match();
   if (!m){ ui.matchId = null; return viewMatches(); }
@@ -773,9 +863,9 @@ function viewMatch(){
 
   const header = `
   <div class="card mhead">
+    ${ph !== 'prep' ? scoreBug(m) : ''}
     <div class="mt">${esc(matchTitle(m))}</div>
     <div class="muted">${fmtDate(m.date, {weekday:'long', day:'numeric', month:'long'})} · ${settingsLine(st)}</div>
-    ${hasScore(m) && ph !== 'prep' ? `<div class="bigscore">${scoreLine(m)}</div>` : ''}
   </div>`;
 
   // ---- opstelling
@@ -1008,7 +1098,6 @@ function teamInfoCard(x){
       <label class="f">📅 Seizoen<input value="${esc(ls.name)}" data-ts="name" data-id="${x.id}"></label>
     </div>
     <datalist id="clubNames">${clubList().map(c => `<option value="${esc(c)}">`).join('')}</datalist>
-    <div class="f">🎨 Teamkleur<div class="muted" style="margin:2px 0 8px">Zie je terug bovenin en bij het team.</div>${colorPicker(x)}</div>
     <div class="muted">${ls.players.length} spelers · ${ls.matches.length} wedstrijden · ${ls.matches.filter(m => m.phase === 'done').length} gespeeld</div>
   </div>
   <div class="card">
