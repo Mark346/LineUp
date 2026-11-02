@@ -7,12 +7,12 @@
 <meta name="apple-mobile-web-app-title" content="LineUp">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="application-name" content="LineUp">
-<link rel="manifest" href="manifest.webmanifest?v=5">
-<link rel="icon" type="image/svg+xml" href="icon.svg?v=5">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=5">
-<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=5">
-<link rel="apple-touch-icon-precomposed" sizes="180x180" href="apple-touch-icon.png?v=5">
-<meta name="theme-color" content="#0c5a2c">
+<link rel="manifest" href="manifest.webmanifest?v=6">
+<link rel="icon" type="image/svg+xml" href="icon.svg?v=6">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=6">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=6">
+<link rel="apple-touch-icon-precomposed" sizes="180x180" href="apple-touch-icon.png?v=6">
+<meta name="theme-color" content="#0f6b35">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,500;0,600;0,700;0,800;0,900;1,800;1,900&display=swap" rel="stylesheet">
 <title>LineUp</title>
@@ -297,84 +297,101 @@
   nav#nav button.on{background:var(--acc);color:var(--on-acc)}
   body{padding-bottom:calc(24px + env(safe-area-inset-bottom))}
   .toast{bottom:calc(24px + env(safe-area-inset-bottom))}
-  /* ===================== Grasveld-stijl ===================== */
-  :root, body[data-theme="gras"]{
-    --bg:#0f6b35; --bg2:none; --surf:#13803f; --surf2:#1a9049; --solid:#0f6b35; --line:rgba(255,255,255,.18);
-    --txt:#ffffff; --muted:#c9efd5; --acc:#ffe14d; --acc2:#ffffff; --on-acc:#0c3d1f;
-    --hdr:#0c5a2c; --hdr-txt:#fff; --hdr-glow:none; --pitch1:#16893f; --pitch2:#1a9446; --pline:rgba(255,255,255,.85); --kp:#ffe14d;
-    --ok:#ffe14d; --red:#ffb4a8; --shadow:0 6px 18px rgba(0,0,0,.16); --blur:none; --radius:16px;
+  /* ===================== Grasveld Licht ===================== */
+  :root, body[data-theme="graslicht"]{
+    --bg:#eef7f0; --bg2:none; --surf:#ffffff; --surf2:#f3f8f4; --solid:#ffffff; --line:rgba(15,107,53,.14);
+    --txt:#0c3d1f; --muted:#4f7a5d; --acc:#ffd52e; --acc2:#0f6b35; --on-acc:#0c3d1f;
+    --hdr:#0f6b35; --hdr-txt:#fff; --hdr-glow:none; --pitch1:#16893f; --pitch2:#1a9446; --pline:rgba(255,255,255,.85); --kp:#0f6b35;
+    --ok:#0f6b35; --red:#d9363e; --shadow:0 4px 14px rgba(12,61,31,.07); --blur:none; --radius:16px;
     --font:"Archivo",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; --disp:"Archivo",sans-serif;
-    --soft:rgba(255,225,77,.16);
+    --soft:rgba(255,213,46,.22); color-scheme:light;
   }
-  body[data-theme="gras"]{background:repeating-linear-gradient(0deg,#0f6b35 0 140px,#0e6432 140px 280px);background-attachment:fixed}
-  header{background:#0c5a2c;border-bottom:1px solid rgba(255,255,255,.12)}
+  body[data-theme="graslicht"]{background:#eef7f0}
+  header{background:repeating-linear-gradient(90deg,#0f6b35 0 60px,#0e6532 60px 120px);border-bottom:0;color:#fff}
   header::before,header::after{display:none}
-  h2,.mt,.benchtitle{font-weight:800}
-  .card{background:var(--surf);border-color:var(--line);border-radius:16px}
-  .summary,.tcard,.trow,.tile{background:var(--surf);border-color:var(--line)}
-  input,select,textarea{background:rgba(0,0,0,.16);border-color:rgba(255,255,255,.2)}
-  input::placeholder,textarea::placeholder{color:rgba(255,255,255,.55)}
+  h2,.mt,.benchtitle{font-weight:800;color:var(--txt)}
+  .card,.summary,.tcard,.trow,.tile{background:#fff;border-color:var(--line);box-shadow:var(--shadow)}
+  .card{border-radius:16px}
+  input,select,textarea{background:#f3f8f4;border-color:rgba(15,107,53,.2);color:var(--txt)}
+  input::placeholder,textarea::placeholder{color:#8aa895}
+  input:focus,select:focus,textarea:focus{border-color:#16893f;box-shadow:0 0 0 3px rgba(22,137,63,.15)}
   /* knoppen en tabs */
-  .btn{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.18)}
-  .btn.pri,.mbig{background:#ffe14d;color:#0c3d1f;border-color:transparent;box-shadow:0 6px 16px rgba(0,0,0,.18)}
+  .btn{background:#f3f8f4;border-color:var(--line);color:var(--txt)}
+  .btn.pri,.mbig{background:#ffd52e;color:#0c3d1f;border-color:transparent;box-shadow:0 6px 16px rgba(201,160,0,.25)}
   .mbig{animation:none!important}
-  .mbig .mph{background:#0c3d1f;color:#ffe14d}
+  .mbig .mph{background:#0c3d1f;color:#ffd52e}
   .mbig.live .mph::before{background:#ff6b5b;box-shadow:none}
-  .btn.red{color:#ffd0c8;border-color:rgba(255,208,200,.45)}
-  nav#nav{background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.14);border-radius:16px}
-  nav#nav button{color:rgba(255,255,255,.85);border-radius:12px}
-  nav#nav button.on,.stabs button.on,.phases button.on,.segc button.on,.segs .pill.on,.tag.on{background:#ffe14d;color:#0c3d1f}
-  header .pill.tpill{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.22);color:#fff}
-  header .pill.tpill.on{background:#ffe14d;color:#0c3d1f;border-color:#ffe14d;box-shadow:none}
-  header .pill.addt{border-color:rgba(255,255,255,.4)}
-  .stabs{background:rgba(12,90,44,.95);border-color:rgba(255,255,255,.14)}
-  .phases{background:rgba(12,90,44,.96);border-bottom:1px solid rgba(255,255,255,.12)}
-  .phases button.past{color:#fff3a6}
-  .pill.now:not(.on){border-color:#ffe14d;color:#ffe14d}
-  .segs .pill{background:rgba(0,0,0,.14);border-color:rgba(255,255,255,.16)}
+  .btn.pri2{border-color:#0f6b35;color:#0f6b35}
+  .btn.red{color:#d9363e;border-color:rgba(217,54,62,.4);background:#fff}
+  nav#nav{background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.16);border-radius:16px}
+  nav#nav button{color:rgba(255,255,255,.9);border-radius:12px}
+  nav#nav button.on{background:#ffd52e;color:#0c3d1f}
+  header .pill.tpill{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.25);color:#fff}
+  header .pill.tpill.on{background:#ffd52e;color:#0c3d1f;border-color:#ffd52e;box-shadow:none}
+  header .pill.addt{border-color:rgba(255,255,255,.45);color:#fff;background:transparent}
+  .cloud{background:rgba(255,255,255,.16);color:#fff}
+  .stabs{background:rgba(255,255,255,.96);border-color:var(--line)}
+  .stabs button{color:var(--muted)}
+  .stabs button.on,.segc button.on,.segs .pill.on,.tag.on{background:#ffd52e;color:#0c3d1f}
+  .phases{background:rgba(255,255,255,.97);border-bottom:1px solid var(--line)}
+  .phases button{color:var(--muted)}
+  .phases .pback{color:var(--txt)}
+  .phases button.on{background:#ffd52e;color:#0c3d1f}
+  .phases button.past{color:#16893f}
+  .segs .pill{background:#f3f8f4;border-color:var(--line);color:var(--txt)}
+  .pill.now:not(.on){border-color:#16893f;color:#0f6b35}
+  .pill{background:#f3f8f4;color:var(--txt)}
   /* veld */
-  .pitch{border:2px solid rgba(255,255,255,.35);box-shadow:inset 0 0 40px rgba(0,0,0,.12)}
-  .pl .dot{background:#ffffff;color:#0c3d1f;box-shadow:0 4px 10px rgba(0,0,0,.3)}
-  .pl.k .dot{background:#0c3d1f;color:#fff;box-shadow:0 0 0 3px #ffe14d,0 4px 10px rgba(0,0,0,.3)}
-  .pl.emptyp .dot{background:rgba(0,0,0,.2);color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.7)}
-  .pl .nm{background:rgba(0,0,0,.38);color:#fff}
-  .pl .mb{background:#ffe14d;color:#0c3d1f}
+  .pitch{border:2px solid rgba(15,107,53,.25);box-shadow:inset 0 0 40px rgba(0,0,0,.10)}
+  .pl .dot{background:#ffffff;color:#0c3d1f;box-shadow:0 4px 10px rgba(0,0,0,.28)}
+  .pl.k .dot{background:#0c3d1f;color:#fff;box-shadow:0 0 0 3px #ffd52e,0 4px 10px rgba(0,0,0,.28)}
+  .pl.emptyp .dot{background:rgba(0,0,0,.18);color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.75)}
+  .pl .nm{background:rgba(0,0,0,.4);color:#fff}
+  .pl .mb{background:#ffd52e;color:#0c3d1f}
   /* bank, lijsten, statistiek */
-  .benchp{background:rgba(0,0,0,.14);border-color:rgba(255,255,255,.16)}
-  .benchp .bd,.num,.tbadge{background:#ffe14d!important;color:#0c3d1f!important}
-  .benchp.low{border-color:#ffe14d;background:rgba(255,225,77,.12)}
-  .benchp.low i,.pp{color:#ffe14d}
-  .bar{background:rgba(0,0,0,.2)}
-  .bar i{background:#ffe14d}
-  .tile b,.bigscore{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:#ffe14d}
-  table.ov .cur{background:rgba(255,225,77,.14)}
-  table.ov .kp{color:#ffe14d}
-  .whop{background:rgba(0,0,0,.14)}
-  .whop.on{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.5)}
-  .wissel{background:rgba(255,225,77,.14)}
-  .knvb{background:rgba(255,225,77,.12);border-color:rgba(255,225,77,.45)}
-  .knvb.ok{background:rgba(0,0,0,.12);border-color:var(--line)}
-  .switch{background:rgba(0,0,0,.2)}
-  .switch.on{background:rgba(255,225,77,.22);border-color:#ffe14d}
-  .switch.on i{background:#ffe14d;box-shadow:none}
-  .badge{background:rgba(0,0,0,.18);color:#e4f7ea}
-  .badge.ok{background:rgba(255,225,77,.2);color:#ffe14d}
-  .modal .box{background:#0f6b35}
-  .toast{background:#ffffff;color:#0c3d1f}
-  #outdated{background:#ffe14d;color:#0c3d1f}
-  /* woordmerk en logo */
-  .wordmark{font-family:"Archivo",sans-serif;font-style:italic;font-weight:900}
-  .wordmark span{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:#ffe14d}
-  .wordmark .speed{background:linear-gradient(90deg,transparent,#ffe14d) 6px 1px/14px 2.5px no-repeat,linear-gradient(90deg,transparent,#ffe14d) 0 6px/20px 3px no-repeat,linear-gradient(90deg,transparent,#ffe14d) 8px 11px/12px 2.5px no-repeat}
+  .benchp{background:#f3f8f4;border-color:var(--line);color:var(--txt)}
+  .benchp .bd,.num,.tbadge{background:#ffd52e!important;color:#0c3d1f!important}
+  .benchp.low{border-color:#e0b400;background:#fff7cc}
+  .benchp.low i{color:#8a6d00}
+  .pp{color:#16893f}
+  .bar{background:#e3f1e7}
+  .bar i{background:#16893f}
+  .tile b,.bigscore{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:#0f6b35}
+  table.ov .cur{background:rgba(255,213,46,.25)}
+  table.ov .kp{color:#0f6b35}
+  .whop{background:#f3f8f4;color:var(--muted)}
+  .whop.on{background:#e6f5ea;border-color:#16893f;color:var(--txt)}
+  .wissel{background:#fff7cc}
+  .knvb{background:#fff7cc;border-color:#ffd52e}
+  .knvb span{color:#0f6b35}
+  .knvb.ok{background:#f3f8f4;border-color:var(--line)}
+  .switch{background:#e3f1e7}
+  .switch i{background:#9fb8a7}
+  .switch.on{background:#fff3b0;border-color:#e0b400}
+  .switch.on i{background:#0f6b35;box-shadow:none}
+  .badge{background:#e3f1e7;color:#4f7a5d}
+  .badge.ok{background:#d8f3e0;color:#0f6b35}
+  .badge.live{background:#fff3b0;color:#0c3d1f}
+  .modal .box{background:#ffffff;color:var(--txt)}
+  .toast{background:#0c3d1f;color:#ffffff}
+  #outdated{background:#ffd52e;color:#0c3d1f}
+  .sgroup{color:#4f7a5d}
+  /* woordmerk en logo (in de groene kop) */
+  .wordmark{font-family:"Archivo",sans-serif;font-style:italic;font-weight:900;color:#fff}
+  .wordmark span{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:#ffd52e}
+  .wordmark .speed{background:linear-gradient(90deg,transparent,#ffd52e) 6px 1px/14px 2.5px no-repeat,linear-gradient(90deg,transparent,#ffd52e) 0 6px/20px 3px no-repeat,linear-gradient(90deg,transparent,#ffd52e) 8px 11px/12px 2.5px no-repeat}
   .brand .club{color:#c9efd5}
   .logo{box-shadow:0 4px 12px rgba(0,0,0,.25)}
-  /* scorebalk in grasstijl */
-  .scorebug{display:flex;align-items:stretch;height:36px;margin:-2px 0 12px;font-family:"Archivo",sans-serif;font-weight:900;font-style:italic;font-size:18px;width:max-content;max-width:100%;border-radius:10px;overflow:hidden}
-  .scorebug .sbt{background:#ffffff;color:#0c3d1f;padding:0 12px;display:flex;align-items:center}
-  .scorebug .sbs{background:#ffe14d;color:#0c3d1f;padding:0 14px;display:flex;align-items:center;white-space:nowrap}
-  .scorebug .sbst{background:rgba(0,0,0,.28);color:#fff;padding:0 12px;display:flex;align-items:center;gap:7px;font-size:13px;font-style:normal;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .scorebug .sbdot{width:8px;height:8px;border-radius:50%;background:#ff6b5b;animation:blink 1s infinite;flex:none}
+  /* scorebalk */
+  .scorebug{display:flex;align-items:stretch;height:36px;margin:-2px 0 12px;font-family:"Archivo",sans-serif;font-weight:900;font-style:italic;font-size:18px;width:max-content;max-width:100%;border-radius:10px;overflow:hidden;box-shadow:0 3px 10px rgba(12,61,31,.12)}
+  .scorebug .sbt{background:#0f6b35;color:#ffffff;padding:0 12px;display:flex;align-items:center}
+  .scorebug .sbs{background:#ffd52e;color:#0c3d1f;padding:0 14px;display:flex;align-items:center;white-space:nowrap}
+  .scorebug .sbst{background:#e3f1e7;color:#0c3d1f;padding:0 12px;display:flex;align-items:center;gap:7px;font-size:13px;font-style:normal;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .scorebug .sbdot{width:8px;height:8px;border-radius:50%;background:#e5383b;animation:blink 1s infinite;flex:none}
   .benchtitle span{text-transform:none}
+  h2 .ic,.benchtitle .ic{color:#16893f}
+  .summary span,a{color:#0f6b35}
+  .step button{color:#0f6b35}
   @media print{
     body{background:#fff;color:#000;padding:0}
     header,nav,main,.toast{display:none!important}
@@ -391,7 +408,7 @@
 </style>
 </head>
 <body>
-<script>document.body.dataset.theme = "gras";</script>
+<script>document.body.dataset.theme = "graslicht";</script>
 <header>
   <div class="brand"><div class="logo" id="logoBox"></div><div><div class="club" id="clubName"></div><div class="app wordmark"><i class="speed"></i>Line<span>Up</span></div></div><span id="cloudDot" class="cloud" data-act="goCloud"></span></div>
   <div class="teams" id="teams"></div>
