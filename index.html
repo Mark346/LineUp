@@ -392,6 +392,27 @@
   h2 .ic,.benchtitle .ic{color:#16893f}
   .summary span,a{color:#0f6b35}
   .step button{color:#0f6b35}
+  body.survey #nav,body.survey #teams,body.survey #logoBox,body.survey #cloudDot{display:none}
+  .nm2{display:flex;gap:6px}.nm2 input{padding:6px 8px;min-width:0;flex:1}
+  .svhead{display:flex;align-items:center;gap:12px;margin:2px 2px 14px}
+  .svhead .logo{width:52px;height:52px}
+  .svhead .club{font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:800;color:var(--muted)}
+  .svteam{font-family:var(--disp);font-weight:900;font-size:26px;line-height:1.05}
+  .svnames{display:flex;flex-wrap:wrap;gap:8px}
+  .svname{border:1px solid var(--line);background:var(--surf2);color:var(--txt);border-radius:14px;padding:12px 16px;font:inherit;font-size:17px;font-weight:800;cursor:pointer}
+  .svname.on{background:var(--acc);color:var(--on-acc);border-color:var(--acc)}
+  .svpicked{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px}
+  .svpicked span{background:var(--surf2);border:1px dashed var(--line);border-radius:12px;padding:8px;font-size:13px;font-weight:700;color:var(--muted);text-align:center;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+  .svpicked span.on{background:var(--acc);color:var(--on-acc);border-style:solid;border-color:var(--acc)}
+  .svpicked b{font-size:16px}
+  .svgroup{margin:14px 2px 8px;font-size:12px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  .svopts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .svopt{position:relative;border:1px solid var(--line);background:var(--surf2);color:var(--txt);border-radius:14px;padding:12px 6px;font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:64px;justify-content:center}
+  .svopt b{font-size:16px;font-weight:900}
+  .svopt small{font-size:11px;color:var(--muted);text-align:center;line-height:1.2}
+  .svopt.on{background:var(--acc);border-color:var(--acc);color:var(--on-acc)}
+  .svopt.on small{color:var(--on-acc);opacity:.8}
+  .svopt i{position:absolute;top:-8px;right:-6px;width:24px;height:24px;border-radius:50%;background:var(--txt);color:var(--bg);font-style:normal;font-weight:900;font-size:13px;display:flex;align-items:center;justify-content:center}
   @media print{
     body{background:#fff;color:#000;padding:0}
     header,nav,main,.toast{display:none!important}
@@ -587,7 +608,22 @@ const team = () => S.teams.find(t => t.id === S.active.team) || S.teams[0];
 const season = () => team().seasons[0];
 function guestOf(id){ for (const mm of season().matches){ const g = (mm.guests || []).find(g => g.id === id); if (g) return g; } return null; }
 const player = id => season().players.find(p => p.id === id) || guestOf(id);
-const pname = id => { const p = player(id); return p ? p.name : '?'; };
+const TUSSEN = new Set(['van','de','der','den','het','ter','ten','te','in','op',"'t",'t','v.','d.','v/d','la','le','du','da','di','von','el','al']);
+const splitName = full => { const w = String(full || '').trim().split(/\s+/).filter(Boolean); return {first: w[0] || '', last: w.slice(1).join(' ')}; };
+const lastCore = last => { const w = String(last || '').split(/\s+/).filter(Boolean); return w.find(x => !TUSSEN.has(x.toLowerCase())) || w[w.length - 1] || ''; };
+const shortName = full => { const {first, last} = splitName(full); const c = lastCore(last); return c ? `${first} ${c[0].toUpperCase()}.` : first; };
+const cap = w => w ? w[0].toLocaleUpperCase('nl') + w.slice(1) : w;
+const niceFirst = f => String(f || '').trim().split(/\s+/).filter(Boolean).map(w => w.split('-').map(cap).join('-')).join(' ');
+const niceLast = l => String(l || '').trim().split(/\s+/).filter(Boolean).map(w => TUSSEN.has(w.toLowerCase()) ? w.toLowerCase() : w.split('-').map(cap).join('-')).join(' ');
+const normName = n => String(n || '').trim().replace(/\s+/g, ' ').toLowerCase();
+function pshort(p){
+  if (!p) return '?';
+  const sh = shortName(p.name);
+  let pool = []; try { pool = season().players; } catch(e){}
+  if (pool.some(o => o.id !== p.id && shortName(o.name) === sh && normName(o.name) !== normName(p.name))){ const {first, last} = splitName(p.name); return `${first} ${lastCore(last)}`.trim(); }
+  return sh;
+}
+const pname = id => { const p = player(id); return p ? pshort(p) : '?'; };
 const isGK = p => (p.pref || []).includes('K');
 const match = () => season().matches.find(m => m.id === ui.matchId);
 
@@ -778,6 +814,7 @@ function renderHeader(){
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === ui.tab));
 }
 function render(){
+  if (typeof SURVEY_ID !== 'undefined' && SURVEY_ID){ renderSurvey(); return; }
   renderHeader();
   app.innerHTML = iconize(({matches: ui.matchId ? viewMatch : viewMatches, stats: viewStats, settings: viewSettings}[ui.tab] || viewMatches)());
 }
@@ -910,7 +947,7 @@ function viewMatch(){
       <div class="benchtitle">🪑 Reserves <span>minuten gespeeld t/m dit blok</span></div>
       <div class="bench" id="benchZone">${bench.length ? bench.map(id => {
         const p = player(id);
-        return `<div class="benchp ${ui.sel && ui.sel.type === 'b' && ui.sel.id === id ? 'sel' : ''} ${up[id] === minUp && bench.length > 1 ? 'low' : ''}" data-act="tapBench" data-drag="b" data-id="${id}"><span class="bd">${esc(p.number || p.name.charAt(0).toUpperCase())}</span><span class="bn">${esc(p.name)}${prefTag(p)}</span><i>${Math.round(up[id])}'</i></div>`;
+        return `<div class="benchp ${ui.sel && ui.sel.type === 'b' && ui.sel.id === id ? 'sel' : ''} ${up[id] === minUp && bench.length > 1 ? 'low' : ''}" data-act="tapBench" data-drag="b" data-id="${id}"><span class="bd">${esc(p.number || p.name.charAt(0).toUpperCase())}</span><span class="bn">${esc(pshort(p))}${prefTag(p)}</span><i>${Math.round(up[id])}'</i></div>`;
       }).join('') : '<span class="muted" style="padding:8px">Geen reserves · sleep een speler hierheen om hem eruit te halen</span>'}</div>
       <div class="hint">Sleep een reserve op een plek of speler, of tik op twee spelers om te wisselen.</div>
       <div class="tools">
@@ -949,12 +986,12 @@ function viewMatch(){
     <details data-key="who" ${(ui.open.who ?? ph === 'prep') ? 'open' : ''}>
     <summary>👥 Wie zijn er? <span class="muted" style="font-weight:400">${nIn} van ${roster.length}</span></summary>
     <div class="who" style="margin-top:10px">
-      ${roster.map(p => { const on = isIn(m, p.id); return `<button class="whop ${on ? 'on' : ''}" data-act="togglePresent" data-id="${p.id}">${on ? '✅' : '❌'} ${esc(p.name)}${p.guest ? ' <small>invaller</small>' : ''}</button>`; }).join('') || '<span class="muted">Nog geen spelers – voeg ze toe bij Instellingen.</span>'}
+      ${roster.map(p => { const on = isIn(m, p.id); return `<button class="whop ${on ? 'on' : ''}" data-act="togglePresent" data-id="${p.id}">${on ? '✅' : '❌'} ${esc(pshort(p))}${p.guest ? ' <small>invaller</small>' : ''}</button>`; }).join('') || '<span class="muted">Nog geen spelers – voeg ze toe bij Instellingen.</span>'}
     </div>
     <div class="muted" style="margin-top:6px">Tik op een naam om iemand af of aan te melden.${ph === 'live' ? ' Tijdens de wedstrijd geldt dat vanaf het huidige blok; zijn plek wordt opgevuld door de reserve met de minste minuten.' : ''}</div>
     <div class="row" style="margin-top:10px"><input id="guestName" placeholder="Invaller (naam)" list="otherNames" style="flex:3"><button class="btn sm" style="flex:none" data-act="addGuest">＋ Invaller</button></div>
     <datalist id="otherNames">${S.teams.flatMap(t => t.id === team().id ? [] : t.seasons[t.seasons.length - 1].players.map(p => `<option value="${esc(p.name)}">`)).join('')}</datalist>
-    ${(m.guests || []).length ? `<div class="muted" style="margin-top:8px">Invallers: ${m.guests.map(g => `${esc(g.name)} <button class="x" style="font-size:16px" data-act="delGuest" data-id="${g.id}">×</button>`).join(' ')}</div>` : ''}
+    ${(m.guests || []).length ? `<div class="muted" style="margin-top:8px">Invallers: ${m.guests.map(g => `${esc(pshort(g))} <button class="x" style="font-size:16px" data-act="delGuest" data-id="${g.id}">×</button>`).join(' ')}</div>` : ''}
     </details>
   </div>`;
 
@@ -1020,23 +1057,24 @@ function viewPlayers(){
     ${se.players.length ? se.players.map(p => `
       <div class="item" style="flex-wrap:wrap">
         <div class="num">${esc(p.number || '•')}</div>
-        <div class="grow"><input value="${esc(p.name)}" data-p="name" data-id="${p.id}" style="padding:6px 8px"></div>
+        <div class="grow nm2"><input value="${esc(splitName(p.name).first)}" data-pn="first" data-id="${p.id}" placeholder="Voornaam" aria-label="Voornaam"><input value="${esc(splitName(p.name).last)}" data-pn="last" data-id="${p.id}" placeholder="Achternaam" aria-label="Achternaam"></div>
         <button class="x" data-act="delPlayer" data-id="${p.id}">×</button>
         ${usePos() ? `<div class="pprow">${[0, 1, 2].map(k => `<label><span>${k + 1}e keus</span><select data-pp="${k}" data-id="${p.id}"><option value="">–</option><optgroup label="Linie">${POS_GROUPS.slice(0, 3).map(g => `<option value="${g.v}" ${(p.pos || [])[k] === g.v ? 'selected' : ''}>${g.s}</option>`).join('')}</optgroup><optgroup label="Kant van het veld">${POS_GROUPS.slice(3).map(g => `<option value="${g.v}" ${(p.pos || [])[k] === g.v ? 'selected' : ''}>${g.s}</option>`).join('')}</optgroup><optgroup label="Positie (${esc(se.formation)})">${posCodes(se).map(c => `<option value="${c}" ${(p.pos || [])[k] === c ? 'selected' : ''}>${c} · ${POS_NAMES[c]}</option>`).join('')}${(p.pos || [])[k] && !(p.pos[k] || '').startsWith('g:') && !posCodes(se).includes(p.pos[k]) ? `<option value="${esc(p.pos[k])}" selected>${esc(p.pos[k])} (andere formatie)</option>` : ''}</optgroup></select></label>`).join('')}</div>` : ''}
       </div>`).join('') : `<div class="empty"><b>👥</b>Nog geen spelers. Voeg ze hieronder toe.</div>`}
   </div>
   <div class="card">
     <h2>➕ Speler toevoegen aan ${esc(team().name)}</h2>
-    <div class="row"><input id="newName" placeholder="Naam speler" style="flex:3" enterkeyhint="done"><input id="newNum" placeholder="#" inputmode="numeric" style="flex:1"></div>
+    <div class="row"><input id="newName" placeholder="Voornaam" style="flex:2" autocapitalize="words"><input id="newLast" placeholder="Achternaam" style="flex:2" autocapitalize="words" enterkeyhint="done"><input id="newNum" placeholder="#" inputmode="numeric" style="flex:1;min-width:0"></div>
     <button class="btn pri full" style="margin-top:10px" data-act="addPlayer">Speler toevoegen</button>
     <details style="margin-top:12px"><summary class="muted">📝 Meerdere namen tegelijk plakken</summary>
-      <textarea id="bulk" rows="5" style="margin-top:8px" placeholder="Eén naam per regel"></textarea>
+      <textarea id="bulk" rows="5" style="margin-top:8px" placeholder="Eén speler per regel: voornaam achternaam"></textarea>
       <button class="btn sm" style="margin-top:6px" data-act="bulk">Alles toevoegen</button>
     </details>
     ${others.length ? `<details style="margin-top:8px"><summary class="muted">📥 Overnemen uit ander team/seizoen</summary>
       <div class="row" style="margin-top:8px"><select id="copyFrom">${others.map(o => `<option value="${o.s.id}">${esc(o.t.name)} · ${esc(o.s.name)} (${o.s.players.length})</option>`).join('')}</select><button class="btn sm" style="flex:none" data-act="copyPlayers">Overnemen</button></div>
     </details>` : ''}
-  </div>`;
+  </div>
+  ${surveyCard(se, team())}`;
 }
 
 function viewStats(){
@@ -1084,7 +1122,7 @@ function viewStats(){
       ${list.map(r => {
         const top = Object.entries(r.pos).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([c]) => c === 'K' ? '🧤' : c).join(' · ');
         return `<tr>
-          <td>${esc(r.p.name)}<div class="bar"><i style="width:${Math.round(r.mins / maxMin * 100)}%"></i></div>${top ? `<div class="muted" style="font-size:11px;margin-top:2px">${top}</div>` : ''}</td>
+          <td>${esc(pshort(r.p))}<div class="bar"><i style="width:${Math.round(r.mins / maxMin * 100)}%"></i></div>${top ? `<div class="muted" style="font-size:11px;margin-top:2px">${top}</div>` : ''}</td>
           <td>${r.matches}</td><td><b>${Math.round(r.mins)}'</b></td>
           <td style="color:${pct(r) < avgPct - 10 ? 'var(--red)' : 'inherit'}">${r.possible ? pct(r) + '%' : '–'}</td>
           <td><b>${r.goals || ''}</b></td><td class="kp">${r.kmins ? Math.round(r.kmins) + "'" : ''}</td><td class="w">${r.bench}×</td></tr>`;
@@ -1094,11 +1132,11 @@ function viewStats(){
   </div>
   ${list.some(r => r.goals) ? `<div class="card">
     <h2>⚽ Topscorers</h2>
-    ${list.filter(r => r.goals).sort((a, b) => b.goals - a.goals).map(r => `<div class="set"><div class="lbl">${esc(r.p.name)}</div><b>${r.goals}</b></div>`).join('')}
+    ${list.filter(r => r.goals).sort((a, b) => b.goals - a.goals).map(r => `<div class="set"><div class="lbl">${esc(pshort(r.p))}</div><b>${r.goals}</b></div>`).join('')}
   </div>` : ''}
   ${keepers.length ? `<div class="card">
     <h2>🧤 In de goal dit seizoen</h2>
-    ${keepers.map(r => `<div class="set"><div class="lbl">${esc(r.p.name)}</div><b>${Math.round(r.kmins)} min</b></div>`).join('')}
+    ${keepers.map(r => `<div class="set"><div class="lbl">${esc(pshort(r.p))}</div><b>${Math.round(r.kmins)} min</b></div>`).join('')}
   </div>` : ''}
   <div class="card list">
     <h2>📋 Uitslagen</h2>
@@ -1175,7 +1213,7 @@ function viewSettings(){
       <button class="switch ${se.usePositions ? 'on' : ''}" data-act="togglePos" aria-label="Voorkeursposities aan/uit"><i></i></button></div>
     ${se.usePositions ? `<button class="btn sm full" style="margin-top:12px" data-act="stab" data-v="spelers">👥 Posities per speler invullen</button>` : ''}
   </div>`;
-  else if (st === 'spelers') body = viewPlayers();
+  else if (st === 'spelers'){ body = viewPlayers(); if (se.survey && !ui.surveyBusy && Date.now() - (ui.surveyFetched || 0) > 20000){ ui.surveyFetched = Date.now(); setTimeout(() => fetchSurvey(se, true), 50); } }
   else if (st === 'stats') body = viewStats();
   else body = teamInfoCard(t) + `<div class="sgroup">App</div>${cloudCard()}`;
   return `
@@ -1274,10 +1312,10 @@ function regenIfNeeded(m){
   else { generate(m, false); toast('Opstelling bijgewerkt'); }
 }
 function addPlayerFromForm(){
-  const se = season(), n = document.getElementById('newName').value.trim();
+  const se = season(), n = (niceFirst(document.getElementById('newName').value) + ' ' + niceLast(document.getElementById('newLast')?.value || '')).trim();
   if (!n){ document.getElementById('newName').focus(); return; }
   se.players.push({id:uid(), name:n, number:document.getElementById('newNum').value.trim(), pref:[]});
-  commit(); toast(`${n} toegevoegd`); document.getElementById('newName').focus();
+  commit(); toast(`${shortName(n)} toegevoegd`); document.getElementById('newName').focus();
 }
 
 document.addEventListener('click', async e => {
@@ -1505,6 +1543,10 @@ document.addEventListener('click', async e => {
       toast(noPos ? `Klaar – ${noPos} speler(s) zonder voorkeurspositie` : 'Hele wedstrijd opgesteld ⚡'); break;
     }
     case 'knvb': { const k = applyKnvb(se, team().name); commit(); toast(`KNVB ${k.label}: ${k.t}`); break; }
+    case 'surveyStart': await startSurvey(se, team()); break;
+    case 'surveyShare': shareSurvey(se, team()); break;
+    case 'surveyFetch': await fetchSurvey(se, false); break;
+    case 'surveyNew': await startSurvey(se, team()); break;
     case 'goCloud': ui.sOpen = true; ui.stab = 'info'; go('settings'); setTimeout(() => (document.getElementById('cloudCode') || document.querySelector('.sgroup'))?.scrollIntoView({block:'center'}), 60); break;
     case 'cloudConnect': {
       const code = document.getElementById('cloudCode').value.trim().toLowerCase(), pin = document.getElementById('cloudPin').value.trim();
@@ -1569,6 +1611,7 @@ document.addEventListener('change', e => {
     commit(); return;
   }
   if (el.dataset.s){ se[el.dataset.s] = el.value.trim() || se[el.dataset.s]; commit(); return; }
+  if (el.dataset.pn){ const p = player(el.dataset.id), nm = splitName(p.name); nm[el.dataset.pn] = el.value.trim().replace(/\s+/g, ' '); if (!nm.first){ el.value = splitName(p.name).first; return; } p.name = `${nm.first} ${nm.last}`.trim(); commit(); return; }
   if (el.dataset.p){ const p = player(el.dataset.id); p[el.dataset.p] = el.value.trim() || p.name; commit(); return; }
   if (el.dataset.pp !== undefined){
     const p = player(el.dataset.id), k = +el.dataset.pp; p.pos = (p.pos || ['', '', '']).slice(0, 3); while (p.pos.length < 3) p.pos.push('');
@@ -1762,6 +1805,175 @@ function subDialog(m, defMin){
   });
 }
 
+/* ===================== Vraag het de spelers ===================== */
+const randId = n => { const a = new Uint8Array(n); crypto.getRandomValues(a); return [...a].map(x => 'abcdefghijkmnpqrstuvwxyz23456789'[x % 32]).join(''); };
+const surveyUrl = sid => location.origin + location.pathname + '?vraag=' + sid;
+async function startSurvey(se, t){
+  const api = await firebaseApi();
+  if (!api || !api.createSurvey){ await tell('Hiervoor moet de online opslag (Firebase) ingesteld zijn. Zie Instellingen → Team → Samenwerken.'); return; }
+  if (!await ask(`${se.survey && se.survey.key ? 'Een nieuwe ronde starten? De oude link stopt dan. ' : ''}Een link maken waarmee de spelers van ${teamLabel(t)} zelf hun naam en favoriete posities kiezen? De huidige voorkeursposities van alle spelers worden leeggemaakt.`, 'Link maken')) return;
+  const sid = randId(24);
+  const codes = posCodes(se);
+  let pk, key;
+  try {
+    const kp = await crypto.subtle.generateKey({name:'RSA-OAEP', modulusLength:2048, publicExponent:new Uint8Array([1, 0, 1]), hash:'SHA-256'}, true, ['encrypt', 'decrypt']);
+    pk = await crypto.subtle.exportKey('jwk', kp.publicKey); key = await crypto.subtle.exportKey('jwk', kp.privateKey);
+  } catch(e){ await tell('Deze browser kan geen beveiligde link maken.'); return; }
+  try {
+    await api.createSurvey(sid, {v:2, team: teamLabel(t), club: t.club || '', codes, pk: JSON.stringify({kty: pk.kty, n: pk.n, e: pk.e}), created: Date.now()});
+  } catch(e){ console.error(e); await tell('Het maken van de link lukt niet. Staan de nieuwe Firestore-regels erin? (zie FIREBASE.md) Melding: ' + (e.message || e)); return; }
+  se.players.forEach(p => p.pos = ['', '', '']);
+  se.usePositions = true;
+  se.survey = {sid, key, created: Date.now(), seen: [], answered: {}};
+  commit();
+  shareSurvey(se, t);
+}
+function shareSurvey(se, t){
+  const url = surveyUrl(se.survey.sid);
+  const txt = `⚽ ${teamLabel(t)}: vul hier je voor- en achternaam en je favoriete posities in! ${url}`;
+  if (navigator.share) navigator.share({title: 'LineUp – ' + teamLabel(t), text: txt}).catch(() => {});
+  else navigator.clipboard?.writeText(txt).then(() => toast('Link gekopieerd – plak hem in de team-app'), () => tell(url));
+}
+async function fetchSurvey(se, quiet){
+  if (!se.survey || !se.survey.key) return;
+  const api = await firebaseApi(); if (!api || !api.listResponses) return;
+  ui.surveyBusy = true;
+  try {
+    const sid = se.survey.sid;
+    const rs = (await api.listResponses(sid)).sort((a, b) => (a.at || 0) - (b.at || 0));
+    se = S.teams.flatMap(x => x.seasons).find(x => x.survey && x.survey.sid === sid); if (!se) throw new Error('enquête niet meer gevonden');
+    let added = 0, updated = 0;
+    const priv = await crypto.subtle.importKey('jwk', se.survey.key, {name:'RSA-OAEP', hash:'SHA-256'}, false, ['decrypt']);
+    for (const r of rs){
+      if (se.survey.seen.includes(r.id) || typeof r.c !== 'string') continue;
+      let d;
+      try { d = JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:'RSA-OAEP'}, priv, Uint8Array.from(atob(r.c), ch => ch.charCodeAt(0))))); }
+      catch(e){ se.survey.seen.push(r.id); continue; }
+      se.survey.seen.push(r.id);
+      const first = niceFirst(String(d.f || '').slice(0, 30)), last = niceLast(String(d.l || '').slice(0, 40));
+      if (!first) continue;
+      const full = `${first} ${last}`.trim();
+      let p = se.players.find(x => normName(x.name) === normName(full));
+      if (!p){ const solo = se.players.filter(x => normName(x.name) === normName(first)); if (solo.length === 1) p = solo[0]; }
+      if (!p){ p = {id: uid(), name: full, number: '', pref: []}; se.players.push(p); added++; }
+      else p.name = full;
+      p.pos = (Array.isArray(d.p) ? d.p : []).slice(0, 3).map(c => String(c || '').slice(0, 6)); while (p.pos.length < 3) p.pos.push('');
+      se.survey.answered[p.id] = r.at || Date.now(); updated++;
+    }
+    ui.surveyFetched = Date.now();
+    if (updated){ save(); toast(`${updated} antwoord${updated === 1 ? '' : 'en'} verwerkt${added ? ` · ${added} nieuwe speler${added === 1 ? '' : 's'}` : ''}`); }
+    else if (!quiet) toast('Nog geen nieuwe antwoorden');
+  } catch(e){ console.error(e); if (!quiet) tell('Antwoorden ophalen lukt niet. Melding: ' + (e.message || e)); }
+  ui.surveyBusy = false; render();
+}
+function surveyCard(se, t){
+  if (!cloudAvailable()) return `
+  <div class="card">
+    <h2>📣 Vraag het de spelers</h2>
+    <div class="muted">Laat spelers zelf hun naam en favoriete posities invullen via een link in de team-app. Hiervoor moet eerst de online opslag (Firebase) ingesteld zijn.</div>
+  </div>`;
+  if (!se.survey || !se.survey.key) return `
+  <div class="card">
+    <h2>📣 Vraag het de spelers</h2>
+    <div class="muted" style="margin-bottom:12px">Plaats een link in de team-app (bijv. WhatsApp). Spelers vullen zelf hun voor- en achternaam en hun 1e, 2e en 3e favoriete positie in. Bestaat de naam al, dan worden zijn voorkeuren overschreven; anders wordt de speler toegevoegd. Andere spelers kunnen niemands naam of antwoord zien.</div>
+    <button class="btn pri full" data-act="surveyStart">📣 Vraag het de spelers <small style="font-weight:600;opacity:.8">&nbsp;(link voor de team-app)</small></button>
+  </div>`;
+  const done = se.players.filter(p => se.survey.answered[p.id]), todo = se.players.filter(p => !se.survey.answered[p.id]);
+  return `
+  <div class="card">
+    <h2>📣 Vraag het de spelers</h2>
+    <div class="muted" style="margin-bottom:10px">Link gemaakt op ${new Date(se.survey.created).toLocaleDateString('nl-NL', {day:'numeric', month:'long'})}. <b style="color:var(--txt)">${done.length} van ${se.players.length}</b> ingevuld.</div>
+    <div class="bar" style="height:10px;margin-bottom:12px"><i style="width:${se.players.length ? Math.round(done.length / se.players.length * 100) : 0}%"></i></div>
+    <div class="who">
+      ${done.map(p => `<span class="whop on" style="cursor:default">✅ ${esc(pshort(p))}</span>`).join('')}
+      ${todo.map(p => `<span class="whop" style="cursor:default;text-decoration:none">⏱️ ${esc(pshort(p))}</span>`).join('')}
+    </div>
+    <div class="tools">
+      <button class="btn sm" data-act="surveyFetch">🔄 Antwoorden ophalen</button>
+      <button class="btn sm" data-act="surveyShare">📤 Link opnieuw delen</button>
+      <button class="btn sm" data-act="surveyNew">↩️ Nieuwe ronde</button>
+    </div>
+  </div>`;
+}
+
+// ---------- pagina voor de spelers (via ?vraag=...) ----------
+const SV = {sid: null, data: null, step: 'load', first: '', last: '', picks: [], err: ''};
+function svOptions(){
+  const codes = (SV.data && SV.data.codes) || [];
+  return [
+    {h:'Keeper', o:codes.includes('K') ? [{v:'K', n:'Keeper', s:'In de goal'}] : []},
+    {h:'Waar in het veld?', o:[{v:'g:V', n:'Achter', s:'Verdediging'}, {v:'g:M', n:'Midden', s:'Middenveld'}, {v:'g:A', n:'Voor', s:'Aanval'}]},
+    {h:'Welke kant?', o:[{v:'g:L', n:'Links', s:'Linkerkant'}, {v:'g:C', n:'Midden', s:'Door het midden'}, {v:'g:R', n:'Rechts', s:'Rechterkant'}]},
+    {h:'Precieze positie', o:codes.filter(c => c !== 'K').map(c => ({v:c, n:c, s:POS_NAMES[c] || c}))}
+  ].filter(g => g.o.length);
+}
+function viewSurvey(){
+  const d = SV.data;
+  if (SV.step === 'load') return `<div class="card empty"><b>⚽</b>Even laden…</div>`;
+  if (SV.step === 'error') return `<div class="card empty"><b>⚠️</b>${esc(SV.err)}</div>`;
+  const head = `<div class="svhead"><div class="logo">${LOGO_MARK}</div><div><div class="club">${esc(d.club || '')}</div><div class="svteam">${esc(d.team)}</div></div></div>`;
+  if (SV.step === 'done') return head + `<div class="card empty"><b>🎉</b><h2 style="margin:6px 0">Bedankt, ${esc(SV.first)}!</h2>Je trainer ziet nu je favoriete posities.<br><br><button class="btn" data-sv="again">Opnieuw invullen</button></div>`;
+  if (SV.step === 'name') return head + `
+  <div class="card">
+    <h2>👋 Wie ben jij?</h2>
+    <label class="f">Voornaam<input id="svFirst" value="${esc(SV.first)}" placeholder="bv. Daan" maxlength="30" autocomplete="given-name" autocapitalize="words"></label>
+    <label class="f">Achternaam<input id="svLast" value="${esc(SV.last)}" placeholder="bv. de Vries" maxlength="40" autocomplete="family-name" autocapitalize="words"></label>
+    <div class="muted" style="margin:2px 0 12px">Alleen je trainer ziet je naam en je antwoorden.</div>
+    <button class="btn pri full big" data-sv="toPos">Verder ›</button>
+  </div>`;
+  const rank = v => SV.picks.indexOf(v);
+  return head + `
+  <div class="card">
+    <h2>⚽ Waar speel je het liefst?</h2>
+    <div class="muted" style="margin-bottom:12px">Tik je <b>1e</b>, <b>2e</b> en <b>3e</b> keus aan. Nog een keer tikken haalt een keus weg.</div>
+    <div class="svpicked">${[0, 1, 2].map(i => `<span class="${SV.picks[i] ? 'on' : ''}"><b>${i + 1}</b>${SV.picks[i] ? esc(svLabel(SV.picks[i])) : '–'}</span>`).join('')}</div>
+    ${svOptions().map(g => `<div class="svgroup">${esc(g.h)}</div><div class="svopts">${g.o.map(o => `<button class="svopt ${rank(o.v) >= 0 ? 'on' : ''}" data-sv="pick" data-v="${esc(o.v)}">${rank(o.v) >= 0 ? `<i>${rank(o.v) + 1}</i>` : ''}<b>${esc(o.n)}</b><small>${esc(o.s)}</small></button>`).join('')}</div>`).join('')}
+    <div class="grid2" style="margin-top:16px"><button class="btn" data-sv="back">‹ Terug</button><button class="btn pri" data-sv="send" ${SV.picks.length ? '' : 'disabled'}>Versturen ✓</button></div>
+  </div>`;
+}
+const svLabel = v => { const g = POS_GROUPS.find(x => x.v === v); return g ? g.s : (v === 'K' ? 'Keeper' : (POS_NAMES[v] ? v : v)); };
+function renderSurvey(){ app.innerHTML = iconize(viewSurvey()); }
+async function bootSurvey(sid){
+  SV.sid = sid; document.body.classList.add('survey');
+  renderSurvey();
+  try {
+    const api = await firebaseApi();
+    if (!api || !api.getSurvey) throw new Error('Deze link werkt nog niet: de online opslag is niet ingesteld.');
+    SV.data = await api.getSurvey(sid);
+    if (!SV.data || !SV.data.pk) throw new Error('Deze link bestaat niet (meer). Vraag je trainer om een nieuwe link.');
+    SV.step = 'name';
+  } catch(e){ SV.step = 'error'; SV.err = e.message || String(e); }
+  renderSurvey();
+}
+document.addEventListener('click', async e => {
+  const el = e.target.closest('[data-sv]'); if (!el) return;
+  const a = el.dataset.sv;
+  if (a === 'toPos'){
+    SV.first = (document.getElementById('svFirst')?.value || '').trim().replace(/\s+/g, ' ');
+    SV.last = (document.getElementById('svLast')?.value || '').trim().replace(/\s+/g, ' ');
+    if (!SV.first || !SV.last){ toast('Vul je voornaam én achternaam in'); return; }
+    SV.step = 'pos'; renderSurvey(); window.scrollTo(0, 0);
+  }
+  else if (a === 'pick'){
+    const v = el.dataset.v, i = SV.picks.indexOf(v);
+    if (i >= 0) SV.picks.splice(i, 1); else if (SV.picks.length < 3) SV.picks.push(v); else toast('Je hebt al 3 keuzes – tik er eerst één weg');
+    renderSurvey();
+  }
+  else if (a === 'back'){ SV.step = 'name'; renderSurvey(); }
+  else if (a === 'again'){ SV.step = 'name'; SV.picks = []; renderSurvey(); }
+  else if (a === 'send'){
+    el.disabled = true;
+    try {
+      const api = await firebaseApi();
+      const pos = SV.picks.slice(0, 3); while (pos.length < 3) pos.push('');
+      const pk = await crypto.subtle.importKey('jwk', {...JSON.parse(SV.data.pk), alg:'RSA-OAEP-256', ext:true}, {name:'RSA-OAEP', hash:'SHA-256'}, false, ['encrypt']);
+      const enc = new Uint8Array(await crypto.subtle.encrypt({name:'RSA-OAEP'}, pk, new TextEncoder().encode(JSON.stringify({f: SV.first.slice(0, 30), l: SV.last.slice(0, 40), p: pos}))));
+      await api.addResponse(SV.sid, {c: btoa(String.fromCharCode(...enc)), at: Date.now()});
+      SV.step = 'done'; renderSurvey(); window.scrollTo(0, 0);
+    } catch(err){ el.disabled = false; tell('Versturen lukt niet. Probeer het zo nog eens. (' + (err.message || err) + ')'); }
+  }
+});
+
 /* ===================== Online samenwerken (Firebase) ===================== */
 const DATA_VERSION = 5;               // ophogen als de opbouw van de gegevens verandert
 const FIREBASE_SDK = '10.12.2';
@@ -1784,7 +1996,11 @@ function firebaseApi(){
     return {
       get: async id => { const s = await fs.getDoc(ref(id)); return s.exists() ? s.data() : null; },
       set: (id, v) => fs.setDoc(ref(id), v),
-      listen: (id, cb, err) => fs.onSnapshot(ref(id), s => cb(s.exists() ? s.data() : null), err)
+      listen: (id, cb, err) => fs.onSnapshot(ref(id), s => cb(s.exists() ? s.data() : null), err),
+      getSurvey: async sid => { const d = await fs.getDoc(fs.doc(db, 'surveys', sid)); return d.exists() ? d.data() : null; },
+      createSurvey: (sid, v) => fs.setDoc(fs.doc(db, 'surveys', sid), v),
+      addResponse: (sid, v) => fs.addDoc(fs.collection(db, 'surveys', sid, 'responses'), v),
+      listResponses: async sid => (await fs.getDocs(fs.collection(db, 'surveys', sid, 'responses'))).docs.map(d => ({id: d.id, ...d.data()}))
     };
   })();
   fbApiPromise.catch(() => fbApiPromise = null);
@@ -1972,10 +2188,10 @@ function buildPrint(m){
 }
 
 if (!S.active.team) S.active.team = S.teams[0].id;
-render();
+const SURVEY_ID = new URLSearchParams(location.search).get('vraag');
+if (SURVEY_ID) bootSurvey(SURVEY_ID); else render();
 document.getElementById('nav').innerHTML = iconize(document.getElementById('nav').innerHTML);
-loadLogo();
-cloudStart();
+if (!SURVEY_ID){ loadLogo(); cloudStart(); }
 </script>
 </body>
 </html>
