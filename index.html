@@ -403,9 +403,9 @@ const FORMATIONS = {
   11: [{n:'1-4-3-3', l:[4,3,3]}, {n:'1-4-4-2', l:[4,4,2]}, {n:'1-3-4-3', l:[3,4,3]}, {n:'1-4-2-3-1', l:[4,2,3,1]}, {n:'1-4-1-4-1', l:[4,1,4,1]}, {n:'1-4-3-1-2 (ruit)', l:[4,3,1,2]}, {n:'1-4-5-1', l:[4,5,1]}, {n:'1-3-5-2', l:[3,5,2]}, {n:'1-5-3-2', l:[5,3,2]}, {n:'1-5-4-1', l:[5,4,1]}, {n:'1-4-2-2-2', l:[4,2,2,2]}, {n:'1-3-4-1-2', l:[3,4,1,2]}]
 };
 const CODES = {
-  V: {1:['CV'],2:['LV','RV'],3:['LV','CV','RV'],4:['LB','CV','CV','RB'],5:['LB','CV','CV','CV','RB']},
-  M: {1:['CM'],2:['LM','RM'],3:['LM','CM','RM'],4:['LM','CM','CM','RM'],5:['LM','CM','CM','CM','RM']},
-  A: {1:['SP'],2:['LS','RS'],3:['LA','SP','RA'],4:['LA','SP','SP','RA']}
+  V: {1:['CV'],2:['LV','RV'],3:['LV','CV','RV'],4:['LB','LCV','RCV','RB'],5:['LB','LCV','CV','RCV','RB']},
+  M: {1:['CM'],2:['LM','RM'],3:['LM','CM','RM'],4:['LM','LCM','RCM','RM'],5:['LM','LCM','CM','RCM','RM']},
+  A: {1:['SP'],2:['LS','RS'],3:['LA','SP','RA'],4:['LA','LS','RS','RA']}
 };
 const KMODES = [
   {v:'vast',  t:'Eén kieper', s:'hele wedstrijd'},
@@ -425,7 +425,7 @@ function positions(fp, name){
     const m = c >= 5 ? 10 : c === 4 ? 13 : c === 3 ? 18 : 28;
     let codes = CODES[line][c] || Array(c).fill(line);
     if (line === 'M' && L >= 4){ // meerdere middenvelden: verdedigend en aanvallend
-      if (i === 1 && c <= 2) codes = Array(c).fill('VM');
+      if (i === 1 && c <= 2) codes = c === 1 ? ['VM'] : ['LVM', 'RVM'];
       else if (i === L - 2 && c === 1) codes = ['AM'];
       else if (i === L - 2 && c === 3 && f.l[1] <= 2) codes = ['LM', 'AM', 'RM'];
     }
@@ -913,7 +913,7 @@ function viewPlayers(){
         <div class="num">${esc(p.number || '•')}</div>
         <div class="grow"><input value="${esc(p.name)}" data-p="name" data-id="${p.id}" style="padding:6px 8px"></div>
         <button class="x" data-act="delPlayer" data-id="${p.id}">×</button>
-        ${usePos() ? `<div class="pprow">${[0, 1, 2].map(k => `<label><span>${k + 1}e keus</span><select data-pp="${k}" data-id="${p.id}"><option value="">–</option>${posCodes(se).map(c => `<option value="${c}" ${(p.pos || [])[k] === c ? 'selected' : ''}>${c} · ${POS_NAMES[c]}</option>`).join('')}</select></label>`).join('')}</div>` : ''}
+        ${usePos() ? `<div class="pprow">${[0, 1, 2].map(k => `<label><span>${k + 1}e keus</span><select data-pp="${k}" data-id="${p.id}"><option value="">–</option><optgroup label="Linie">${POS_GROUPS.slice(0, 3).map(g => `<option value="${g.v}" ${(p.pos || [])[k] === g.v ? 'selected' : ''}>${g.s}</option>`).join('')}</optgroup><optgroup label="Kant van het veld">${POS_GROUPS.slice(3).map(g => `<option value="${g.v}" ${(p.pos || [])[k] === g.v ? 'selected' : ''}>${g.s}</option>`).join('')}</optgroup><optgroup label="Positie (${esc(se.formation)})">${posCodes(se).map(c => `<option value="${c}" ${(p.pos || [])[k] === c ? 'selected' : ''}>${c} · ${POS_NAMES[c]}</option>`).join('')}${(p.pos || [])[k] && !(p.pos[k] || '').startsWith('g:') && !posCodes(se).includes(p.pos[k]) ? `<option value="${esc(p.pos[k])}" selected>${esc(p.pos[k])} (andere formatie)</option>` : ''}</optgroup></select></label>`).join('')}</div>` : ''}
       </div>`).join('') : `<div class="empty"><b>👥</b>Nog geen spelers. Voeg ze hieronder toe.</div>`}
   </div>
   <div class="card">
@@ -1542,22 +1542,38 @@ function applyKnvb(se, name){
 const knvbMatches = (se, name) => { const k = knvbFor(name); return se.fieldPlayers === k.fp && se.matchMinutes === k.min; };
 
 /* ===================== Voorkeursposities ===================== */
-const POS_NAMES = {K:'Keeper', LB:'Linksback', LV:'Linksachter', CV:'Centrale verdediger', RV:'Rechtsachter', RB:'Rechtsback', VM:'Verdedigende middenvelder', LM:'Linkermiddenveld', CM:'Centraal middenveld', AM:'Aanvallende middenvelder', RM:'Rechtermiddenveld', LA:'Linksbuiten', LS:'Linkerspits', SP:'Spits', RS:'Rechterspits', RA:'Rechtsbuiten'};
-const POS_ORDER = ['K','LB','LV','CV','RV','RB','VM','LM','CM','RM','AM','LA','LS','SP','RS','RA'];
-const lineOf = c => c === 'K' ? 'K' : /^(CV|LV|RV|LB|RB)$/.test(c) ? 'V' : /^(LM|CM|RM|VM|AM)$/.test(c) ? 'M' : 'A';
+const POS_NAMES = {K:'Keeper', LB:'Linksback', LV:'Linksachter', LCV:'Linker centrale verdediger', CV:'Centrale verdediger', RCV:'Rechter centrale verdediger', RV:'Rechtsachter', RB:'Rechtsback', LVM:'Linker verdedigende middenvelder', VM:'Verdedigende middenvelder', RVM:'Rechter verdedigende middenvelder', LM:'Linkermiddenveld', LCM:'Linker centrale middenvelder', CM:'Centraal middenveld', RCM:'Rechter centrale middenvelder', AM:'Aanvallende middenvelder', RM:'Rechtermiddenveld', LA:'Linksbuiten', LS:'Linkerspits', SP:'Spits', RS:'Rechterspits', RA:'Rechtsbuiten'};
+const POS_ORDER = ['K','LB','LV','LCV','CV','RCV','RV','RB','LVM','VM','RVM','LM','LCM','CM','RCM','RM','AM','LA','LS','SP','RS','RA'];
+const lineOf = c => c === 'K' ? 'K' : /^(L?R?CV|LV|RV|LB|RB)$/.test(c) ? 'V' : /^(LM|RM|AM|[LR]?CM|[LR]?VM)$/.test(c) ? 'M' : 'A';
+const baseOf = c => /^[LR](CV|CM|VM)$/.test(c) ? c.slice(1) : c;
+const sideOf = c => c === 'K' ? 'K' : c[0] === 'L' ? 'L' : c[0] === 'R' ? 'R' : 'C';
+// groepen: hele linie of een kant van het veld
+const POS_GROUPS = [{v:'g:V', n:'Achter', s:'Achter (verdediging)'}, {v:'g:M', n:'Midden', s:'Middenveld'}, {v:'g:A', n:'Voor', s:'Voor (aanval)'}, {v:'g:L', n:'Links', s:'Linkerflank'}, {v:'g:C', n:'As', s:'As (centraal)'}, {v:'g:R', n:'Rechts', s:'Rechterflank'}];
+const prefName = c => { const g = POS_GROUPS.find(x => x.v === c); return g ? g.n : c; };
+function prefQuality(c, P){
+  if (!c) return 0;
+  if (c.startsWith('g:')){
+    const g = c.slice(2); if (P.line === 'K') return 0;
+    return 'VMA'.includes(g) ? (P.line === g ? .8 : 0) : (sideOf(P.code) === g ? .8 : 0);
+  }
+  if (c === P.code) return 1;
+  if (baseOf(c) === baseOf(P.code)) return .9;
+  if (lineOf(c) === P.line) return .2;
+  return 0;
+}
 const usePos = () => !!season().usePositions;
 const posCodes = st => POS_ORDER.filter(c => positions(st.fieldPlayers, st.formation).some(p => p.code === c));
 const prefsOf = p => ((p && p.pos) || []).filter(Boolean);
 function prefScore(p, P){
   const prefs = (p && p.pos) || [];
   let sc = 0;
-  prefs.forEach((c, k) => { if (!c) return; if (c === P.code) sc = Math.max(sc, [30, 20, 10][k]); else if (lineOf(c) === P.line) sc = Math.max(sc, [6, 4, 2][k]); });
+  prefs.forEach((c, k) => { if (c) sc = Math.max(sc, [30, 20, 10][k] * prefQuality(c, P)); });
   if (P.line === 'K' && prefs.some(Boolean) && !prefs.includes('K')) sc -= 50;
   if (P.line !== 'K' && prefs[0] === 'K' && prefs.filter(Boolean).length === 1) sc -= 5;
   return sc;
 }
 const canKeep = id => prefsOf(player(id)).includes('K');
-const prefTag = p => usePos() && prefsOf(p).length ? `<small class="pp">${prefsOf(p).map(c => c === 'K' ? '🧤' : c).join(' · ')}</small>` : '';
+const prefTag = p => usePos() && prefsOf(p).length ? `<small class="pp">${prefsOf(p).map(c => c === 'K' ? '🧤' : prefName(c)).join(' · ')}</small>` : '';
 
 /* ===================== Wisselmomenten per wedstrijd ===================== */
 function periodName(k, base){ if (base === 2) return `${k + 1}e helft`; if (base === 4) return `${k + 1}e kwart`; return k === 0 ? 'Start' : `${k}e wissel`; }
