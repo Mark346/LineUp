@@ -7,9 +7,11 @@
 <meta name="apple-mobile-web-app-title" content="LineUp">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="application-name" content="LineUp">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" type="image/svg+xml" href="icon.svg">
-<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest?v=3">
+<link rel="icon" type="image/svg+xml" href="icon.svg?v=3">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=3">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=3">
+<link rel="apple-touch-icon-precomposed" sizes="180x180" href="apple-touch-icon.png?v=3">
 <meta name="theme-color" content="#07090f">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,700;0,800;0,900;1,800;1,900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -668,18 +670,8 @@ function render(){
 }
 
 /* ===================== Schermen ===================== */
-function viewMatches(){
-  const se = season(), t = team();
-  const list = se.matches.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+function matchRow(m){
   return `
-  ${!se.players.length ? `<div class="card empty"><b>👋</b>Begin met spelers toevoegen voor ${esc(t.name)}.<br><br><button class="btn pri" data-act="goPlayers">👥 Spelers toevoegen</button></div>` : ''}
-  <button class="btn pri full big" data-act="newMatch" ${se.players.length ? '' : 'disabled style="opacity:.5"'}>＋ Nieuwe wedstrijd</button>
-  <div class="summary" data-act="goSettings2">
-    <div><b>${esc(teamLabel(t))}</b> · ${settingsLine(se)} · ${se.players.length} spelers</div><span>⚙️ wijzigen</span>
-  </div>
-  <div class="card list">
-    <h2>Wedstrijden</h2>
-    ${list.length ? list.map(m => `
       <div class="item match" data-act="openMatch" data-id="${m.id}">
         <div class="grow">
           <div class="name">${esc(matchTitle(m))}</div>
@@ -687,7 +679,26 @@ function viewMatches(){
         </div>
         ${hasScore(m) ? `<b>${m.home === false ? `${esc(m.goalsAgainst)}-${esc(m.goalsFor)}` : `${esc(m.goalsFor)}-${esc(m.goalsAgainst)}`}</b>` : ''}
         <span class="badge ${m.phase === 'done' ? 'ok' : m.phase === 'live' ? 'live' : ''}">${phaseName(m.phase)}</span>
-      </div>`).join('') : `<div class="empty"><b>📋</b>Nog geen wedstrijden dit seizoen.</div>`}
+      </div>`;
+}
+function viewMatches(){
+  const se = season(), t = team();
+  const order = {live:0, post:1, prep:2};
+  const open = se.matches.filter(m => m.phase !== 'done').sort((a, b) => (order[a.phase] - order[b.phase]) || (a.date || '').localeCompare(b.date || ''));
+  const done = se.matches.filter(m => m.phase === 'done').sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  return `
+  ${!se.players.length ? `<div class="card empty"><b>👋</b>Begin met spelers toevoegen voor ${esc(t.name)}.<br><br><button class="btn pri" data-act="goPlayers">👥 Spelers toevoegen</button></div>` : ''}
+  ${open.length ? `<div class="card list">
+    <h2>📝 In voorbereiding & bezig</h2>
+    ${open.map(matchRow).join('')}
+  </div>` : ''}
+  <button class="btn pri full big" data-act="newMatch" ${se.players.length ? '' : 'disabled style="opacity:.5"'}>＋ Nieuwe wedstrijd</button>
+  <div class="summary" data-act="goSettings2">
+    <div><b>${esc(teamLabel(t))}</b> · ${settingsLine(se)} · ${se.players.length} spelers</div><span>⚙️ wijzigen</span>
+  </div>
+  <div class="card list">
+    <h2>✅ Gespeeld</h2>
+    ${done.length ? done.map(matchRow).join('') : `<div class="empty"><b>🏁</b>Nog geen gespeelde wedstrijden dit seizoen.</div>`}
   </div>`;
 }
 
@@ -1070,7 +1081,7 @@ const askNum = (msg, val) => sheet(`<p>${esc(msg)}</p><input type="number" input
 function createTeam(n, club, sn){
   const t = {id:uid(), name:n.trim(), club:(club || '').trim(), color:nextTeamColor(), seasons:[defaultSeason((sn || '').trim() || seasonName(), 8, FORMATIONS[8][0].n, 3, 60)]};
   const k = applyKnvb(t.seasons[0], t.name);
-  S.teams.push(t); S.active.team = t.id; ui.matchId = null; commit(); window.scrollTo(0, 0);
+  S.teams.push(t); S.active.team = t.id; ui.matchId = null; ui.tab = 'matches'; commit(); window.scrollTo(0, 0);
   toast(`${teamLabel(t)} toegevoegd · KNVB ${k.label}: ${k.t}`);
 }
 function newTeamDialog(){
@@ -1154,7 +1165,7 @@ document.addEventListener('click', async e => {
   const act = el.dataset.act, id = el.dataset.id, se = season(), m = match();
   const tgt = el.dataset.scope === 'match' ? m && m.settings : se;
   switch (act){
-    case 'team': S.active.team = id; ui.matchId = null; ui.sel = null; commit(); break;
+    case 'team': S.active.team = id; ui.matchId = null; ui.sel = null; ui.tab = 'matches'; commit(); window.scrollTo(0, 0); break;
     case 'goSettings': { const r = await newTeamDialog(); if (r) createTeam(r.name, r.club, r.season); break; }
     case 'goSettings2': e.preventDefault(); ui.sOpen = true; ui.stab = 'team'; go('settings'); break;
     case 'goPlayers': ui.sOpen = true; ui.stab = 'spelers'; go('settings'); break;
