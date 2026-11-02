@@ -816,6 +816,7 @@ function renderHeader(){
 function render(){
   if (typeof SURVEY_ID !== 'undefined' && SURVEY_ID){ renderSurvey(); return; }
   renderHeader();
+  try { setCloudStatus(); } catch(e){}
   app.innerHTML = iconize(({matches: ui.matchId ? viewMatch : viewMatches, stats: viewStats, settings: viewSettings}[ui.tab] || viewMatches)());
 }
 
@@ -1506,6 +1507,7 @@ document.addEventListener('click', async e => {
       const t = S.teams.find(x => x.id === id);
       if (S.teams.length === 1){ await tell('Je hebt minstens één team nodig. Maak eerst een nieuw team aan en verwijder daarna dit team.'); return; }
       if (!await ask(`${teamLabel(t)} met alle spelers en wedstrijden verwijderen?`, 'Verwijderen')) return;
+      { const cm = cloudMap(); if (cm[id]){ delete cm[id]; setCloudMap(cm); unlinkLive(id); } }
       S.teams = S.teams.filter(x => x.id !== id); if (S.active.team === id) S.active.team = sortedTeams()[0].id; commit(); break;
     }
     case 'copyTeam': {
@@ -1548,30 +1550,8 @@ document.addEventListener('click', async e => {
     case 'surveyFetch': await fetchSurvey(se, false); break;
     case 'surveyNew': await startSurvey(se, team()); break;
     case 'goCloud': ui.sOpen = true; ui.stab = 'info'; go('settings'); setTimeout(() => (document.getElementById('cloudCode') || document.querySelector('.sgroup'))?.scrollIntoView({block:'center'}), 60); break;
-    case 'cloudConnect': {
-      const code = document.getElementById('cloudCode').value.trim().toLowerCase(), pin = document.getElementById('cloudPin').value.trim();
-      if (code.length < 4 || pin.length < 4){ await tell('Teamcode en pincode moeten allebei minstens 4 tekens lang zijn.'); return; }
-      let api, remote, cid;
-      try {
-        setCloudStatus('busy');
-        api = await firebaseApi();
-        cid = await sha('opstelling|' + code + '|' + pin);
-        remote = await api.get(cid);
-      } catch(err){ console.error(err); setCloudStatus('err'); await tell('Verbinden lukt niet. Controleer firebase-config.js en de Firestore-regels (zie FIREBASE.md). Melding: ' + (err.message || err)); return; }
-      if (remote && (remote.version || 0) > DATA_VERSION){ showOutdated(); await tell('Online staat een nieuwere versie. Ververs eerst de app.'); return; }
-      if (remote){
-        if (!await ask(`Voor "${code}" staan al gegevens online. Die worden nu op dit apparaat geladen en vervangen wat hier staat.`, 'Laden')){ setCloudStatus('off'); return; }
-        cloud.force = true;
-      } else {
-        if (!await ask(`Nieuwe online opslag "${code}" aanmaken met de gegevens van dit apparaat?`, 'Aanmaken')){ setCloudStatus('off'); return; }
-      }
-      localStorage.setItem(CLOUD_KEY, JSON.stringify({code, id:cid}));
-      await cloudStart(); render(); toast('Verbonden ☁️'); break;
-    }
-    case 'cloudOff': {
-      if (!await ask('Dit apparaat loskoppelen? De gegevens blijven online en op dit apparaat staan, maar worden niet meer gedeeld.', 'Loskoppelen')) return;
-      localStorage.removeItem(CLOUD_KEY); if (cloud.unsub) cloud.unsub(); cloud.unsub = null; cloud.id = null; cloud.api = null; setCloudStatus('off'); render(); break;
-    }
+    case 'cloudConnect': await cloudConnect(team()); break;
+    case 'cloudOff': await cloudOff(team()); break;
   }
 });
 
@@ -1975,12 +1955,16 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase) ===================== */
-const DATA_VERSION = 5;               // ophogen als de opbouw van de gegevens verandert
+const DATA_VERSION = 6;               // ophogen als de opbouw van de gegevens verandert
 const FIREBASE_SDK = '10.12.2';
 const CLOUD_KEY = 'opstellingmaker.cloud';
 const DEVICE = (() => { let d = localStorage.getItem('opstellingmaker.device'); if (!d){ d = uid() + uid(); try { localStorage.setItem('opstellingmaker.device', d); } catch(e){} } return d; })();
-const cloud = {api:null, id:null, code:'', status:'off', timer:null, lastPush:0, lastRemote:0, outdated:false, pending:null, unsub:null, force:false};
-const cloudCfg = () => { try { return JSON.parse(localStorage.getItem(CLOUD_KEY)) || null; } catch(e){ return null; } };
+// Elke koppeling hoort bij één team: per apparaat bewaard als {teamId: {code, id}}
+const CLOUD_MAP_KEY = 'opstellingmaker.cloud.teams';
+const cloud = {api:null, status:'off', outdated:false, pending:null, links:{}};
+const cloudMap = () => { try { return JSON.parse(localStorage.getItem(CLOUD_MAP_KEY)) || {}; } catch(e){ return {}; } };
+const setCloudMap = m => { try { localStorage.setItem(CLOUD_MAP_KEY, JSON.stringify(m)); } catch(e){} };
+const cloudCfg = (tid = S.active.team) => cloudMap()[tid] || null;
 const cloudAvailable = () => !!(window.__cloudApi || window.FIREBASE_CONFIG);
 async function sha(t){ const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
 let fbApiPromise = null;
@@ -2006,39 +1990,87 @@ function firebaseApi(){
   fbApiPromise.catch(() => fbApiPromise = null);
   return fbApiPromise;
 }
+function linkStatus(tid, st){ const L = cloud.links[tid]; if (L) L.status = st; if (tid === S.active.team) setCloudStatus(st); }
 function setCloudStatus(st){
+  if (st === undefined){ const L = cloud.links[S.active.team]; st = cloud.outdated ? 'old' : (L ? L.status : 'off'); }
   cloud.status = st;
   const el = document.getElementById('cloudDot');
   if (el){ el.innerHTML = iconize({ok:'☁️ ✓', busy:'☁️ …', err:'☁️ ⚠️', old:'⬆️ ververs', off:''}[st] || ''); el.className = 'cloud ' + st; }
 }
-async function cloudStart(){
-  const c = cloudCfg();
-  if (!c || !cloudAvailable()){ setCloudStatus('off'); return; }
-  try {
-    cloud.api = await firebaseApi();
-    if (!cloud.api){ setCloudStatus('off'); return; }
-    cloud.id = c.id; cloud.code = c.code;
-    if (cloud.unsub) cloud.unsub();
-    setCloudStatus('busy');
-    cloud.unsub = cloud.api.listen(cloud.id, applyRemote, e => { console.error(e); setCloudStatus('err'); });
-  } catch(e){ console.error(e); setCloudStatus('err'); }
-}
-function applyRemote(r){
-  if (!r){ cloudPush(true); return; }                       // nog leeg: gegevens van dit apparaat uploaden
-  if ((r.version || 0) > DATA_VERSION){ cloud.outdated = true; setCloudStatus('old'); showOutdated(); return; }
-  if (!cloud.force){
-    if (r.by === DEVICE){ if (!cloud.timer) setCloudStatus('ok'); return; } // eigen wijziging
-    if (cloud.timer) return;                                 // eigen wijziging onderweg: die wint
-    if (r.updated <= cloud.lastRemote) return;
+// Haal uit online gegevens het team: nieuw formaat (één team) of oud formaat (hele app met alle teams)
+function teamFromRemote(r, local){
+  let d; try { d = JSON.parse(r.data); } catch(e){ return null; }
+  if (r.kind === 'team') return d;
+  if (d && Array.isArray(d.teams)){
+    if (!local) return d.teams.length === 1 ? d.teams[0] : null;
+    return d.teams.find(x => x.id === local.id) || d.teams.find(x => teamLabel(x) === teamLabel(local)) || d.teams.find(x => x.name === local.name) || null;
   }
-  cloud.force = false;
-  cloud.lastRemote = r.updated || 0;
-  let d; try { d = JSON.parse(r.data); } catch(e){ return; }
+  return null;
+}
+async function migrateOldCloud(){
+  const old = localStorage.getItem(CLOUD_KEY); if (!old) return;
+  let c; try { c = JSON.parse(old); } catch(e){ c = null; }
+  localStorage.removeItem(CLOUD_KEY);
+  if (!c || !c.id) return;
+  const map = cloudMap(); if (Object.values(map).some(x => x.id === c.id)) return;
+  let tid = S.teams.length === 1 ? S.teams[0].id : null;
+  if (!tid){
+    // het team dat in de oude online opslag het eerst stond, of laat kiezen
+    tid = await chooseDialog(`Samenwerken werkt nu per team. Bij welk team hoort je teamcode "${c.code}"? De andere teams worden dan niet meer gedeeld.`, sortedTeams().map(t => ({v: t.id, n: teamLabel(t)})));
+    if (!tid) tid = S.active.team;
+  }
+  map[tid] = {code: c.code, id: c.id}; setCloudMap(map);
+}
+function chooseDialog(text, opts){
+  return new Promise(res => {
+    const d = document.createElement('div'); d.className = 'modal';
+    d.innerHTML = iconize(`<div class="box"><p>☁️ ${esc(text)}</p><div style="display:grid;gap:8px">${opts.map(o => `<button class="btn pri" data-r="${esc(o.v)}">${esc(o.n)}</button>`).join('')}</div></div>`);
+    document.body.appendChild(d);
+    d.addEventListener('click', e => { e.stopPropagation(); const b = e.target.closest('[data-r]'); if (b){ d.remove(); res(b.dataset.r); } });
+  });
+}
+async function cloudStart(){
+  if (!cloudAvailable()){ setCloudStatus('off'); return; }
+  await migrateOldCloud();
+  const map = cloudMap();
+  Object.keys(map).forEach(tid => { if (!S.teams.some(t => t.id === tid)) delete map[tid]; });
+  setCloudMap(map);
+  Object.keys(cloud.links).forEach(tid => { if (!map[tid] || map[tid].id !== cloud.links[tid].id) unlinkLive(tid); });
+  if (!Object.keys(map).length){ setCloudStatus('off'); return; }
+  try { cloud.api = await firebaseApi(); } catch(e){ console.error(e); setCloudStatus('err'); return; }
+  if (!cloud.api){ setCloudStatus('off'); return; }
+  Object.entries(map).forEach(([tid, c]) => {
+    if (cloud.links[tid]) return;
+    const L = cloud.links[tid] = {id: c.id, code: c.code, status:'busy', timer:null, lastRemote:0, last:null, force: !!c.force, unsub:null};
+    if (c.force){ delete c.force; setCloudMap(map); }
+    linkStatus(tid, 'busy');
+    L.unsub = cloud.api.listen(c.id, r => applyRemote(tid, r), e => { console.error(e); linkStatus(tid, 'err'); });
+  });
+  setCloudStatus();
+}
+function unlinkLive(tid){ const L = cloud.links[tid]; if (!L) return; if (L.unsub) L.unsub(); clearTimeout(L.timer); delete cloud.links[tid]; }
+function applyRemote(tid, r){
+  const L = cloud.links[tid]; if (!L) return;
+  if (!r){ cloudPushTeam(tid, true); return; }                 // nog leeg: dit team uploaden
+  if ((r.version || 0) > DATA_VERSION){ cloud.outdated = true; setCloudStatus('old'); showOutdated(); return; }
+  const legacy = r.kind !== 'team';
+  if (!L.force && !legacy){
+    if (r.by === DEVICE){ if (!L.timer) linkStatus(tid, 'ok'); return; }   // eigen wijziging
+    if (L.timer) return;                                       // eigen wijziging onderweg: die wint
+    if (r.updated <= L.lastRemote) return;
+  }
+  const local = S.teams.find(t => t.id === tid); if (!local) return;
+  const td = teamFromRemote(r, local);
+  L.force = false; L.lastRemote = r.updated || 0;
+  if (!td){ cloudPushTeam(tid, true); return; }
   const apply = () => {
-    d.active = S.active;                                     // welk team je bekijkt blijft per apparaat
-    S = d; normalize();
+    const i = S.teams.findIndex(t => t.id === tid); if (i < 0) return;
+    td.id = tid;                                               // team-id is per apparaat
+    S.teams[i] = td; normalize();
+    L.last = JSON.stringify(S.teams[i]);
     try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){}
-    render(); setCloudStatus('ok');
+    render(); linkStatus(tid, 'ok');
+    if (legacy) cloudPushTeam(tid, true);                      // oude opslag omzetten naar alleen dit team
   };
   const a = document.activeElement;
   if ((a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) || drag.el || document.querySelector('.modal')) cloud.pending = apply;
@@ -2046,15 +2078,19 @@ function applyRemote(r){
 }
 function flushPending(){ if (cloud.pending && !drag.el && !document.querySelector('.modal')){ const f = cloud.pending; cloud.pending = null; f(); } }
 document.addEventListener('focusout', () => setTimeout(flushPending, 50));
-function cloudPush(now){
-  if (!cloud.api || !cloud.id || cloud.outdated) return;
-  clearTimeout(cloud.timer); setCloudStatus('busy');
-  cloud.timer = setTimeout(async () => {
-    const t = Date.now(); cloud.lastPush = t;
-    const payload = {data: JSON.stringify({...S, active:null}), version: DATA_VERSION, updated: t, by: DEVICE};
-    cloud.timer = null;
-    try { await cloud.api.set(cloud.id, payload); if (!cloud.timer) setCloudStatus('ok'); }
-    catch(e){ console.error(e); setCloudStatus('err'); }
+function cloudPush(){ Object.keys(cloud.links).forEach(tid => cloudPushTeam(tid, false)); }
+function cloudPushTeam(tid, now){
+  const L = cloud.links[tid]; if (!L || !cloud.api || cloud.outdated) return;
+  const t = S.teams.find(x => x.id === tid); if (!t) return;
+  const json = JSON.stringify(t);
+  if (!now && json === L.last) return;
+  clearTimeout(L.timer); linkStatus(tid, 'busy');
+  L.timer = setTimeout(async () => {
+    L.timer = null;
+    const tt = S.teams.find(x => x.id === tid); if (!tt) return;
+    const data = JSON.stringify(tt), u = Date.now();
+    try { await cloud.api.set(L.id, {kind:'team', data, version: DATA_VERSION, updated: u, by: DEVICE}); L.last = data; L.lastRemote = Math.max(L.lastRemote, u); if (!L.timer) linkStatus(tid, 'ok'); }
+    catch(e){ console.error(e); linkStatus(tid, 'err'); }
   }, now ? 0 : 700);
 }
 function showOutdated(){
@@ -2064,8 +2100,38 @@ function showOutdated(){
   d.onclick = () => location.reload();
   document.body.appendChild(d);
 }
-function cloudCard(){
-  const c = cloudCfg();
+async function cloudConnect(t){
+  const code = document.getElementById('cloudCode').value.trim().toLowerCase(), pin = document.getElementById('cloudPin').value.trim();
+  if (code.length < 4 || pin.length < 4){ await tell('Teamcode en pincode moeten allebei minstens 4 tekens lang zijn.'); return; }
+  let api, remote, cid;
+  try {
+    setCloudStatus('busy');
+    api = await firebaseApi();
+    cid = await sha('opstelling|' + code + '|' + pin);
+    remote = await api.get(cid);
+  } catch(err){ console.error(err); setCloudStatus(); await tell('Verbinden lukt niet. Controleer firebase-config.js en de Firestore-regels (zie FIREBASE.md). Melding: ' + (err.message || err)); return; }
+  const map = cloudMap();
+  const other = Object.keys(map).find(k => map[k].id === cid && k !== t.id);
+  if (other){ setCloudStatus(); await tell(`Deze teamcode is op dit apparaat al gekoppeld aan ${teamLabel(S.teams.find(x => x.id === other))}.`); return; }
+  if (remote && (remote.version || 0) > DATA_VERSION){ showOutdated(); setCloudStatus(); await tell('Online staat een nieuwere versie. Ververs eerst de app.'); return; }
+  let force = false;
+  if (remote){
+    const td = teamFromRemote(remote, t) || teamFromRemote(remote, null);
+    if (!td){ setCloudStatus(); await tell('Onder deze teamcode staan gegevens van meerdere teams, maar geen team met dezelfde naam als dit team. Geef dit team eerst dezelfde naam.'); return; }
+    if (!await ask(`Onder "${code}" staat online het team ${teamLabel(td)} (${td.seasons[0].players.length} spelers, ${td.seasons[0].matches.length} wedstrijden). Dat wordt nu in ${teamLabel(t)} op dit apparaat geladen en vervangt wat hier staat. Je andere teams blijven zoals ze zijn.`, 'Laden')){ setCloudStatus(); return; }
+    force = true;
+  } else {
+    if (!await ask(`Nieuwe online opslag "${code}" aanmaken voor ${teamLabel(t)}? Alleen dit team wordt gedeeld.`, 'Aanmaken')){ setCloudStatus(); return; }
+  }
+  map[t.id] = {code, id: cid, force}; setCloudMap(map);
+  await cloudStart(); render(); toast(`${teamLabel(t)} verbonden ☁️`);
+}
+async function cloudOff(t){
+  if (!await ask(`${teamLabel(t)} op dit apparaat loskoppelen? Het team blijft online en op dit apparaat staan, maar wordt niet meer gedeeld. Je andere teams blijven gekoppeld.`, 'Loskoppelen')) return;
+  const map = cloudMap(); delete map[t.id]; setCloudMap(map); unlinkLive(t.id); setCloudStatus(); render();
+}
+function cloudCard(t = team()){
+  const c = cloudCfg(t.id), L = cloud.links[t.id];
   if (!cloudAvailable()) return `
   <div class="card">
     <h2>☁️ Samenwerken met andere trainers</h2>
@@ -2074,19 +2140,22 @@ function cloudCard(){
       : window.__cfgError ? '<b>firebase-config.js bevat een fout:</b> ' + esc(window.__cfgError) + '. Controleer of je alleen het deel tussen { } hebt geplakt, met alle komma\'s en aanhalingstekens.'
       : '<b>firebase-config.js is gevonden, maar er staat nog geen koppeling in</b> (nog <code>null</code>?). Of je ziet nog de oude versie: wacht een minuut en ververs.'}</div>
   </div>`;
+  const st = cloud.outdated ? 'old' : (L ? L.status : 'busy');
+  const others = sortedTeams().filter(x => x.id !== t.id && cloudCfg(x.id));
+  const foot = others.length ? `<div class="muted" style="margin-top:8px;font-size:12px">Ook gedeeld op dit apparaat: ${others.map(x => esc(teamLabel(x))).join(', ')}</div>` : '';
   if (c) return `
   <div class="card">
-    <h2>☁️ Samenwerken</h2>
-    <div class="set"><div class="lbl">Teamcode<small>${esc(c.code)}</small></div><b class="cloud ${cloud.status}">${{ok:'✓ Opgeslagen', busy:'… Bezig', err:'⚠️ Geen verbinding', old:'⬆️ Ververs de app', off:'—'}[cloud.status]}</b></div>
-    <div class="muted" style="margin:8px 0">Alles wordt automatisch online bewaard. Andere trainers openen dezelfde app en vullen dezelfde teamcode en pincode in.</div>
-    <button class="btn full" data-act="cloudOff">Loskoppelen op dit apparaat</button>
+    <h2>☁️ Samenwerken · ${esc(teamLabel(t))}</h2>
+    <div class="set"><div class="lbl">Teamcode<small>${esc(c.code)}</small></div><b class="cloud ${st}">${{ok:'✓ Opgeslagen', busy:'… Bezig', err:'⚠️ Geen verbinding', old:'⬆️ Ververs de app', off:'—'}[st]}</b></div>
+    <div class="muted" style="margin:8px 0">Alleen dit team (<b>${esc(teamLabel(t))}</b>) wordt online bewaard en gedeeld. Andere trainers vullen bij hun team dezelfde teamcode en pincode in.</div>
+    <button class="btn full" data-act="cloudOff">Dit team loskoppelen op dit apparaat</button>${foot}
   </div>`;
   return `
   <div class="card">
-    <h2>☁️ Samenwerken</h2>
-    <div class="muted" style="margin-bottom:10px">Vul een teamcode en pincode in. Iedereen die dezelfde combinatie invult, werkt in dezelfde gegevens. Bedenk iets dat niet makkelijk te raden is.</div>
-    <div class="grid2"><input id="cloudCode" placeholder="Teamcode, bv. maliskamp-trainers" autocapitalize="off" autocomplete="off"><input id="cloudPin" placeholder="Pincode" inputmode="numeric" autocomplete="off"></div>
-    <button class="btn pri full" style="margin-top:10px" data-act="cloudConnect">☁️ Verbinden</button>
+    <h2>☁️ Samenwerken · ${esc(teamLabel(t))}</h2>
+    <div class="muted" style="margin-bottom:10px">Deel <b>alleen dit team</b> met andere trainers. Vul een teamcode en pincode in; iedereen die dezelfde combinatie invult, werkt in dit team. Heeft een andere trainer dit team al online gezet? Vul dan zijn code in: dit team wordt vervangen door de online versie.</div>
+    <div class="grid2"><input id="cloudCode" placeholder="Teamcode, bv. maliskamp-jo15" autocapitalize="off" autocomplete="off"><input id="cloudPin" placeholder="Pincode" inputmode="numeric" autocomplete="off"></div>
+    <button class="btn pri full" style="margin-top:10px" data-act="cloudConnect">☁️ Dit team verbinden</button>${foot}
   </div>`;
 }
 
