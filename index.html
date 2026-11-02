@@ -393,6 +393,12 @@
   .summary span,a{color:#0f6b35}
   .step button{color:#0f6b35}
   body.survey #nav,body.survey #teams,body.survey #logoBox,body.survey #cloudDot{display:none}
+  .mlist{display:grid;gap:6px}.mrow{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:14px;background:var(--surf2)}
+  .mrow small{display:block;color:var(--muted);font-size:12px;font-weight:600}.mrow .grow{min-width:0;flex:1}
+  .mav{width:34px;height:34px;border-radius:50%;background:#0f6b35;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;flex:none}
+  [hidden]{display:none!important}
+  .istep{background:var(--surf2);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:8px 0}
+  .istep ol{margin:6px 0 8px;padding-left:20px;font-size:14px;line-height:1.45}.istep li{margin:3px 0}
   .nm2{display:flex;gap:6px}.nm2 input{padding:6px 8px;min-width:0;flex:1}
   .svhead{display:flex;align-items:center;gap:12px;margin:2px 2px 14px}
   .svhead .logo{width:52px;height:52px}
@@ -1229,7 +1235,7 @@ function sheet(html){
     d.innerHTML = iconize(`<div class="box">${html}</div>`);
     document.body.appendChild(d);
     const inp = d.querySelector('input');
-    const done = ok => { d.remove(); res(ok ? (inp ? inp.value : true) : (inp ? null : false)); };
+    const done = ok => { d.remove(); res(ok ? (inp ? inp.value : true) : (inp ? null : false)); setTimeout(() => { try { flushPending(); } catch(e){} }, 0); };
     d.addEventListener('click', e => { e.stopPropagation(); const b = e.target.closest('[data-r]'); if (b) done(b.dataset.r === 'ok'); else if (e.target === d) done(false); });
     inp && inp.addEventListener('keydown', e => { if (e.key === 'Enter') done(true); });
     setTimeout(() => inp && inp.focus(), 60);
@@ -1257,16 +1263,18 @@ function newTeamDialog(){
       </div>
       <datalist id="mtClubs">${clubList().map(c => `<option value="${esc(c)}">`).join('')}</datalist>
       <div class="knvbhint" id="mtHint">📏 De KNVB-spelvorm en speelduur worden ingevuld op basis van de naam.</div>
-      <div class="grid2" style="margin-top:6px"><button class="btn" data-r="no">Annuleren</button><button class="btn pri" data-r="ok">Toevoegen</button></div></div>`);
+      <div class="grid2" style="margin-top:6px"><button class="btn" data-r="no">Annuleren</button><button class="btn pri" data-r="ok">Toevoegen</button></div>
+      <button class="btn full" style="margin-top:10px" data-r="join">🔗 Gedeeld team toevoegen (link plakken)</button></div>`);
     document.body.appendChild(d);
     const name = d.querySelector('#mtName');
     name.addEventListener('input', () => { const v = name.value.trim(), k = knvbFor(v); d.querySelector('#mtHint').innerHTML = v ? `📏 KNVB ${esc(k.label)}: <b>${k.t}</b>` : '📏 De KNVB-spelvorm en speelduur worden ingevuld op basis van de naam.'; });
     const done = ok => {
+      if (ok === 'join'){ d.remove(); res({join:true}); return; }
       if (ok && !name.value.trim()){ name.focus(); return; }
       const r = ok ? {name:name.value.trim(), club:d.querySelector('#mtClub').value, season:d.querySelector('#mtSeason').value} : null;
       d.remove(); res(r);
     };
-    d.addEventListener('click', e => { e.stopPropagation(); const b = e.target.closest('[data-r]'); if (b) done(b.dataset.r === 'ok'); else if (e.target === d) done(false); });
+    d.addEventListener('click', e => { e.stopPropagation(); const b = e.target.closest('[data-r]'); if (b) done(b.dataset.r === 'join' ? 'join' : b.dataset.r === 'ok'); else if (e.target === d) done(false); });
     d.addEventListener('keydown', e => { if (e.key === 'Enter') done(true); });
     setTimeout(() => name.focus(), 60);
   });
@@ -1328,7 +1336,7 @@ document.addEventListener('click', async e => {
   const tgt = el.dataset.scope === 'match' ? m && m.settings : se;
   switch (act){
     case 'team': S.active.team = id; ui.matchId = null; ui.sel = null; ui.tab = 'matches'; commit(); window.scrollTo(0, 0); break;
-    case 'goSettings': { const r = await newTeamDialog(); if (r) createTeam(r.name, r.club, r.season); break; }
+    case 'goSettings': { const r = await newTeamDialog(); if (r && r.join) await pasteInvite(); else if (r) createTeam(r.name, r.club, r.season); break; }
     case 'goSettings2': e.preventDefault(); ui.sOpen = true; ui.stab = 'team'; go('settings'); break;
     case 'goPlayers': ui.sOpen = true; ui.stab = 'spelers'; go('settings'); break;
     case 'sOpen': S.active.team = id; ui.sOpen = true; ui.stab = 'team'; ui.matchId = null; commit(); window.scrollTo(0, 0); break;
@@ -1501,7 +1509,7 @@ document.addEventListener('click', async e => {
       createTeam(n, document.getElementById('newTeamClub').value, document.getElementById('newTeamSeason').value); break;
     }
     case 'newTeamSheet': {
-      const r = await newTeamDialog(); if (r) createTeam(r.name, r.club, r.season); break;
+      const r = await newTeamDialog(); if (r && r.join) await pasteInvite(); else if (r) createTeam(r.name, r.club, r.season); break;
     }
     case 'delTeam': {
       const t = S.teams.find(x => x.id === id);
@@ -1551,6 +1559,11 @@ document.addEventListener('click', async e => {
     case 'surveyNew': await startSurvey(se, team()); break;
     case 'goCloud': ui.sOpen = true; ui.stab = 'info'; go('settings'); setTimeout(() => (document.getElementById('cloudCode') || document.querySelector('.sgroup'))?.scrollIntoView({block:'center'}), 60); break;
     case 'cloudConnect': await cloudConnect(team()); break;
+    case 'shareTeam': await shareTeam(team()); break;
+    case 'inviteTrainer': await inviteTrainer(team()); break;
+    case 'reInvite': { const iv = (team().members || []).find(x => x.id === id); if (iv) sendInvite(team(), iv); break; }
+    case 'revokeMember': await revokeMember(team(), id); break;
+    case 'pasteInvite': await pasteInvite(); break;
     case 'cloudOff': await cloudOff(team()); break;
   }
 });
@@ -2051,7 +2064,7 @@ async function cloudStart(){
 function unlinkLive(tid){ const L = cloud.links[tid]; if (!L) return; if (L.unsub) L.unsub(); clearTimeout(L.timer); delete cloud.links[tid]; }
 function applyRemote(tid, r){
   const L = cloud.links[tid]; if (!L) return;
-  if (!r){ cloudPushTeam(tid, true); return; }                 // nog leeg: dit team uploaden
+  if (!r){ cloudPushTeam(tid, true); checkMembership(tid); return; }  // nog leeg: dit team uploaden
   if ((r.version || 0) > DATA_VERSION){ cloud.outdated = true; setCloudStatus('old'); showOutdated(); return; }
   const legacy = r.kind !== 'team';
   if (!L.force && !legacy){
@@ -2066,11 +2079,14 @@ function applyRemote(tid, r){
   const apply = () => {
     const i = S.teams.findIndex(t => t.id === tid); if (i < 0) return;
     td.id = tid;                                               // team-id is per apparaat
+    const extra = (S.teams[i].members || []).filter(x => !(td.members || []).some(y => y.id === x.id));
+    if (extra.length) td.members = [...(td.members || []), ...extra];   // niemand kwijtraken bij gelijktijdige wijzigingen
     S.teams[i] = td; normalize();
     L.last = JSON.stringify(S.teams[i]);
     try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){}
     render(); linkStatus(tid, 'ok');
-    if (legacy) cloudPushTeam(tid, true);                      // oude opslag omzetten naar alleen dit team
+    if (legacy || extra.length) cloudPushTeam(tid, true);
+    checkMembership(tid);                      // oude opslag omzetten naar alleen dit team
   };
   const a = document.activeElement;
   if ((a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) || drag.el || document.querySelector('.modal')) cloud.pending = apply;
@@ -2146,17 +2162,195 @@ function cloudCard(t = team()){
   if (c) return `
   <div class="card">
     <h2>☁️ Samenwerken · ${esc(teamLabel(t))}</h2>
-    <div class="set"><div class="lbl">Teamcode<small>${esc(c.code)}</small></div><b class="cloud ${st}">${{ok:'✓ Opgeslagen', busy:'… Bezig', err:'⚠️ Geen verbinding', old:'⬆️ Ververs de app', off:'—'}[st]}</b></div>
-    <div class="muted" style="margin:8px 0">Alleen dit team (<b>${esc(teamLabel(t))}</b>) wordt online bewaard en gedeeld. Andere trainers vullen bij hun team dezelfde teamcode en pincode in.</div>
-    <button class="btn full" data-act="cloudOff">Dit team loskoppelen op dit apparaat</button>${foot}
+    <div class="set"><div class="lbl">Gedeeld team<small>${c.code ? 'teamcode ' + esc(c.code) : 'via uitnodigingslink'}</small></div><b class="cloud ${st}">${{ok:'✓ Opgeslagen', busy:'… Bezig', err:'⚠️ Geen verbinding', old:'⬆️ Ververs de app', off:'—'}[st]}</b></div>
+    <div class="muted" style="margin:8px 0 0">Alleen dit team (<b>${esc(teamLabel(t))}</b>) wordt gedeeld. Wijzigingen zie je bij elkaar meteen.</div>
+    ${membersCard(t, c)}
+    <button class="btn full" style="margin-top:8px" data-act="cloudOff">Dit team loskoppelen op dit apparaat</button>${foot}
   </div>`;
   return `
   <div class="card">
     <h2>☁️ Samenwerken · ${esc(teamLabel(t))}</h2>
-    <div class="muted" style="margin-bottom:10px">Deel <b>alleen dit team</b> met andere trainers. Vul een teamcode en pincode in; iedereen die dezelfde combinatie invult, werkt in dit team. Heeft een andere trainer dit team al online gezet? Vul dan zijn code in: dit team wordt vervangen door de online versie.</div>
-    <div class="grid2"><input id="cloudCode" placeholder="Teamcode, bv. maliskamp-jo15" autocapitalize="off" autocomplete="off"><input id="cloudPin" placeholder="Pincode" inputmode="numeric" autocomplete="off"></div>
-    <button class="btn pri full" style="margin-top:10px" data-act="cloudConnect">☁️ Dit team verbinden</button>${foot}
+    <div class="muted" style="margin-bottom:12px">Deel <b>dit team</b> met andere trainers. Je stuurt elke trainer een eigen link via WhatsApp; daarna maken jullie samen de opstellingen en zie je hier met wie je het team deelt.</div>
+    <button class="btn pri full" data-act="shareTeam">📤 Team delen met een trainer</button>
+    <button class="btn full" style="margin-top:8px" data-act="pasteInvite">🔗 Ik heb een uitnodigingslink gekregen</button>
+    <details style="margin-top:12px"><summary class="muted">🔑 Verbinden met teamcode en pincode</summary>
+      <div class="muted" style="margin:8px 0">Iedereen die dezelfde combinatie invult, werkt in dit team. Staat het team al online, dan wordt dit team vervangen door de online versie.</div>
+      <div class="grid2"><input id="cloudCode" placeholder="Teamcode" autocapitalize="off" autocomplete="off"><input id="cloudPin" placeholder="Pincode" inputmode="numeric" autocomplete="off"></div>
+      <button class="btn full" style="margin-top:10px" data-act="cloudConnect">☁️ Verbinden</button>
+    </details>${foot}
   </div>`;
+}
+
+/* ===================== Team delen met trainers (link) ===================== */
+const ME_KEY = 'opstellingmaker.me';
+const myName = () => localStorage.getItem(ME_KEY) || '';
+async function askMyName(force){
+  if (myName() && !force) return myName();
+  let n = '';
+  while (!n){ const r = await askText('Wat is je naam? Dan zien de andere trainers met wie ze het team delen.', myName()); if (r === null) return null; n = String(r).trim().slice(0, 40); }
+  try { localStorage.setItem(ME_KEY, n); } catch(e){}
+  return n;
+}
+const hex64 = () => { const a = new Uint8Array(32); crypto.getRandomValues(a); return [...a].map(x => x.toString(16).padStart(2, '0')).join(''); };
+const inviteUrl = (cid, inv) => location.origin + location.pathname + `?team=${cid}&inv=${inv}`;
+const isStandalone = () => !!(navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches));
+const activeMembers = t => (t.members || []).filter(x => x.status !== 'weg');
+
+async function shareTeam(t){
+  if (!cloudAvailable()){ await tell('Hiervoor moet de online opslag (Firebase) ingesteld zijn.'); return; }
+  const me = await askMyName(); if (!me) return;
+  const map = cloudMap();
+  if (!map[t.id]){
+    const mid = uid();
+    t.members = [{id: mid, name: me, status: 'actief', owner: true, joined: Date.now()}];
+    map[t.id] = {code: '', id: hex64(), mid}; setCloudMap(map);
+    save(); await cloudStart();
+  }
+  await inviteTrainer(t);
+}
+async function inviteTrainer(t){
+  const c = cloudCfg(t.id); if (!c) return shareTeam(t);
+  const n = await askText(`Wie nodig je uit voor ${teamLabel(t)}? (naam van de trainer)`, '');
+  if (n === null) return;
+  const name = String(n).trim().slice(0, 40) || 'Trainer';
+  const inv = {id: uid() + uid(), name, status: 'uitgenodigd', created: Date.now(), by: myName()};
+  t.members = t.members || []; t.members.push(inv); commit();
+  sendInvite(t, inv);
+}
+function sendInvite(t, inv){
+  const c = cloudCfg(t.id); if (!c) return;
+  const url = inviteUrl(c.id, inv.id);
+  const txt = `⚽ Hoi ${inv.name}! Ik deel ${teamLabel(t)} met je in LineUp, dan kunnen we samen de opstellingen maken. Open deze link om mee te doen: ${url}`;
+  if (navigator.share) navigator.share({title: 'LineUp – ' + teamLabel(t), text: txt}).catch(() => {});
+  else navigator.clipboard?.writeText(txt).then(() => toast('Uitnodiging gekopieerd – plak hem in WhatsApp'), () => tell(url));
+}
+async function revokeMember(t, id){
+  const mbr = (t.members || []).find(x => x.id === id); if (!mbr) return;
+  if (!await ask(`${mbr.name} verwijderen? ${mbr.status === 'actief' ? 'Het team verdwijnt niet van zijn telefoon, maar wijzigingen worden niet meer gedeeld.' : 'De uitnodigingslink werkt dan niet meer.'}`, 'Verwijderen')) return;
+  mbr.status = 'weg'; mbr.removed = Date.now(); commit();
+}
+async function ensureMember(tid){
+  const map = cloudMap(), c = map[tid], t = S.teams.find(x => x.id === tid); if (!c || !t) return;
+  const mine = c.mid && (t.members || []).find(x => x.id === c.mid);
+  if (mine) return;
+  const me = await askMyName();
+  try { flushPending(); } catch(e){}
+  if (!cloudCfg(tid)) return;
+  const tt = S.teams.find(x => x.id === tid); if (!tt) return;
+  if (c.mid && (tt.members || []).some(x => x.id === c.mid)) return;
+  const mid = c.mid || uid();
+  tt.members = tt.members || []; tt.members.push({id: mid, name: me || 'Trainer', status: 'actief', joined: Date.now()});
+  map[tid].mid = mid; setCloudMap(map); save(); render();
+}
+async function checkMembership(tid){
+  const c = cloudCfg(tid), t = S.teams.find(x => x.id === tid), L = cloud.links[tid]; if (!c || !t || !L) return;
+  const mine = c.mid && (t.members || []).find(x => x.id === c.mid);
+  if (mine && mine.status === 'weg'){
+    const map = cloudMap(); delete map[tid]; setCloudMap(map); unlinkLive(tid); setCloudStatus(); render();
+    await tell(`${teamLabel(t)} wordt niet meer met je gedeeld. Het team blijft op dit apparaat staan, maar wijzigingen van de andere trainers komen niet meer binnen.`);
+    return;
+  }
+  if (!mine && !L.joining){ L.joining = true; setTimeout(() => ensureMember(tid), 300); }
+}
+function parseInvite(text){
+  try { const u = new URL(String(text).trim().match(/https?:\/\/\S+/)?.[0] || String(text).trim()); const cid = u.searchParams.get('team'), inv = u.searchParams.get('inv'); return cid && /^[0-9a-f]{64}$/.test(cid) && inv ? {cid, inv} : null; } catch(e){ return null; }
+}
+async function joinTeam(cid, invId){
+  if (!cloudAvailable()){ await tell('Deze app is nog niet gekoppeld aan de online opslag.'); return; }
+  const map = cloudMap();
+  const have = Object.keys(map).find(k => map[k].id === cid && S.teams.some(t => t.id === k));
+  if (have){ S.active.team = have; ui.tab = 'matches'; commit(); toast(`${teamLabel(team())} staat al in je app`); return; }
+  let remote, api;
+  try { api = await firebaseApi(); remote = await api.get(cid); }
+  catch(e){ await tell('De uitnodiging openen lukt niet. Controleer je internet en probeer het opnieuw. (' + (e.message || e) + ')'); return; }
+  const td = remote && teamFromRemote(remote, null);
+  if (!td){ await tell('Deze uitnodiging werkt niet (meer). Vraag de trainer om een nieuwe link.'); return; }
+  if ((remote.version || 0) > DATA_VERSION){ showOutdated(); await tell('Er is een nieuwere versie van de app. Ververs eerst.'); return; }
+  const inv = (td.members || []).find(x => x.id === invId);
+  if (!inv || inv.status === 'weg'){ await tell('Deze uitnodiging is ingetrokken. Vraag de trainer om een nieuwe link.'); return; }
+  const owner = (td.members || []).find(x => x.owner) || {};
+  if (!await inviteSheet(td, owner, inv, inviteUrl(cid, invId))) return;
+  if (!myName() && inv.name && inv.name !== 'Trainer'){ try { localStorage.setItem(ME_KEY, inv.name); } catch(e){} }
+  const same = S.teams.find(t => teamLabel(t) === teamLabel(td) && !map[t.id]);
+  let tid;
+  if (same && await ask(`Je hebt zelf al een team ${teamLabel(same)}. Dat team vervangen door het gedeelde team? (Kies Annuleren om het gedeelde team er als apart team bij te zetten.)`, 'Vervangen')){
+    tid = same.id; const i = S.teams.indexOf(same); S.teams[i] = {...td, id: tid};
+  } else {
+    tid = uid(); S.teams.push({...td, id: tid});
+  }
+  const t = S.teams.find(x => x.id === tid);
+  inv.status = 'actief'; inv.joined = Date.now();
+  t.members = td.members;
+  map[tid] = {code: '', id: cid, mid: inv.id}; setCloudMap(map);
+  normalize(); S.active.team = tid; ui.tab = 'matches'; ui.matchId = null;
+  await cloudStart();
+  commit(); window.scrollTo(0, 0);
+  toast(`${teamLabel(t)} toegevoegd ☁️`);
+
+}
+let installEvt = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; const b = document.getElementById('installBtn'); if (b) b.hidden = false; });
+const platform = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) ? 'ios' : /Android/.test(navigator.userAgent) ? 'android' : 'other';
+function installSteps(url){
+  const pf = platform();
+  const ios = `<div class="istep"><b>🍏 iPhone / iPad</b><ol>
+      <li>Open deze pagina in <b>Safari</b>. Zit je in WhatsApp? Tik rechtsboven op het kompas of op ••• → <i>Open in Safari</i>.</li>
+      <li>Tik onderin op de <b>deelknop</b> (vierkantje met pijl omhoog).</li>
+      <li>Scroll omlaag en kies <b>Zet op beginscherm</b> → <b>Voeg toe</b>.</li>
+      <li>Open LineUp vanaf je beginscherm, tik op <b>＋</b> → <b>Gedeeld team toevoegen</b> en plak de link. (Op de iPhone begint de beginscherm-app leeg, daarom plak je de link daar nog één keer.)</li>
+    </ol>${url ? `<button class="btn sm" data-r="copy">📋 Kopieer de uitnodigingslink</button>` : ''}</div>`;
+  const and = `<div class="istep"><b>🤖 Android</b><ol>
+      <li>Open deze pagina in <b>Chrome</b>. Zit je in WhatsApp? Tik op ⋮ → <i>Openen in Chrome</i>.</li>
+      <li>Tik eerst hierboven op <b>Meedoen</b>.</li>
+      <li>Tik rechtsboven op <b>⋮</b> → <b>App installeren</b> of <b>Toevoegen aan startscherm</b>.</li>
+      <li>Klaar: LineUp staat op je startscherm, met het team erin.</li>
+    </ol><button class="btn sm" id="installBtn" data-r="install" ${installEvt ? '' : 'hidden'}>📲 Installeer LineUp nu</button></div>`;
+  return pf === 'android' ? and + `<details><summary class="muted">Heb je een iPhone?</summary>${ios}</details>`
+    : pf === 'ios' ? ios + `<details><summary class="muted">Heb je een Android-telefoon?</summary>${and}</details>`
+    : ios + and;
+}
+function inviteSheet(td, owner, inv, url){
+  return new Promise(res => {
+    const d = document.createElement('div'); d.className = 'modal';
+    const pf = platform(), standalone = isStandalone();
+    d.innerHTML = iconize(`<div class="box" style="max-height:90vh;overflow:auto">
+      <div class="svhead" style="margin:0 0 10px"><div class="logo">${LOGO_MARK}</div><div><div class="club">${esc(td.club || 'LineUp')}</div><div class="svteam">${esc(teamLabel(td))}</div></div></div>
+      <p style="margin-top:0;font-size:15px;font-weight:500;line-height:1.45">Hoi ${esc(inv.name || 'trainer')}! <b>${esc(owner.name || 'Een trainer')}</b> deelt <b>${esc(teamLabel(td))}</b> met je in LineUp (${td.seasons[0].players.length} spelers, ${td.seasons[0].matches.length} wedstrijden). Samen maken jullie de opstellingen; wijzigingen zien jullie bij elkaar meteen.</p>
+      <button class="btn pri full big" data-r="ok">✅ Meedoen</button>
+      ${standalone ? '' : `<div class="sgroup" style="margin-top:16px">📲 LineUp op je beginscherm zetten</div>
+      <div class="muted" style="margin-bottom:8px">Dan open je LineUp voortaan als een gewone app.${pf === 'ios' ? ' <b>Tip voor iPhone:</b> zet de app éérst op je beginscherm en plak daar de link.' : ''}</div>
+      ${installSteps(url)}`}
+      <button class="btn full" style="margin-top:12px" data-r="no">Niet nu</button></div>`);
+    document.body.appendChild(d);
+    d.addEventListener('click', async e => {
+      e.stopPropagation();
+      const b = e.target.closest('[data-r]'); if (!b) return;
+      const r = b.dataset.r;
+      if (r === 'copy'){ try { await navigator.clipboard.writeText(url); toast('Link gekopieerd'); } catch(_){ b.outerHTML = '<div style="word-break:break-all;font-size:12px;user-select:all">' + esc(url) + '</div>'; } return; }
+      if (r === 'install'){ if (installEvt){ installEvt.prompt(); installEvt = null; b.hidden = true; } return; }
+      d.remove(); res(r === 'ok');
+      setTimeout(() => { try { flushPending(); } catch(_){} }, 0);
+    });
+  });
+}
+async function pasteInvite(){
+  const r = await askText('Plak hier de uitnodigingslink die je via WhatsApp hebt gekregen.', '');
+  if (r === null) return;
+  const p = parseInvite(r);
+  if (!p){ await tell('Dit is geen geldige uitnodigingslink. Kopieer de hele link uit het bericht (houd de link ingedrukt → Kopieer).'); return; }
+  await joinTeam(p.cid, p.inv);
+}
+function membersCard(t, c){
+  const ms = activeMembers(t);
+  return `
+    <div class="sgroup" style="margin-top:14px">Gedeeld met</div>
+    <div class="mlist">${ms.length ? ms.map(x => {
+      const me = x.id === c.mid;
+      return `<div class="mrow"><span class="mav">${esc((x.name || '?').charAt(0).toUpperCase())}</span><span class="grow"><b>${esc(x.name || 'Trainer')}${me ? ' (jij)' : ''}</b><small>${x.status === 'uitgenodigd' ? 'Uitgenodigd · nog niet geopend' : (x.owner ? 'Heeft het team gedeeld' : 'Doet mee') + (x.joined ? ' · sinds ' + new Date(x.joined).toLocaleDateString('nl-NL', {day:'numeric', month:'short'}) : '')}</small></span>
+        ${x.status === 'uitgenodigd' ? `<button class="btn sm" data-act="reInvite" data-id="${x.id}">📤</button>` : ''}
+        ${me ? '' : `<button class="x" data-act="revokeMember" data-id="${x.id}" aria-label="Verwijderen">×</button>`}</div>`;
+    }).join('') : `<div class="muted">Nog niemand in de lijst. Trainers die met de teamcode verbonden zijn, verschijnen hier zodra ze de app openen.</div>`}</div>
+    <button class="btn pri full" style="margin-top:12px" data-act="inviteTrainer">＋ Trainer uitnodigen (link via WhatsApp)</button>`;
 }
 
 /* ===================== Slepen ===================== */
@@ -2260,7 +2454,11 @@ if (!S.active.team) S.active.team = S.teams[0].id;
 const SURVEY_ID = new URLSearchParams(location.search).get('vraag');
 if (SURVEY_ID) bootSurvey(SURVEY_ID); else render();
 document.getElementById('nav').innerHTML = iconize(document.getElementById('nav').innerHTML);
-if (!SURVEY_ID){ loadLogo(); cloudStart(); }
+if (!SURVEY_ID){
+  loadLogo();
+  const qp = new URLSearchParams(location.search), jc = qp.get('team'), ji = qp.get('inv');
+  cloudStart().then(() => { if (jc && ji){ history.replaceState(null, '', location.pathname); joinTeam(jc, ji); } });
+}
 </script>
 </body>
 </html>
