@@ -7,14 +7,14 @@
 <meta name="apple-mobile-web-app-title" content="LineUp">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="application-name" content="LineUp">
-<link rel="manifest" href="manifest.webmanifest?v=4">
-<link rel="icon" type="image/svg+xml" href="icon.svg?v=4">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=4">
-<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=4">
-<link rel="apple-touch-icon-precomposed" sizes="180x180" href="apple-touch-icon.png?v=4">
-<meta name="theme-color" content="#050505">
+<link rel="manifest" href="manifest.webmanifest?v=5">
+<link rel="icon" type="image/svg+xml" href="icon.svg?v=5">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=5">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=5">
+<link rel="apple-touch-icon-precomposed" sizes="180x180" href="apple-touch-icon.png?v=5">
+<meta name="theme-color" content="#0c5a2c">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700;800;900&family=Saira:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,500;0,600;0,700;0,800;0,900;1,800;1,900&display=swap" rel="stylesheet">
 <title>LineUp</title>
 <style>
   /* ===================== Thema's ===================== */
@@ -297,82 +297,84 @@
   nav#nav button.on{background:var(--acc);color:var(--on-acc)}
   body{padding-bottom:calc(24px + env(safe-area-inset-bottom))}
   .toast{bottom:calc(24px + env(safe-area-inset-bottom))}
-  /* ===================== Broadcast-stijl ===================== */
-  :root, body[data-theme="broadcast"]{
-    --bg:#050505; --bg2:none; --surf:#101010; --surf2:#1b1b1b; --solid:#0c0c0c; --line:rgba(255,255,255,.10);
-    --txt:#ffffff; --muted:#a3a3a3; --acc:#ff5a1f; --acc2:#ff2d55; --on-acc:#ffffff;
-    --hdr:#050505; --hdr-txt:#fff; --hdr-glow:none; --pitch1:#16341f; --pitch2:#1a3c24; --pline:rgba(255,255,255,.7); --kp:#ff5a1f;
-    --ok:#3ee08f; --red:#ff4d6d; --shadow:none; --blur:none; --radius:8px;
-    --font:"Saira",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; --disp:"Saira Condensed","Saira",sans-serif;
-    --soft:rgba(255,90,31,.14);
+  /* ===================== Grasveld-stijl ===================== */
+  :root, body[data-theme="gras"]{
+    --bg:#0f6b35; --bg2:none; --surf:#13803f; --surf2:#1a9049; --solid:#0f6b35; --line:rgba(255,255,255,.18);
+    --txt:#ffffff; --muted:#c9efd5; --acc:#ffe14d; --acc2:#ffffff; --on-acc:#0c3d1f;
+    --hdr:#0c5a2c; --hdr-txt:#fff; --hdr-glow:none; --pitch1:#16893f; --pitch2:#1a9446; --pline:rgba(255,255,255,.85); --kp:#ffe14d;
+    --ok:#ffe14d; --red:#ffb4a8; --shadow:0 6px 18px rgba(0,0,0,.16); --blur:none; --radius:16px;
+    --font:"Archivo",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; --disp:"Archivo",sans-serif;
+    --soft:rgba(255,225,77,.16);
   }
-  body[data-theme="broadcast"]{background:#050505}
-  header{border-bottom:1px solid var(--line)}
-  header::before{display:none}
-  .card,.tile,.summary,.trow,.tcard{border-radius:8px}
-  h2,.benchtitle,.sgroup,.mt,.stabs button,.phases button,nav#nav button,.pill,.btn,.mbig .mbt b,.mph,.badge,.segs .pill,.whop,table.ov th{font-family:var(--disp);text-transform:uppercase;letter-spacing:.02em}
-  .card h2{font-size:19px;font-weight:900}
-  .mhead .mt{font-size:26px;text-transform:uppercase}
-  /* schuine accentvlakken met rechte tekst */
-  nav#nav button.on, header .pill.tpill.on, .phases button.on, .segc button.on, .stabs button.on, .btn.pri, .mbig, .segs .pill.on, .tag.on, .sw.on{
-    position:relative;isolation:isolate;background:transparent!important;color:#fff!important;box-shadow:none!important;border-color:transparent!important}
-  nav#nav button.on::before, header .pill.tpill.on::before, .phases button.on::before, .segc button.on::before, .stabs button.on::before, .btn.pri::before, .mbig::before, .segs .pill.on::before, .tag.on::before{
-    content:"";position:absolute;inset:0;z-index:-1;background:var(--acc);transform:skewX(-12deg);border-radius:3px}
-  nav#nav{border-radius:6px;background:#111;border-color:var(--line)}
-  nav#nav button{border-radius:3px;color:#cfcfcf}
-  header .pill{border-radius:4px}
-  header .pill.tpill:not(.on){background:#151515;border-color:var(--line);color:#e6e6e6}
-  .pill{border-radius:6px}
-  .btn{border-radius:6px}
-  .btn.big{border-radius:6px;font-size:20px;font-weight:900}
-  .mbig{border-radius:0;padding:14px 18px;margin-left:6px;margin-right:6px;width:calc(100% - 12px);animation:none!important}
-  .mbig .mph{background:#050505;color:#fff;border-radius:3px}
-  .mbig.live .mph::before{background:#fff;box-shadow:none}
-  .phases{background:rgba(5,5,5,.94);border-bottom:1px solid var(--line)}
-  .phases button{border-radius:3px}
-  .phases button.past{color:#ffb08f}
-  .stabs{border-radius:6px;background:rgba(12,12,12,.94)}
-  .segs .pill{border-radius:4px}
-  .segs .pill.on{color:#fff}
-  .pill.now:not(.on){border-color:var(--acc);color:var(--acc)}
+  body[data-theme="gras"]{background:repeating-linear-gradient(0deg,#0f6b35 0 140px,#0e6432 140px 280px);background-attachment:fixed}
+  header{background:#0c5a2c;border-bottom:1px solid rgba(255,255,255,.12)}
+  header::before,header::after{display:none}
+  h2,.mt,.benchtitle{font-weight:800}
+  .card{background:var(--surf);border-color:var(--line);border-radius:16px}
+  .summary,.tcard,.trow,.tile{background:var(--surf);border-color:var(--line)}
+  input,select,textarea{background:rgba(0,0,0,.16);border-color:rgba(255,255,255,.2)}
+  input::placeholder,textarea::placeholder{color:rgba(255,255,255,.55)}
+  /* knoppen en tabs */
+  .btn{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.18)}
+  .btn.pri,.mbig{background:#ffe14d;color:#0c3d1f;border-color:transparent;box-shadow:0 6px 16px rgba(0,0,0,.18)}
+  .mbig{animation:none!important}
+  .mbig .mph{background:#0c3d1f;color:#ffe14d}
+  .mbig.live .mph::before{background:#ff6b5b;box-shadow:none}
+  .btn.red{color:#ffd0c8;border-color:rgba(255,208,200,.45)}
+  nav#nav{background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.14);border-radius:16px}
+  nav#nav button{color:rgba(255,255,255,.85);border-radius:12px}
+  nav#nav button.on,.stabs button.on,.phases button.on,.segc button.on,.segs .pill.on,.tag.on{background:#ffe14d;color:#0c3d1f}
+  header .pill.tpill{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.22);color:#fff}
+  header .pill.tpill.on{background:#ffe14d;color:#0c3d1f;border-color:#ffe14d;box-shadow:none}
+  header .pill.addt{border-color:rgba(255,255,255,.4)}
+  .stabs{background:rgba(12,90,44,.95);border-color:rgba(255,255,255,.14)}
+  .phases{background:rgba(12,90,44,.96);border-bottom:1px solid rgba(255,255,255,.12)}
+  .phases button.past{color:#fff3a6}
+  .pill.now:not(.on){border-color:#ffe14d;color:#ffe14d}
+  .segs .pill{background:rgba(0,0,0,.14);border-color:rgba(255,255,255,.16)}
   /* veld */
-  .pitch{border-radius:6px;box-shadow:none;background:repeating-linear-gradient(0deg,var(--pitch1) 0 10%,var(--pitch2) 10% 20%)}
-  .pl .dot{background:#fff!important;color:#050505!important;box-shadow:0 0 0 3px var(--acc)!important;font-family:var(--disp);font-weight:900}
-  .pl.k .dot{background:#141414!important;color:#fff!important;box-shadow:0 0 0 3px var(--acc)!important}
-  .pl.emptyp .dot{background:rgba(0,0,0,.35)!important;color:#fff!important;box-shadow:0 0 0 2px rgba(255,255,255,.6)!important}
-  .pl .nm{background:var(--acc);color:#fff;border-radius:3px;font-family:var(--disp);font-weight:800;text-transform:uppercase;letter-spacing:.02em;-webkit-backdrop-filter:none;backdrop-filter:none}
-  .pl.emptyp .nm{background:rgba(0,0,0,.55)}
-  .pl .mb{border-radius:3px;background:#fff;color:#050505}
-  /* bank, lijsten */
-  .benchp{border-radius:6px;background:#161616}
-  .benchp .bd{background:var(--acc);color:#fff;border-radius:4px;font-family:var(--disp)}
-  .benchp.low{border-color:var(--acc);background:rgba(255,90,31,.10)}
-  .num,.tbadge{background:var(--acc)!important;color:#fff!important;border-radius:4px;font-family:var(--disp)}
-  .bar i{background:var(--acc)}
-  .tile b,.bigscore{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:var(--acc);font-family:var(--disp)}
-  .whop.on{border-color:rgba(255,255,255,.35);background:#1b1b1b}
-  .wissel{background:rgba(255,90,31,.12);border-left:0;border-radius:4px}
-  table.ov .cur{background:rgba(255,90,31,.12)}
-  .switch.on{background:rgba(255,90,31,.2)}
-  .switch.on i{box-shadow:none}
-  .knvb{background:rgba(255,90,31,.10);border-color:rgba(255,90,31,.4)}
-  .modal .box{border-radius:10px}
-  .toast{border-radius:4px;background:#fff;color:#050505;font-family:var(--disp);font-weight:800;text-transform:uppercase}
-  /* woordmerk */
-  .wordmark{font-family:var(--disp);font-weight:900}
-  .wordmark span{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:var(--acc)}
-  .wordmark .speed{background:linear-gradient(90deg,transparent,var(--acc)) 6px 1px/14px 2.5px no-repeat,linear-gradient(90deg,transparent,var(--acc)) 0 6px/20px 3px no-repeat,linear-gradient(90deg,transparent,var(--acc)) 8px 11px/12px 2.5px no-repeat}
-  .logo{box-shadow:none;border-radius:6px}
-  .logo .mark{border-radius:6px}
-  /* scorebalk */
-  nav#nav button{font-size:13px;gap:5px;padding:10px 2px;letter-spacing:0}
-  nav#nav button b .ic{width:15px;height:15px}
-  .benchtitle span{text-transform:none;letter-spacing:0;font-family:var(--font)}
-  .scorebug{display:flex;align-items:stretch;height:36px;margin:-2px 0 12px;font-family:var(--disp);font-weight:900;font-size:19px;text-transform:uppercase;width:max-content;max-width:100%}
-  .scorebug .sbt{background:#fff;color:#050505;padding:0 12px;display:flex;align-items:center}
-  .scorebug .sbs{background:var(--acc);color:#fff;padding:0 14px;display:flex;align-items:center;white-space:nowrap}
-  .scorebug .sbst{background:#1d1d1d;color:#fff;padding:0 12px;display:flex;align-items:center;gap:7px;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .scorebug .sbdot{width:8px;height:8px;border-radius:50%;background:var(--acc2);animation:blink 1s infinite;flex:none}
+  .pitch{border:2px solid rgba(255,255,255,.35);box-shadow:inset 0 0 40px rgba(0,0,0,.12)}
+  .pl .dot{background:#ffffff;color:#0c3d1f;box-shadow:0 4px 10px rgba(0,0,0,.3)}
+  .pl.k .dot{background:#0c3d1f;color:#fff;box-shadow:0 0 0 3px #ffe14d,0 4px 10px rgba(0,0,0,.3)}
+  .pl.emptyp .dot{background:rgba(0,0,0,.2);color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.7)}
+  .pl .nm{background:rgba(0,0,0,.38);color:#fff}
+  .pl .mb{background:#ffe14d;color:#0c3d1f}
+  /* bank, lijsten, statistiek */
+  .benchp{background:rgba(0,0,0,.14);border-color:rgba(255,255,255,.16)}
+  .benchp .bd,.num,.tbadge{background:#ffe14d!important;color:#0c3d1f!important}
+  .benchp.low{border-color:#ffe14d;background:rgba(255,225,77,.12)}
+  .benchp.low i,.pp{color:#ffe14d}
+  .bar{background:rgba(0,0,0,.2)}
+  .bar i{background:#ffe14d}
+  .tile b,.bigscore{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:#ffe14d}
+  table.ov .cur{background:rgba(255,225,77,.14)}
+  table.ov .kp{color:#ffe14d}
+  .whop{background:rgba(0,0,0,.14)}
+  .whop.on{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.5)}
+  .wissel{background:rgba(255,225,77,.14)}
+  .knvb{background:rgba(255,225,77,.12);border-color:rgba(255,225,77,.45)}
+  .knvb.ok{background:rgba(0,0,0,.12);border-color:var(--line)}
+  .switch{background:rgba(0,0,0,.2)}
+  .switch.on{background:rgba(255,225,77,.22);border-color:#ffe14d}
+  .switch.on i{background:#ffe14d;box-shadow:none}
+  .badge{background:rgba(0,0,0,.18);color:#e4f7ea}
+  .badge.ok{background:rgba(255,225,77,.2);color:#ffe14d}
+  .modal .box{background:#0f6b35}
+  .toast{background:#ffffff;color:#0c3d1f}
+  #outdated{background:#ffe14d;color:#0c3d1f}
+  /* woordmerk en logo */
+  .wordmark{font-family:"Archivo",sans-serif;font-style:italic;font-weight:900}
+  .wordmark span{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:#ffe14d}
+  .wordmark .speed{background:linear-gradient(90deg,transparent,#ffe14d) 6px 1px/14px 2.5px no-repeat,linear-gradient(90deg,transparent,#ffe14d) 0 6px/20px 3px no-repeat,linear-gradient(90deg,transparent,#ffe14d) 8px 11px/12px 2.5px no-repeat}
+  .brand .club{color:#c9efd5}
+  .logo{box-shadow:0 4px 12px rgba(0,0,0,.25)}
+  /* scorebalk in grasstijl */
+  .scorebug{display:flex;align-items:stretch;height:36px;margin:-2px 0 12px;font-family:"Archivo",sans-serif;font-weight:900;font-style:italic;font-size:18px;width:max-content;max-width:100%;border-radius:10px;overflow:hidden}
+  .scorebug .sbt{background:#ffffff;color:#0c3d1f;padding:0 12px;display:flex;align-items:center}
+  .scorebug .sbs{background:#ffe14d;color:#0c3d1f;padding:0 14px;display:flex;align-items:center;white-space:nowrap}
+  .scorebug .sbst{background:rgba(0,0,0,.28);color:#fff;padding:0 12px;display:flex;align-items:center;gap:7px;font-size:13px;font-style:normal;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .scorebug .sbdot{width:8px;height:8px;border-radius:50%;background:#ff6b5b;animation:blink 1s infinite;flex:none}
+  .benchtitle span{text-transform:none}
   @media print{
     body{background:#fff;color:#000;padding:0}
     header,nav,main,.toast{display:none!important}
@@ -389,7 +391,7 @@
 </style>
 </head>
 <body>
-<script>document.body.dataset.theme = "broadcast";</script>
+<script>document.body.dataset.theme = "gras";</script>
 <header>
   <div class="brand"><div class="logo" id="logoBox"></div><div><div class="club" id="clubName"></div><div class="app wordmark"><i class="speed"></i>Line<span>Up</span></div></div><span id="cloudDot" class="cloud" data-act="goCloud"></span></div>
   <div class="teams" id="teams"></div>
@@ -460,7 +462,7 @@ function iconize(html){
   }).join('');
 }
 const stripEmo = t => String(t).replace(EMO_RE, '').replace(/\s{2,}/g, ' ').trim();
-const LOGO_MARK = `<svg viewBox="0 0 512 512" class="mark" aria-label="LineUp"><defs><linearGradient id="lu-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#f1f1f1"/></linearGradient><linearGradient id="lu-s" gradientUnits="userSpaceOnUse" x1="20" y1="0" x2="210" y2="0"><stop offset="0" stop-color="#ff5a1f" stop-opacity="0"/><stop offset=".6" stop-color="#ff5a1f" stop-opacity=".85"/><stop offset="1" stop-color="#ff7a3d"/></linearGradient><radialGradient id="lu-bg" cx=".25" cy=".15" r="1.05"><stop offset="0" stop-color="#1a1a1a"/><stop offset=".6" stop-color="#0a0a0a"/><stop offset="1" stop-color="#050505"/></radialGradient><radialGradient id="lu-glow" cx=".63" cy=".5" r=".42"><stop offset="0" stop-color="#ff5a1f" stop-opacity=".30"/><stop offset="1" stop-color="#ff5a1f" stop-opacity="0"/></radialGradient><clipPath id="lu-ball"><circle cx="322" cy="256" r="116"/></clipPath></defs><rect width="512" height="512" rx="112" fill="url(#lu-bg)"/><rect width="512" height="512" rx="112" fill="url(#lu-glow)"/><g stroke="url(#lu-s)" stroke-linecap="round" fill="none"><path d="M70 180H196" stroke-width="20"/><path d="M30 256H186" stroke-width="28"/><path d="M84 332H200" stroke-width="20"/></g><circle cx="322" cy="256" r="125" fill="#ff5a1f"/><g transform="rotate(-18 322 256)"><circle cx="322" cy="256" r="116" fill="url(#lu-g)"/><g clip-path="url(#lu-ball)" fill="#0a0a0a" stroke="#0a0a0a" stroke-width="9" stroke-linejoin="round"><polygon points="322.0,214.0 361.9,243.0 346.7,290.0 297.3,290.0 282.1,243.0"/><path d="M322.0 214.0L322.0 170.0"/><path d="M361.9 243.0L403.8 229.4"/><path d="M346.7 290.0L372.5 325.6"/><path d="M297.3 290.0L271.5 325.6"/><path d="M282.1 243.0L240.2 229.4"/><path d="M322.0 170.0L266.7 180.0"/><path d="M322.0 170.0L377.3 180.0"/><path d="M403.8 229.4L377.3 180.0"/><path d="M403.8 229.4L411.4 285.0"/><path d="M372.5 325.6L411.4 285.0"/><path d="M372.5 325.6L322.0 350.0"/><path d="M271.5 325.6L322.0 350.0"/><path d="M271.5 325.6L232.6 285.0"/><path d="M240.2 229.4L232.6 285.0"/><path d="M240.2 229.4L266.7 180.0"/><polygon points="374.9,183.2 363.3,147.4 393.7,125.3 424.1,147.4 412.5,183.2"/><polygon points="407.6,283.8 438.0,261.7 468.5,283.8 456.8,319.6 419.2,319.6"/><polygon points="322.0,346.0 352.4,368.1 340.8,403.9 303.2,403.9 291.6,368.1"/><polygon points="236.4,283.8 224.8,319.6 187.2,319.6 175.5,283.8 206.0,261.7"/><polygon points="269.1,183.2 231.5,183.2 219.9,147.4 250.3,125.3 280.7,147.4"/></g></g></svg>`;
+const LOGO_MARK = `<svg viewBox="0 0 512 512" class="mark" aria-label="LineUp"><defs><linearGradient id="lu-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#f1f1f1"/></linearGradient><linearGradient id="lu-s" gradientUnits="userSpaceOnUse" x1="20" y1="0" x2="210" y2="0"><stop offset="0" stop-color="#ffe14d" stop-opacity="0"/><stop offset=".6" stop-color="#ffe14d" stop-opacity=".85"/><stop offset="1" stop-color="#fff3a6"/></linearGradient><radialGradient id="lu-bg" cx=".25" cy=".15" r="1.05"><stop offset="0" stop-color="#13803f"/><stop offset=".6" stop-color="#0f6b35"/><stop offset="1" stop-color="#0b5a2c"/></radialGradient><radialGradient id="lu-glow" cx=".63" cy=".5" r=".42"><stop offset="0" stop-color="#ffe14d" stop-opacity=".30"/><stop offset="1" stop-color="#ffe14d" stop-opacity="0"/></radialGradient><clipPath id="lu-ball"><circle cx="322" cy="256" r="116"/></clipPath></defs><rect width="512" height="512" rx="112" fill="url(#lu-bg)"/><rect width="512" height="512" rx="112" fill="url(#lu-glow)"/><g stroke="url(#lu-s)" stroke-linecap="round" fill="none"><path d="M70 180H196" stroke-width="20"/><path d="M30 256H186" stroke-width="28"/><path d="M84 332H200" stroke-width="20"/></g><circle cx="322" cy="256" r="125" fill="#ffe14d"/><g transform="rotate(-18 322 256)"><circle cx="322" cy="256" r="116" fill="url(#lu-g)"/><g clip-path="url(#lu-ball)" fill="#0a0a0a" stroke="#0a0a0a" stroke-width="9" stroke-linejoin="round"><polygon points="322.0,214.0 361.9,243.0 346.7,290.0 297.3,290.0 282.1,243.0"/><path d="M322.0 214.0L322.0 170.0"/><path d="M361.9 243.0L403.8 229.4"/><path d="M346.7 290.0L372.5 325.6"/><path d="M297.3 290.0L271.5 325.6"/><path d="M282.1 243.0L240.2 229.4"/><path d="M322.0 170.0L266.7 180.0"/><path d="M322.0 170.0L377.3 180.0"/><path d="M403.8 229.4L377.3 180.0"/><path d="M403.8 229.4L411.4 285.0"/><path d="M372.5 325.6L411.4 285.0"/><path d="M372.5 325.6L322.0 350.0"/><path d="M271.5 325.6L322.0 350.0"/><path d="M271.5 325.6L232.6 285.0"/><path d="M240.2 229.4L232.6 285.0"/><path d="M240.2 229.4L266.7 180.0"/><polygon points="374.9,183.2 363.3,147.4 393.7,125.3 424.1,147.4 412.5,183.2"/><polygon points="407.6,283.8 438.0,261.7 468.5,283.8 456.8,319.6 419.2,319.6"/><polygon points="322.0,346.0 352.4,368.1 340.8,403.9 303.2,403.9 291.6,368.1"/><polygon points="236.4,283.8 224.8,319.6 187.2,319.6 175.5,283.8 206.0,261.7"/><polygon points="269.1,183.2 231.5,183.2 219.9,147.4 250.3,125.3 280.7,147.4"/></g></g></svg>`;
 
 /* ===================== Data ===================== */
 const KEY = 'opstellingmaker.v1';
