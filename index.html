@@ -280,6 +280,17 @@
   header::before{content:"";position:absolute;inset:0;background:radial-gradient(500px 160px at 85% 0%,color-mix(in srgb,var(--team) 22%,transparent),transparent 70%);pointer-events:none}
   .crumb .tbadge{width:42px;height:42px;font-size:13px}
   .brand,.teams{position:relative}
+  .mbig{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;border-radius:18px;padding:15px 16px;margin-bottom:10px;font:inherit;cursor:pointer;color:var(--on-acc);background:linear-gradient(135deg,var(--acc),color-mix(in srgb,var(--acc) 70%,var(--acc2)));box-shadow:0 8px 22px color-mix(in srgb,var(--acc) 35%,transparent);transition:transform .08s}
+  .mbig:active{transform:scale(.98)}
+  .mbig .mbt{flex:1;min-width:0;display:flex;flex-direction:column}
+  .mbig .mbt b{font-size:17px;font-weight:900;font-family:var(--disp);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mbig .mbt small{font-size:13px;font-weight:600;opacity:.75;margin-top:2px}
+  .mbig .mph{flex:none;background:rgba(7,9,15,.85);color:var(--acc);font-size:12px;font-weight:800;padding:6px 10px;border-radius:999px;display:inline-flex;align-items:center;gap:5px}
+  .mbig.live{animation:livepulse 1.8s ease-in-out infinite}
+  .mbig.live .mph{color:#fff;background:#07090f}
+  .mbig.live .mph::before{content:"";width:8px;height:8px;border-radius:50%;background:#ff4d4d;box-shadow:0 0 8px #ff4d4d;animation:blink 1s infinite}
+  @keyframes livepulse{50%{box-shadow:0 8px 32px color-mix(in srgb,var(--acc) 60%,transparent)}}
+  @keyframes blink{50%{opacity:.3}}
   @media print{
     body{background:#fff;color:#000;padding:0}
     header,nav,main,.toast{display:none!important}
@@ -691,10 +702,11 @@ function viewMatches(){
   <div class="summary" data-act="goSettings2">
     <div><b>${esc(teamLabel(t))}</b> · ${settingsLine(se)} · ${se.players.length} spelers</div><span>⚙️ wijzigen</span>
   </div>
-  ${open.length ? `<div class="card list">
-    <h2>📝 In voorbereiding & bezig</h2>
-    ${open.map(matchRow).join('')}
-  </div>` : ''}
+  ${open.length ? `<div class="sgroup" style="margin-top:6px">In voorbereiding & bezig</div>
+    ${open.map(m => `<button class="mbig ${m.phase}" data-act="openMatch" data-id="${m.id}">
+      <span class="mbt"><b>${esc(matchTitle(m))}</b><small>${fmtDate(m.date)} · ${m.present.length} spelers${hasScore(m) ? ' · ' + scoreLine(m) : ''}</small></span>
+      <span class="mph">${phaseName(m.phase)}</span>
+    </button>`).join('')}` : ''}
   <button class="btn pri full big" data-act="newMatch" ${se.players.length ? '' : 'disabled style="opacity:.5"'}>＋ Nieuwe wedstrijd</button>
   <div class="card list">
     <h2>✅ Gespeeld</h2>
