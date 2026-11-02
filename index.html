@@ -688,14 +688,14 @@ function viewMatches(){
   const done = se.matches.filter(m => m.phase === 'done').sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   return `
   ${!se.players.length ? `<div class="card empty"><b>👋</b>Begin met spelers toevoegen voor ${esc(t.name)}.<br><br><button class="btn pri" data-act="goPlayers">👥 Spelers toevoegen</button></div>` : ''}
+  <div class="summary" data-act="goSettings2">
+    <div><b>${esc(teamLabel(t))}</b> · ${settingsLine(se)} · ${se.players.length} spelers</div><span>⚙️ wijzigen</span>
+  </div>
   ${open.length ? `<div class="card list">
     <h2>📝 In voorbereiding & bezig</h2>
     ${open.map(matchRow).join('')}
   </div>` : ''}
   <button class="btn pri full big" data-act="newMatch" ${se.players.length ? '' : 'disabled style="opacity:.5"'}>＋ Nieuwe wedstrijd</button>
-  <div class="summary" data-act="goSettings2">
-    <div><b>${esc(teamLabel(t))}</b> · ${settingsLine(se)} · ${se.players.length} spelers</div><span>⚙️ wijzigen</span>
-  </div>
   <div class="card list">
     <h2>✅ Gespeeld</h2>
     ${done.length ? done.map(matchRow).join('') : `<div class="empty"><b>🏁</b>Nog geen gespeelde wedstrijden dit seizoen.</div>`}
