@@ -404,6 +404,43 @@
   .aumsg{background:#fff3f3;color:var(--red);border-radius:12px;padding:8px 10px;font-size:13px;font-weight:600;margin:4px 0 10px}.aumsg.ok{background:#eefaf1;color:#0f6b35}
   .lbanner{display:flex;gap:10px;align-items:center;background:#fff8d6;border:1px solid #ffd52e;border-radius:16px;padding:10px 12px;margin:0 0 12px;font-size:13px;cursor:pointer}.lbanner span{flex:1}
   .mrow.inv{border-style:dashed}
+  .aabtn{position:absolute;top:10px;right:10px;z-index:2;width:46px;height:46px;border-radius:14px;border:0;background:#ffd52e;color:#0c3d1f;font-family:"Archivo",sans-serif;font-weight:900;font-size:20px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:10px;gap:1px;cursor:pointer;box-shadow:0 3px 10px rgba(12,61,31,.15)}
+  .aabtn small{font-size:14px}
+  .mhead:has(.aabtn) .scorebug,.mhead:has(.aabtn) .mt{margin-right:52px}
+  .fsopts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .fsopts button{height:88px;border-radius:16px;border:1px solid var(--line);background:#f3f8f4;color:#0c3d1f;font-family:"Archivo",sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer}
+  .fsopts button b{font-weight:900;line-height:1}.fsopts button span{font-size:13px;font-weight:800}
+  .fsopts button.on{background:#ffd52e;border:3px solid #0c3d1f}
+  /* Groot */
+  .fs1 .scorebug{height:46px;font-size:22px}.fs1 .scorebug .sbst{font-size:16px}
+  .fs1 .mhead .mt{font-size:26px}.fs1 .mhead .muted{font-size:16px}
+  .fs1 .card h2{font-size:21px}
+  .fs1 .segs .pill{font-size:18px;padding:13px 14px}
+  .fs1 .wissel{font-size:19px;line-height:1.35}
+  .fsz.fs1 .pitch .pl{width:112px}.fsz.fs1 .pitch .pl .dot{width:52px;height:52px;font-size:15px}.fsz.fs1 .pitch .pl .nm{font-size:17px;max-width:112px;padding:3px 9px}
+  .fsz.fs1 .pitch.md .pl{width:96px}.fsz.fs1 .pitch.md .pl .nm{font-size:15px;max-width:96px}
+  .fsz.fs1 .pitch.sm .pl{width:86px}.fsz.fs1 .pitch.sm .pl .dot{width:42px;height:42px;font-size:13px}.fsz.fs1 .pitch.sm .pl .nm{font-size:14px;max-width:86px;padding:2px 7px}
+  .fs1 .benchtitle{font-size:17px}.fs1 .benchp{font-size:20px;padding:8px 15px 8px 8px}.fs1 .benchp .bd{width:40px;height:40px;font-size:15px}.fs1 .benchp i{font-size:16px}
+  .fs1 .hint,.fs1 .card .muted{font-size:15px}
+  .fs1 .btn.big{font-size:20px;min-height:62px}
+  .fs1 table.ov td,.fs1 table.ov th{font-size:16px}
+  .fs1 .whop{font-size:18px;padding:10px 14px}
+  .fs1 .phases button{font-size:15px}
+  /* Extra groot */
+  .fs2 .scorebug{height:56px;font-size:27px}.fs2 .scorebug .sbst{font-size:18px}
+  .fs2 .mhead .mt{font-size:30px}.fs2 .mhead .muted{font-size:18px}
+  .fs2 .card h2{font-size:24px}
+  .fs2 .segs .pill{font-size:21px;padding:15px 16px}
+  .fs2 .wissel{font-size:22px;line-height:1.35}
+  .fsz.fs2 .pitch .pl{width:130px}.fsz.fs2 .pitch .pl .dot{width:60px;height:60px;font-size:17px}.fsz.fs2 .pitch .pl .nm{font-size:21px;max-width:130px;padding:3px 10px}
+  .fsz.fs2 .pitch.md .pl{width:108px}.fsz.fs2 .pitch.md .pl .nm{font-size:18px;max-width:108px}
+  .fsz.fs2 .pitch.sm .pl{width:96px}.fsz.fs2 .pitch.sm .pl .dot{width:46px;height:46px;font-size:14px}.fsz.fs2 .pitch.sm .pl .nm{font-size:16px;max-width:96px;padding:2px 7px}
+  .fs2 .benchtitle{font-size:19px}.fs2 .benchp{font-size:24px;padding:9px 16px 9px 9px}.fs2 .benchp .bd{width:46px;height:46px;font-size:17px}.fs2 .benchp i{font-size:18px}
+  .fs2 .hint,.fs2 .card .muted{font-size:17px}
+  .fs2 .btn.big{font-size:23px;min-height:70px}
+  .fs2 table.ov td,.fs2 table.ov th{font-size:18px}
+  .fs2 .whop{font-size:21px;padding:11px 15px}
+  .fs2 .phases button{font-size:16px}
   .nm2{display:flex;gap:6px}.nm2 input{padding:6px 8px;min-width:0;flex:1}
   .svhead{display:flex;align-items:center;gap:12px;margin:2px 2px 14px}
   .svhead .logo{width:52px;height:52px}
@@ -932,6 +969,7 @@ function viewMatch(){
 
   const header = `
   <div class="card mhead">
+    ${ph === 'live' ? `<button class="aabtn" data-act="fontSize" aria-label="Lettergrootte tijdens de wedstrijd">A<small>a</small></button>` : ''}
     ${ph !== 'prep' ? scoreBug(m) : ''}
     <div class="mt">${esc(matchTitle(m))}</div>
     <div class="muted">${fmtDate(m.date, {weekday:'long', day:'numeric', month:'long'})} · ${settingsLine(st)}</div>
@@ -1054,9 +1092,32 @@ function viewMatch(){
     <div class="grid2" style="margin-bottom:12px"><button class="btn" data-act="share">📤 Delen</button><button class="btn" data-act="print">🖨️ Printen</button></div>
     <button class="btn full" style="margin-bottom:12px" data-act="phase" data-v="post">✏️ Uitslag of doelpunten aanpassen</button>`;
 
-  return `
+  const fs = ph === 'live' ? fontLevel() : 0;
+  return `<div class="fsz fs${fs}">
   ${phaseBar}${header}${body}
-  <button class="btn red full" data-act="delMatch">Wedstrijd verwijderen</button>`;
+  <button class="btn red full" data-act="delMatch">Wedstrijd verwijderen</button></div>`;
+}
+
+const FS_KEY = 'opstellingmaker.fs';
+const fontLevel = () => { const v = +localStorage.getItem(FS_KEY); return v === 1 || v === 2 ? v : 0; };
+function fontDialog(){
+  return new Promise(res => {
+    const d = document.createElement('div'); d.className = 'modal';
+    const cur = fontLevel();
+    const opts = [[0, 'Normaal', 18], [1, 'Groot', 26], [2, 'Extra groot', 34]];
+    d.innerHTML = iconize(`<div class="box"><p>Lettergrootte tijdens de wedstrijd</p>
+      <div class="muted" style="margin:-4px 0 12px">Handig als je zonder bril langs de lijn staat. Je keuze blijft bewaard op deze telefoon.</div>
+      <div class="fsopts">${opts.map(([v, n, px]) => `<button class="${v === cur ? 'on' : ''}" data-r="${v}"><b style="font-size:${px}px">Aa</b><span>${n}</span></button>`).join('')}</div>
+      <button class="btn full" style="margin-top:12px" data-r="no">Sluiten</button></div>`);
+    document.body.appendChild(d);
+    d.addEventListener('click', e => {
+      e.stopPropagation();
+      const b = e.target.closest('[data-r]'); if (!b && e.target !== d) return;
+      const r = b ? b.dataset.r : 'no';
+      if (r !== 'no'){ try { localStorage.setItem(FS_KEY, r); } catch(_){} }
+      d.remove(); res(r !== 'no'); setTimeout(() => { try { flushPending(); } catch(_){} }, 0);
+    });
+  });
 }
 
 function viewPlayers(){
@@ -1564,6 +1625,7 @@ document.addEventListener('click', async e => {
     case 'surveyFetch': await fetchSurvey(se, false); break;
     case 'surveyNew': await startSurvey(se, team()); break;
     case 'goCloud': ui.sOpen = true; ui.stab = 'info'; go('settings'); setTimeout(() => (document.getElementById('cloudCode') || document.querySelector('.sgroup'))?.scrollIntoView({block:'center'}), 60); break;
+    case 'fontSize': if (await fontDialog()) render(); break;
     case 'login': await needLogin(); render(); break;
     case 'logout': await logout(); break;
     case 'inviteTrainer': await inviteTrainer(team()); break;
