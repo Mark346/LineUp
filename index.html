@@ -399,6 +399,11 @@
   [hidden]{display:none!important}
   .istep{background:var(--surf2);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:8px 0}
   .istep ol{margin:6px 0 8px;padding-left:20px;font-size:14px;line-height:1.45}.istep li{margin:3px 0}
+  .gbtn{display:flex;align-items:center;justify-content:center;gap:10px;background:#fff;color:#1f1f1f;border:1px solid var(--line)}
+  .ordiv{display:flex;align-items:center;gap:10px;margin:14px 0 8px;color:var(--muted);font-size:12px;font-weight:700}.ordiv:before,.ordiv:after{content:'';flex:1;height:1px;background:var(--line)}
+  .aumsg{background:#fff3f3;color:var(--red);border-radius:12px;padding:8px 10px;font-size:13px;font-weight:600;margin:4px 0 10px}.aumsg.ok{background:#eefaf1;color:#0f6b35}
+  .lbanner{display:flex;gap:10px;align-items:center;background:#fff8d6;border:1px solid #ffd52e;border-radius:16px;padding:10px 12px;margin:0 0 12px;font-size:13px;cursor:pointer}.lbanner span{flex:1}
+  .mrow.inv{border-style:dashed}
   .nm2{display:flex;gap:6px}.nm2 input{padding:6px 8px;min-width:0;flex:1}
   .svhead{display:flex;align-items:center;gap:12px;margin:2px 2px 14px}
   .svhead .logo{width:52px;height:52px}
@@ -823,7 +828,8 @@ function render(){
   if (typeof SURVEY_ID !== 'undefined' && SURVEY_ID){ renderSurvey(); return; }
   renderHeader();
   try { setCloudStatus(); } catch(e){}
-  app.innerHTML = iconize(({matches: ui.matchId ? viewMatch : viewMatches, stats: viewStats, settings: viewSettings}[ui.tab] || viewMatches)());
+  let ban = ''; try { ban = loginBanner(); } catch(e){}
+  app.innerHTML = iconize(ban + ({matches: ui.matchId ? viewMatch : viewMatches, stats: viewStats, settings: viewSettings}[ui.tab] || viewMatches)());
 }
 
 /* ===================== Schermen ===================== */
@@ -1198,7 +1204,7 @@ function settingsHome(){
     <button class="btn pri full" data-act="addTeam">＋ Team toevoegen</button>
   </div>
   <div class="sgroup">App</div>
-  ${cloudCard()}
+  ${accountCard()}${cloudCard()}
 </div>`;
 }
 
@@ -1222,7 +1228,7 @@ function viewSettings(){
   </div>`;
   else if (st === 'spelers'){ body = viewPlayers(); if (se.survey && !ui.surveyBusy && Date.now() - (ui.surveyFetched || 0) > 20000){ ui.surveyFetched = Date.now(); setTimeout(() => fetchSurvey(se, true), 50); } }
   else if (st === 'stats') body = viewStats();
-  else body = teamInfoCard(t) + `<div class="sgroup">App</div>${cloudCard()}`;
+  else body = teamInfoCard(t) + `<div class="sgroup">Samenwerken</div>${accountCard()}${cloudCard()}${installCard()}`;
   return `
   <div class="stabs">${tabs.map(([k, l]) => `<button class="${k === st ? 'on' : ''}" data-act="stab" data-v="${k}">${l}</button>`).join('')}</div>${body}`;
 }
@@ -1515,7 +1521,7 @@ document.addEventListener('click', async e => {
       const t = S.teams.find(x => x.id === id);
       if (S.teams.length === 1){ await tell('Je hebt minstens één team nodig. Maak eerst een nieuw team aan en verwijder daarna dit team.'); return; }
       if (!await ask(`${teamLabel(t)} met alle spelers en wedstrijden verwijderen?`, 'Verwijderen')) return;
-      { const cm = cloudMap(); if (cm[id]){ delete cm[id]; setCloudMap(cm); unlinkLive(id); } }
+      { const cm = cloudMap(); if (cm[id]){ if (!isLegacy(cm[id]) && myUid()) cloud.api.userRemoveTeam(myUid(), cm[id].id).catch(() => {}); delete cm[id]; setCloudMap(cm); unlinkLive(id); } }
       S.teams = S.teams.filter(x => x.id !== id); if (S.active.team === id) S.active.team = sortedTeams()[0].id; commit(); break;
     }
     case 'copyTeam': {
@@ -1558,13 +1564,15 @@ document.addEventListener('click', async e => {
     case 'surveyFetch': await fetchSurvey(se, false); break;
     case 'surveyNew': await startSurvey(se, team()); break;
     case 'goCloud': ui.sOpen = true; ui.stab = 'info'; go('settings'); setTimeout(() => (document.getElementById('cloudCode') || document.querySelector('.sgroup'))?.scrollIntoView({block:'center'}), 60); break;
-    case 'cloudConnect': await cloudConnect(team()); break;
-    case 'shareTeam': await shareTeam(team()); break;
+    case 'login': await needLogin(); render(); break;
+    case 'logout': await logout(); break;
     case 'inviteTrainer': await inviteTrainer(team()); break;
-    case 'reInvite': { const iv = (team().members || []).find(x => x.id === id); if (iv) sendInvite(team(), iv); break; }
-    case 'revokeMember': await revokeMember(team(), id); break;
+    case 'reInvite': { const iv = (team().invites || []).find(x => x.id === id); if (iv) sendInvite(team(), iv); break; }
+    case 'cancelInvite': await cancelInvite(team(), id); break;
+    case 'removeMember': await removeMember(team(), id); break;
+    case 'leaveTeam': await leaveTeam(team()); break;
     case 'pasteInvite': await pasteInvite(); break;
-    case 'cloudOff': await cloudOff(team()); break;
+    case 'editMyName': await changeMyName(); break;
   }
 });
 
@@ -1804,6 +1812,7 @@ const surveyUrl = sid => location.origin + location.pathname + '?vraag=' + sid;
 async function startSurvey(se, t){
   const api = await firebaseApi();
   if (!api || !api.createSurvey){ await tell('Hiervoor moet de online opslag (Firebase) ingesteld zijn. Zie Instellingen → Team → Samenwerken.'); return; }
+  if (!await needLogin('Log in om een link voor de spelers te maken.')) return;
   if (!await ask(`${se.survey && se.survey.key ? 'Een nieuwe ronde starten? De oude link stopt dan. ' : ''}Een link maken waarmee de spelers van ${teamLabel(t)} zelf hun naam en favoriete posities kiezen? De huidige voorkeursposities van alle spelers worden leeggemaakt.`, 'Link maken')) return;
   const sid = randId(24);
   const codes = posCodes(se);
@@ -1828,7 +1837,7 @@ function shareSurvey(se, t){
   else navigator.clipboard?.writeText(txt).then(() => toast('Link gekopieerd – plak hem in de team-app'), () => tell(url));
 }
 async function fetchSurvey(se, quiet){
-  if (!se.survey || !se.survey.key) return;
+  if (!se.survey || !se.survey.key || !myUid()) return;
   const api = await firebaseApi(); if (!api || !api.listResponses) return;
   ui.surveyBusy = true;
   try {
@@ -1905,7 +1914,7 @@ function viewSurvey(){
   if (SV.step === 'load') return `<div class="card empty"><b>⚽</b>Even laden…</div>`;
   if (SV.step === 'error') return `<div class="card empty"><b>⚠️</b>${esc(SV.err)}</div>`;
   const head = `<div class="svhead"><div class="logo">${LOGO_MARK}</div><div><div class="club">${esc(d.club || '')}</div><div class="svteam">${esc(d.team)}</div></div></div>`;
-  if (SV.step === 'done') return head + `<div class="card empty"><b>🎉</b><h2 style="margin:6px 0">Bedankt, ${esc(SV.first)}!</h2>Je trainer ziet nu je favoriete posities.<br><br><button class="btn" data-sv="again">Opnieuw invullen</button></div>`;
+  if (SV.step === 'done') return head + `<div class="card empty"><b>🎉</b><h2 style="margin:6px 0">Bedankt, ${esc(niceFirst(SV.first))}!</h2>Je trainer ziet nu je favoriete posities.<br><br><button class="btn" data-sv="again">Opnieuw invullen</button></div>`;
   if (SV.step === 'name') return head + `
   <div class="card">
     <h2>👋 Wie ben jij?</h2>
@@ -1967,19 +1976,25 @@ document.addEventListener('click', async e => {
   }
 });
 
-/* ===================== Online samenwerken (Firebase) ===================== */
-const DATA_VERSION = 6;               // ophogen als de opbouw van de gegevens verandert
+/* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
+const DATA_VERSION = 7;               // ophogen als de opbouw van de gegevens verandert
 const FIREBASE_SDK = '10.12.2';
 const CLOUD_KEY = 'opstellingmaker.cloud';
 const DEVICE = (() => { let d = localStorage.getItem('opstellingmaker.device'); if (!d){ d = uid() + uid(); try { localStorage.setItem('opstellingmaker.device', d); } catch(e){} } return d; })();
-// Elke koppeling hoort bij één team: per apparaat bewaard als {teamId: {code, id}}
+// Koppelingen per team op dit apparaat: {lokaalTeamId: {id: onlineTeamId, v: 7}}  (oud: {code, id: 64 tekens})
 const CLOUD_MAP_KEY = 'opstellingmaker.cloud.teams';
-const cloud = {api:null, status:'off', outdated:false, pending:null, links:{}};
+const ME_KEY = 'opstellingmaker.me';
+const cloud = {creating:new Set(), api:null, status:'off', outdated:false, pending:null, links:{}, user:null, authKnown:false, syncing:false, authUnsub:null};
 const cloudMap = () => { try { return JSON.parse(localStorage.getItem(CLOUD_MAP_KEY)) || {}; } catch(e){ return {}; } };
 const setCloudMap = m => { try { localStorage.setItem(CLOUD_MAP_KEY, JSON.stringify(m)); } catch(e){} };
 const cloudCfg = (tid = S.active.team) => cloudMap()[tid] || null;
+const isLegacy = c => !!c && c.v !== 7;
 const cloudAvailable = () => !!(window.__cloudApi || window.FIREBASE_CONFIG);
+const myUid = () => cloud.user && cloud.user.uid;
+const myName = () => (cloud.user && cloud.user.displayName) || localStorage.getItem(ME_KEY) || '';
+const hasContent = t => t.seasons.some(se => se.players.length || se.matches.length);
 async function sha(t){ const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
+
 let fbApiPromise = null;
 function firebaseApi(){
   if (window.__cloudApi) return Promise.resolve(window.__cloudApi);
@@ -1987,33 +2002,61 @@ function firebaseApi(){
   if (fbApiPromise) return fbApiPromise;
   fbApiPromise = (async () => {
     const base = `https://www.gstatic.com/firebasejs/${FIREBASE_SDK}/`;
-    const [{initializeApp}, fs] = await Promise.all([import(base + 'firebase-app.js'), import(base + 'firebase-firestore.js')]);
-    const db = fs.getFirestore(initializeApp(window.FIREBASE_CONFIG));
-    const ref = id => fs.doc(db, 'clubs', id);
+    const [{initializeApp}, fs, au] = await Promise.all([import(base + 'firebase-app.js'), import(base + 'firebase-firestore.js'), import(base + 'firebase-auth.js')]);
+    const app = initializeApp(window.FIREBASE_CONFIG);
+    const db = fs.getFirestore(app), auth = au.getAuth(app);
+    auth.languageCode = 'nl';
+    const d = (...p) => fs.doc(db, ...p);
+    const data = s => s.exists() ? s.data() : null;
     return {
-      get: async id => { const s = await fs.getDoc(ref(id)); return s.exists() ? s.data() : null; },
-      set: (id, v) => fs.setDoc(ref(id), v),
-      listen: (id, cb, err) => fs.onSnapshot(ref(id), s => cb(s.exists() ? s.data() : null), err),
-      getSurvey: async sid => { const d = await fs.getDoc(fs.doc(db, 'surveys', sid)); return d.exists() ? d.data() : null; },
-      createSurvey: (sid, v) => fs.setDoc(fs.doc(db, 'surveys', sid), v),
+      // inloggen
+      onAuth: cb => au.onAuthStateChanged(auth, u => cb(u ? {uid: u.uid, email: u.email, displayName: u.displayName} : null)),
+      signInGoogle: async () => { const r = await au.signInWithPopup(auth, new au.GoogleAuthProvider()); return r.user; },
+      signInEmail: (e, p) => au.signInWithEmailAndPassword(auth, e, p),
+      signUpEmail: async (e, p, name) => { const r = await au.createUserWithEmailAndPassword(auth, e, p); if (name) await au.updateProfile(r.user, {displayName: name}); return r.user; },
+      setName: async name => { if (auth.currentUser) await au.updateProfile(auth.currentUser, {displayName: name}); },
+      resetPassword: e => au.sendPasswordResetEmail(auth, e),
+      signOut: () => au.signOut(auth),
+      // oude opslag (alleen om over te zetten)
+      get: async id => data(await fs.getDoc(d('clubs', id))),
+      set: (id, v) => fs.setDoc(d('clubs', id), v),
+      // teams
+      teamGet: async id => data(await fs.getDoc(d('teams', id))),
+      teamCreate: (id, v) => fs.setDoc(d('teams', id), v),
+      teamPush: (id, v) => fs.setDoc(d('teams', id), v, {merge: true}),
+      teamListen: (id, cb, err) => fs.onSnapshot(d('teams', id), s => cb(data(s)), err),
+      teamJoin: (id, uid, via) => fs.updateDoc(d('teams', id), {['members.' + uid]: 'trainer', via, updated: Date.now()}),
+      teamRemoveMember: (id, uid) => fs.updateDoc(d('teams', id), {['members.' + uid]: fs.deleteField(), updated: Date.now()}),
+      // uitnodigingen
+      inviteCreate: (id, v) => fs.setDoc(d('invites', id), v),
+      inviteGet: async id => data(await fs.getDoc(d('invites', id))),
+      inviteClaim: (id, uid, name) => fs.updateDoc(d('invites', id), {usedBy: uid, usedName: name || '', usedAt: Date.now()}),
+      inviteDelete: id => fs.deleteDoc(d('invites', id)),
+      // eigen lijst met teams (voor een nieuwe telefoon)
+      userGet: async uid => data(await fs.getDoc(d('users', uid))),
+      userSet: (uid, v) => fs.setDoc(d('users', uid), v, {merge: true}),
+      userRemoveTeam: (uid, rid) => fs.updateDoc(d('users', uid), {['teams.' + rid]: fs.deleteField()}),
+      // vraag het de spelers
+      getSurvey: async sid => data(await fs.getDoc(d('surveys', sid))),
+      createSurvey: (sid, v) => fs.setDoc(d('surveys', sid), v),
       addResponse: (sid, v) => fs.addDoc(fs.collection(db, 'surveys', sid, 'responses'), v),
-      listResponses: async sid => (await fs.getDocs(fs.collection(db, 'surveys', sid, 'responses'))).docs.map(d => ({id: d.id, ...d.data()}))
+      listResponses: async sid => (await fs.getDocs(fs.collection(db, 'surveys', sid, 'responses'))).docs.map(x => ({id: x.id, ...x.data()}))
     };
   })();
   fbApiPromise.catch(() => fbApiPromise = null);
   return fbApiPromise;
 }
-function linkStatus(tid, st){ const L = cloud.links[tid]; if (L) L.status = st; if (tid === S.active.team) setCloudStatus(st); }
+
+function linkStatus(tid, st){ const L = cloud.links[tid]; if (L) L.status = st; if (tid === S.active.team) setCloudStatus(); }
 function setCloudStatus(st){
-  if (st === undefined){ const L = cloud.links[S.active.team]; st = cloud.outdated ? 'old' : (L ? L.status : 'off'); }
+  if (st === undefined){ const L = cloud.links[S.active.team], c = cloudCfg(); st = cloud.outdated ? 'old' : L ? L.status : (c && !cloud.user && cloud.authKnown) ? 'login' : 'off'; }
   cloud.status = st;
   const el = document.getElementById('cloudDot');
-  if (el){ el.innerHTML = iconize({ok:'☁️ ✓', busy:'☁️ …', err:'☁️ ⚠️', old:'⬆️ ververs', off:''}[st] || ''); el.className = 'cloud ' + st; }
+  if (el){ el.innerHTML = iconize({ok:'☁️ ✓', busy:'☁️ …', err:'☁️ ⚠️', old:'⬆️ ververs', login:'🔒 inloggen', off:''}[st] || ''); el.className = 'cloud ' + st; }
 }
-// Haal uit online gegevens het team: nieuw formaat (één team) of oud formaat (hele app met alle teams)
 function teamFromRemote(r, local){
   let d; try { d = JSON.parse(r.data); } catch(e){ return null; }
-  if (r.kind === 'team') return d;
+  if (r.kind === 'team' || r.members) return d && d.seasons ? d : null;
   if (d && Array.isArray(d.teams)){
     if (!local) return d.teams.length === 1 ? d.teams[0] : null;
     return d.teams.find(x => x.id === local.id) || d.teams.find(x => teamLabel(x) === teamLabel(local)) || d.teams.find(x => x.name === local.name) || null;
@@ -2027,11 +2070,7 @@ async function migrateOldCloud(){
   if (!c || !c.id) return;
   const map = cloudMap(); if (Object.values(map).some(x => x.id === c.id)) return;
   let tid = S.teams.length === 1 ? S.teams[0].id : null;
-  if (!tid){
-    // het team dat in de oude online opslag het eerst stond, of laat kiezen
-    tid = await chooseDialog(`Samenwerken werkt nu per team. Bij welk team hoort je teamcode "${c.code}"? De andere teams worden dan niet meer gedeeld.`, sortedTeams().map(t => ({v: t.id, n: teamLabel(t)})));
-    if (!tid) tid = S.active.team;
-  }
+  if (!tid) tid = await chooseDialog(`Samenwerken werkt nu per team. Bij welk team hoort je teamcode "${c.code}"?`, sortedTeams().map(t => ({v: t.id, n: teamLabel(t)}))) || S.active.team;
   map[tid] = {code: c.code, id: c.id}; setCloudMap(map);
 }
 function chooseDialog(text, opts){
@@ -2042,59 +2081,160 @@ function chooseDialog(text, opts){
     d.addEventListener('click', e => { e.stopPropagation(); const b = e.target.closest('[data-r]'); if (b){ d.remove(); res(b.dataset.r); } });
   });
 }
+
+// ---------- opstarten en inloggen ----------
 async function cloudStart(){
   if (!cloudAvailable()){ setCloudStatus('off'); return; }
   await migrateOldCloud();
-  const map = cloudMap();
-  Object.keys(map).forEach(tid => { if (!S.teams.some(t => t.id === tid)) delete map[tid]; });
-  setCloudMap(map);
-  Object.keys(cloud.links).forEach(tid => { if (!map[tid] || map[tid].id !== cloud.links[tid].id) unlinkLive(tid); });
-  if (!Object.keys(map).length){ setCloudStatus('off'); return; }
   try { cloud.api = await firebaseApi(); } catch(e){ console.error(e); setCloudStatus('err'); return; }
   if (!cloud.api){ setCloudStatus('off'); return; }
-  Object.entries(map).forEach(([tid, c]) => {
-    if (cloud.links[tid]) return;
-    const L = cloud.links[tid] = {id: c.id, code: c.code, status:'busy', timer:null, lastRemote:0, last:null, force: !!c.force, unsub:null};
-    if (c.force){ delete c.force; setCloudMap(map); }
-    linkStatus(tid, 'busy');
-    L.unsub = cloud.api.listen(c.id, r => applyRemote(tid, r), e => { console.error(e); linkStatus(tid, 'err'); });
+  if (cloud.authUnsub) return;
+  await new Promise(res => {
+    let first = true;
+    cloud.authUnsub = cloud.api.onAuth(async u => {
+      const was = myUid();
+      cloud.user = u; cloud.authKnown = true;
+      if (u && u.displayName) try { localStorage.setItem(ME_KEY, u.displayName); } catch(e){}
+      if (u && u.uid !== was) await syncAccount();
+      if (!u) stopAll();
+      render();
+      if (first){ first = false; res(); }
+    });
   });
-  setCloudStatus();
 }
+function stopAll(){ Object.keys(cloud.links).forEach(unlinkLive); setCloudStatus(); }
 function unlinkLive(tid){ const L = cloud.links[tid]; if (!L) return; if (L.unsub) L.unsub(); clearTimeout(L.timer); delete cloud.links[tid]; }
-function applyRemote(tid, r){
-  const L = cloud.links[tid]; if (!L) return;
-  if (!r){ cloudPushTeam(tid, true); checkMembership(tid); return; }  // nog leeg: dit team uploaden
-  if ((r.version || 0) > DATA_VERSION){ cloud.outdated = true; setCloudStatus('old'); showOutdated(); return; }
-  const legacy = r.kind !== 'team';
-  if (!L.force && !legacy){
-    if (r.by === DEVICE){ if (!L.timer) linkStatus(tid, 'ok'); return; }   // eigen wijziging
-    if (L.timer) return;                                       // eigen wijziging onderweg: die wint
-    if (r.updated <= L.lastRemote) return;
+function listenTeam(tid){
+  const c = cloudCfg(tid); if (!c || isLegacy(c) || cloud.links[tid] || !myUid()) return;
+  const L = cloud.links[tid] = {id: c.id, status:'busy', timer:null, lastRemote:0, last:null, members:{}, unsub:null};
+  linkStatus(tid, 'busy');
+  L.unsub = cloud.api.teamListen(c.id, r => applyRemote(tid, r), e => {
+    console.error(e);
+    if (e && /permission/i.test(e.code || e.message || '')) lostAccess(tid);
+    else linkStatus(tid, 'err');
+  });
+}
+async function lostAccess(tid){
+  const t = S.teams.find(x => x.id === tid), c = cloudCfg(tid);
+  unlinkLive(tid);
+  const map = cloudMap(); delete map[tid]; setCloudMap(map);
+  if (c && myUid()) cloud.api.userRemoveTeam(myUid(), c.id).catch(() => {});
+  setCloudStatus(); render();
+  if (t) await tell(`${teamLabel(t)} wordt niet meer met je gedeeld. Het team blijft op dit apparaat staan, maar wijzigingen van de andere trainers komen niet meer binnen.`);
+}
+
+// Na inloggen: oude koppelingen overzetten, teams online bewaren, teams van je account ophalen
+async function syncAccount(){
+  if (cloud.syncing) return; cloud.syncing = true;
+  try {
+    const uid = myUid(), api = cloud.api;
+    const udoc = await api.userGet(uid).catch(() => null) || {};
+    if (!myName()){
+      const n = udoc.name || await askName();
+      if (n){ try { localStorage.setItem(ME_KEY, n); } catch(e){} api.setName(n).catch(() => {}); cloud.user.displayName = n; }
+    }
+    const map = cloudMap();
+    Object.keys(map).forEach(tid => { if (!S.teams.some(t => t.id === tid)) delete map[tid]; });
+    setCloudMap(map);
+    // 1. oude koppelingen (teamcode / eerste link-versie) overzetten
+    for (const tid of Object.keys(map)) if (isLegacy(map[tid])) await migrateLegacy(tid, map[tid]).catch(e => { console.error(e); toast('Overzetten van ' + teamLabel(S.teams.find(t => t.id === tid)) + ' lukt nog niet'); });
+    // 2. teams van je account die nog niet op dit apparaat staan
+    const linked = new Set(Object.values(cloudMap()).map(c => c.id));
+    for (const rid of Object.keys(udoc.teams || {})){
+      if (linked.has(rid)) continue;
+      const r = await api.teamGet(rid).catch(() => null);
+      if (!r){ api.userRemoveTeam(uid, rid).catch(() => {}); continue; }
+      const td = teamFromRemote(r, null); if (!td) continue;
+      placeTeam(td, rid);
+    }
+    // 3. eigen teams met spelers of wedstrijden online bewaren
+    for (const t of S.teams.slice()) if (!cloudCfg(t.id) && hasContent(t)) await createRemoteTeam(t).catch(e => console.error(e));
+    await saveUserTeams();
+    save();
+    Object.keys(cloudMap()).forEach(listenTeam);
+    setCloudStatus();
+  } finally { cloud.syncing = false; }
+}
+function placeTeam(td, rid){
+  // vervangt een leeg team met dezelfde naam, anders als nieuw team erbij
+  const empty = S.teams.find(t => !cloudCfg(t.id) && teamLabel(t) === teamLabel(td) && !hasContent(t));
+  const tid = empty ? empty.id : uid();
+  const nt = {...td, id: tid};
+  if (empty) S.teams[S.teams.indexOf(empty)] = nt; else S.teams.push(nt);
+  const map = cloudMap(); map[tid] = {id: rid, v: 7}; setCloudMap(map);
+  normalize();
+  return tid;
+}
+async function saveUserTeams(){
+  const teams = {}; Object.values(cloudMap()).forEach(c => { if (!isLegacy(c)) teams[c.id] = true; });
+  await cloud.api.userSet(myUid(), {name: myName(), teams}).catch(e => console.error(e));
+}
+async function createRemoteTeam(t){
+  const uid = myUid(), rid = randId(20);
+  t.people = {[uid]: {name: myName() || 'Trainer', joined: Date.now()}};
+  t.invites = []; delete t.members;
+  await cloud.api.teamCreate(rid, {members: {[uid]: 'owner'}, data: JSON.stringify(t), version: DATA_VERSION, updated: Date.now(), by: DEVICE});
+  const map = cloudMap(); map[t.id] = {id: rid, v: 7}; setCloudMap(map);
+  return rid;
+}
+async function migrateLegacy(tid, c){
+  const api = cloud.api, t = S.teams.find(x => x.id === tid);
+  const remote = await api.get(c.id).catch(() => null);
+  if (remote && remote.kind === 'moved' && remote.movedTo){
+    // een andere trainer heeft dit team al overgezet: meedoen via zijn uitnodiging
+    await joinRemote(remote.movedTo, remote.invite, tid);
+    return;
   }
+  const td = remote ? teamFromRemote(remote, t) : null;
+  if (td && (remote.updated || 0) > 0){ const i = S.teams.indexOf(t); S.teams[i] = {...td, id: tid}; normalize(); }
+  const tt = S.teams.find(x => x.id === tid);
+  const rid = await createRemoteTeam(tt);
+  // de trainers van de oude koppeling kunnen 60 dagen lang meedoen na inloggen
+  const iid = randId(24);
+  await api.inviteCreate(iid, {team: rid, multi: true, expires: new Date(Date.now() + 60 * 864e5), name: 'Trainers', teamLabel: teamLabel(tt), club: tt.club || '', byName: myName(), by: myUid(), created: Date.now(), usedBy: null});
+  // oude, onbeveiligde opslag leegmaken: alleen een verwijzing blijft staan
+  await api.set(c.id, {kind: 'moved', movedTo: rid, invite: iid, data: '{}', version: DATA_VERSION, updated: Date.now(), by: DEVICE});
+}
+
+// ---------- gegevens ontvangen en versturen ----------
+function applyRemote(tid, r){
+  const L = cloud.links[tid]; if (!L || !r) return;
+  if ((r.version || 0) > DATA_VERSION){ cloud.outdated = true; setCloudStatus('old'); showOutdated(); return; }
+  const mk = JSON.stringify(r.members || {}), memChanged = mk !== L.memKey;
+  L.members = r.members || {}; L.memKey = mk;
+  if (!L.members[myUid()]){ lostAccess(tid); return; }
+  const fresh = r.by !== DEVICE && !L.timer && (r.updated || 0) > L.lastRemote;
+  if (!fresh){ if (!L.timer) linkStatus(tid, 'ok'); afterRemote(tid); if (memChanged && tid === S.active.team) render(); return; }
   const local = S.teams.find(t => t.id === tid); if (!local) return;
-  const td = teamFromRemote(r, local);
-  L.force = false; L.lastRemote = r.updated || 0;
-  if (!td){ cloudPushTeam(tid, true); return; }
+  const td = teamFromRemote(r, local); if (!td) return;
+  L.lastRemote = r.updated || 0;
   const apply = () => {
     const i = S.teams.findIndex(t => t.id === tid); if (i < 0) return;
-    td.id = tid;                                               // team-id is per apparaat
-    const extra = (S.teams[i].members || []).filter(x => !(td.members || []).some(y => y.id === x.id));
-    if (extra.length) td.members = [...(td.members || []), ...extra];   // niemand kwijtraken bij gelijktijdige wijzigingen
+    td.id = tid;
     S.teams[i] = td; normalize();
     L.last = JSON.stringify(S.teams[i]);
     try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){}
     render(); linkStatus(tid, 'ok');
-    if (legacy || extra.length) cloudPushTeam(tid, true);
-    checkMembership(tid);                      // oude opslag omzetten naar alleen dit team
+    afterRemote(tid);
   };
   const a = document.activeElement;
   if ((a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) || drag.el || document.querySelector('.modal')) cloud.pending = apply;
   else apply();
 }
+function afterRemote(tid){
+  // zorg dat je eigen naam in de lijst staat
+  const t = S.teams.find(x => x.id === tid), uid = myUid(); if (!t || !uid) return;
+  t.people = t.people || {};
+  if (!t.people[uid] || (myName() && t.people[uid].name !== myName())){ t.people[uid] = {...(t.people[uid] || {joined: Date.now()}), name: myName() || 'Trainer'}; save(); }
+}
 function flushPending(){ if (cloud.pending && !drag.el && !document.querySelector('.modal')){ const f = cloud.pending; cloud.pending = null; f(); } }
 document.addEventListener('focusout', () => setTimeout(flushPending, 50));
-function cloudPush(){ Object.keys(cloud.links).forEach(tid => cloudPushTeam(tid, false)); }
+function cloudPush(){
+  if (!cloud.api || !myUid()) return;
+  Object.keys(cloud.links).forEach(tid => cloudPushTeam(tid, false));
+  // nieuwe teams met inhoud automatisch online bewaren
+  if (!cloud.syncing) S.teams.forEach(t => { if (!cloudCfg(t.id) && hasContent(t) && !cloud.creating.has(t.id)){ cloud.creating.add(t.id); createRemoteTeam(t).then(() => { saveUserTeams(); save(); listenTeam(t.id); }).catch(e => console.error(e)).finally(() => cloud.creating.delete(t.id)); } });
+}
 function cloudPushTeam(tid, now){
   const L = cloud.links[tid]; if (!L || !cloud.api || cloud.outdated) return;
   const t = S.teams.find(x => x.id === tid); if (!t) return;
@@ -2105,8 +2245,8 @@ function cloudPushTeam(tid, now){
     L.timer = null;
     const tt = S.teams.find(x => x.id === tid); if (!tt) return;
     const data = JSON.stringify(tt), u = Date.now();
-    try { await cloud.api.set(L.id, {kind:'team', data, version: DATA_VERSION, updated: u, by: DEVICE}); L.last = data; L.lastRemote = Math.max(L.lastRemote, u); if (!L.timer) linkStatus(tid, 'ok'); }
-    catch(e){ console.error(e); linkStatus(tid, 'err'); }
+    try { await cloud.api.teamPush(L.id, {data, version: DATA_VERSION, updated: u, by: DEVICE}); L.last = data; L.lastRemote = Math.max(L.lastRemote, u); if (!L.timer) linkStatus(tid, 'ok'); }
+    catch(e){ console.error(e); if (/permission/i.test(e.code || e.message || '')) lostAccess(tid); else linkStatus(tid, 'err'); }
   }, now ? 0 : 700);
 }
 function showOutdated(){
@@ -2116,35 +2256,266 @@ function showOutdated(){
   d.onclick = () => location.reload();
   document.body.appendChild(d);
 }
-async function cloudConnect(t){
-  const code = document.getElementById('cloudCode').value.trim().toLowerCase(), pin = document.getElementById('cloudPin').value.trim();
-  if (code.length < 4 || pin.length < 4){ await tell('Teamcode en pincode moeten allebei minstens 4 tekens lang zijn.'); return; }
-  let api, remote, cid;
-  try {
-    setCloudStatus('busy');
-    api = await firebaseApi();
-    cid = await sha('opstelling|' + code + '|' + pin);
-    remote = await api.get(cid);
-  } catch(err){ console.error(err); setCloudStatus(); await tell('Verbinden lukt niet. Controleer firebase-config.js en de Firestore-regels (zie FIREBASE.md). Melding: ' + (err.message || err)); return; }
-  const map = cloudMap();
-  const other = Object.keys(map).find(k => map[k].id === cid && k !== t.id);
-  if (other){ setCloudStatus(); await tell(`Deze teamcode is op dit apparaat al gekoppeld aan ${teamLabel(S.teams.find(x => x.id === other))}.`); return; }
-  if (remote && (remote.version || 0) > DATA_VERSION){ showOutdated(); setCloudStatus(); await tell('Online staat een nieuwere versie. Ververs eerst de app.'); return; }
-  let force = false;
-  if (remote){
-    const td = teamFromRemote(remote, t) || teamFromRemote(remote, null);
-    if (!td){ setCloudStatus(); await tell('Onder deze teamcode staan gegevens van meerdere teams, maar geen team met dezelfde naam als dit team. Geef dit team eerst dezelfde naam.'); return; }
-    if (!await ask(`Onder "${code}" staat online het team ${teamLabel(td)} (${td.seasons[0].players.length} spelers, ${td.seasons[0].matches.length} wedstrijden). Dat wordt nu in ${teamLabel(t)} op dit apparaat geladen en vervangt wat hier staat. Je andere teams blijven zoals ze zijn.`, 'Laden')){ setCloudStatus(); return; }
-    force = true;
-  } else {
-    if (!await ask(`Nieuwe online opslag "${code}" aanmaken voor ${teamLabel(t)}? Alleen dit team wordt gedeeld.`, 'Aanmaken')){ setCloudStatus(); return; }
-  }
-  map[t.id] = {code, id: cid, force}; setCloudMap(map);
-  await cloudStart(); render(); toast(`${teamLabel(t)} verbonden ☁️`);
+
+// ---------- inloggen (Google of e-mail + wachtwoord) ----------
+const AUTH_ERR = {
+  'auth/invalid-credential': 'E-mailadres of wachtwoord klopt niet.', 'auth/wrong-password': 'E-mailadres of wachtwoord klopt niet.', 'auth/user-not-found': 'Er is geen account met dit e-mailadres. Kies "Nieuw account".',
+  'auth/invalid-login-credentials': 'E-mailadres of wachtwoord klopt niet.', 'auth/email-already-in-use': 'Er bestaat al een account met dit e-mailadres. Log in, of kies "Wachtwoord vergeten".',
+  'auth/weak-password': 'Kies een wachtwoord van minstens 6 tekens.', 'auth/invalid-email': 'Dit is geen geldig e-mailadres.', 'auth/missing-password': 'Vul je wachtwoord in.',
+  'auth/too-many-requests': 'Te veel pogingen. Wacht even en probeer het opnieuw.', 'auth/network-request-failed': 'Geen internetverbinding.',
+  'auth/operation-not-allowed': 'Deze manier van inloggen staat nog niet aan in Firebase (Authentication → Sign-in method).',
+  'auth/unauthorized-domain': 'Dit adres is nog niet toegestaan in Firebase (Authentication → Settings → Authorized domains: mark346.github.io).',
+  'auth/popup-blocked': 'Het Google-venster werd geblokkeerd. Probeer het nog eens, of log in met e-mail.', 'auth/operation-not-supported-in-this-environment': 'Inloggen met Google werkt hier niet. Log in met e-mail en wachtwoord.',
+  'auth/web-storage-unsupported': 'Inloggen met Google werkt hier niet. Log in met e-mail en wachtwoord.'
+};
+const authMsg = e => AUTH_ERR[e && e.code] || ('Inloggen lukt niet. ' + ((e && (e.message || e.code)) || ''));
+function loginDialog(intro){
+  return new Promise(res => {
+    const d = document.createElement('div'); d.className = 'modal';
+    let mode = 'in';
+    const draw = (msg = '', ok = false) => {
+      const email = d.querySelector('#auMail')?.value || '', name = d.querySelector('#auName')?.value || myName();
+      d.innerHTML = iconize(`<div class="box" style="max-height:90vh;overflow:auto"><p>👤 ${mode === 'up' ? 'Nieuw account maken' : 'Inloggen bij LineUp'}</p>
+        ${intro ? `<div class="muted" style="margin:-4px 0 12px">${esc(intro)}</div>` : ''}
+        <button class="btn full gbtn" data-r="google"><svg viewBox="0 0 48 48" width="20" height="20" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.3-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.3-.4-3.5z"/></svg>Doorgaan met Google</button>
+        <div class="ordiv"><span>of met e-mail</span></div>
+        ${mode === 'up' ? `<label class="f">Je naam<input id="auName" value="${esc(name)}" placeholder="Voor- en achternaam" autocomplete="name" maxlength="40"></label>` : ''}
+        <label class="f">E-mailadres<input id="auMail" type="email" value="${esc(email)}" autocomplete="email" inputmode="email" autocapitalize="off"></label>
+        <label class="f">Wachtwoord<input id="auPw" type="password" autocomplete="${mode === 'up' ? 'new-password' : 'current-password'}" placeholder="${mode === 'up' ? 'Minstens 6 tekens' : ''}"></label>
+        ${msg ? `<div class="aumsg ${ok ? 'ok' : ''}">${esc(msg)}</div>` : ''}
+        <button class="btn pri full big" data-r="${mode}">${mode === 'up' ? 'Account maken' : 'Inloggen'}</button>
+        <div class="grid2" style="margin-top:8px">
+          <button class="btn sm" data-r="${mode === 'up' ? 'toIn' : 'toUp'}">${mode === 'up' ? 'Ik heb al een account' : 'Nieuw account'}</button>
+          ${mode === 'in' ? `<button class="btn sm" data-r="reset">Wachtwoord vergeten?</button>` : `<span></span>`}
+        </div>
+        <button class="btn full" style="margin-top:10px" data-r="no">Annuleren</button></div>`);
+      setTimeout(() => (d.querySelector(mode === 'up' ? '#auName' : '#auMail') || {}).focus?.(), 50);
+    };
+    const finish = ok => { d.remove(); res(ok); setTimeout(() => { try { flushPending(); } catch(_){} }, 0); };
+    const busy = on => d.querySelectorAll('button').forEach(b => b.disabled = on);
+    d.addEventListener('click', async e => {
+      e.stopPropagation();
+      const b = e.target.closest('[data-r]'); if (!b) return;
+      const r = b.dataset.r;
+      if (r === 'no') return finish(false);
+      if (r === 'toUp'){ mode = 'up'; return draw(); }
+      if (r === 'toIn'){ mode = 'in'; return draw(); }
+      const api = await firebaseApi();
+      const mail = (d.querySelector('#auMail')?.value || '').trim(), pw = d.querySelector('#auPw')?.value || '', name = (d.querySelector('#auName')?.value || '').trim();
+      try {
+        if (r === 'no') return finish(false);
+        if (r === 'toUp'){ mode = 'up'; return draw(); }
+        if (r === 'toIn'){ mode = 'in'; return draw(); }
+        if (r === 'reset'){ if (!mail) return draw('Vul eerst je e-mailadres in.'); busy(true); await api.resetPassword(mail); return draw('Je krijgt een e-mail om een nieuw wachtwoord te kiezen. Kijk ook in je spam.', true); }
+        if (r === 'google'){ busy(true); await api.signInGoogle(); }
+        if (r === 'in'){ if (!mail || !pw) return draw('Vul je e-mailadres en wachtwoord in.'); busy(true); await api.signInEmail(mail, pw); }
+        if (r === 'up'){ if (!name) return draw('Vul je naam in.'); if (!mail || !pw) return draw('Vul je e-mailadres en een wachtwoord in.'); busy(true); try { localStorage.setItem(ME_KEY, name); } catch(_){} await api.signUpEmail(mail, pw, name); if (cloud.user) cloud.user.displayName = name; }
+        await waitFor(() => myUid() && !cloud.syncing, 15000);
+        finish(true);
+      } catch(err){ if (err && err.code === 'auth/popup-closed-by-user') return draw(); console.error(err); draw(authMsg(err)); }
+    });
+    d.addEventListener('keydown', e => { if (e.key === 'Enter') d.querySelector(`[data-r="${mode}"]`)?.click(); });
+    document.body.appendChild(d); draw();
+  });
 }
-async function cloudOff(t){
-  if (!await ask(`${teamLabel(t)} op dit apparaat loskoppelen? Het team blijft online en op dit apparaat staan, maar wordt niet meer gedeeld. Je andere teams blijven gekoppeld.`, 'Loskoppelen')) return;
-  const map = cloudMap(); delete map[t.id]; setCloudMap(map); unlinkLive(t.id); setCloudStatus(); render();
+const waitFor = (fn, ms) => new Promise(res => { const t0 = Date.now(); const tick = () => fn() || Date.now() - t0 > ms ? res() : setTimeout(tick, 100); tick(); });
+async function needLogin(why){
+  if (myUid()) return true;
+  if (!cloudAvailable()){ await tell('Hiervoor moet de online opslag (Firebase) ingesteld zijn.'); return false; }
+  if (!cloud.api) await cloudStart();
+  return loginDialog(why);
+}
+async function askName(){
+  let n = '';
+  while (!n){ const r = await askText('Wat is je naam? Dan zien de andere trainers met wie ze het team delen.', ''); if (r === null) return ''; n = String(r).trim().slice(0, 40); }
+  return n;
+}
+async function changeMyName(){
+  const n = await askText('Jouw naam (zo zien de andere trainers je):', myName()); if (!n || !n.trim()) return;
+  const name = n.trim().slice(0, 40);
+  try { localStorage.setItem(ME_KEY, name); } catch(e){}
+  if (cloud.user){ cloud.user.displayName = name; cloud.api.setName(name).catch(() => {}); saveUserTeams(); }
+  Object.keys(cloud.links).forEach(afterRemote);
+  render();
+}
+async function logout(){
+  if (!await ask('Uitloggen op dit apparaat? Je teams blijven op dit apparaat staan, maar worden niet meer gedeeld tot je weer inlogt.', 'Uitloggen')) return;
+  stopAll(); await cloud.api.signOut(); render();
+}
+
+// ---------- trainers uitnodigen ----------
+const inviteUrl = iid => location.origin + location.pathname + `?uitnodiging=${iid}`;
+const isStandalone = () => !!(navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches));
+const isOwner = tid => { const L = cloud.links[tid]; return !!(L && L.members[myUid()] === 'owner'); };
+async function inviteTrainer(t){
+  if (!await needLogin('Log in om je team veilig met andere trainers te delen.')) return;
+  t = S.teams.find(x => x.id === t.id);
+  if (!cloudCfg(t.id) || isLegacy(cloudCfg(t.id))){ try { await createRemoteTeam(t); await saveUserTeams(); save(); listenTeam(t.id); } catch(e){ console.error(e); await tell('Online bewaren lukt niet. Staan de nieuwe Firestore-regels erin? (' + (e.message || e) + ')'); return; } }
+  const n = await askText(`Wie nodig je uit voor ${teamLabel(t)}? (naam van de trainer)`, '');
+  if (n === null || !n.trim()) return;
+  const iid = randId(24), name = n.trim().slice(0, 40);
+  try { await cloud.api.inviteCreate(iid, {team: cloudCfg(t.id).id, name, teamLabel: teamLabel(t), club: t.club || '', byName: myName(), by: myUid(), created: Date.now(), usedBy: null}); }
+  catch(e){ console.error(e); await tell('Uitnodiging maken lukt niet. (' + (e.message || e) + ')'); return; }
+  t = S.teams.find(x => x.id === t.id);
+  t.invites = t.invites || []; t.invites.push({id: iid, name, created: Date.now()}); commit();
+  sendInvite(t, {id: iid, name});
+}
+function sendInvite(t, inv){
+  const url = inviteUrl(inv.id);
+  const txt = `⚽ Hoi ${inv.name}! Ik deel ${teamLabel(t)} met je in LineUp, dan kunnen we samen de opstellingen maken. Open deze link om mee te doen: ${url}`;
+  if (navigator.share) navigator.share({title: 'LineUp – ' + teamLabel(t), text: txt}).catch(() => {});
+  else navigator.clipboard?.writeText(txt).then(() => toast('Uitnodiging gekopieerd – plak hem in WhatsApp'), () => tell(url));
+}
+async function cancelInvite(t, iid){
+  const inv = (t.invites || []).find(x => x.id === iid); if (!inv) return;
+  if (!await ask(`Uitnodiging voor ${inv.name} intrekken? De link werkt dan niet meer.`, 'Intrekken')) return;
+  cloud.api.inviteDelete(iid).catch(e => console.error(e));
+  t.invites = t.invites.filter(x => x.id !== iid); commit();
+}
+async function removeMember(t, uid){
+  const c = cloudCfg(t.id), name = ((t.people || {})[uid] || {}).name || 'Deze trainer';
+  if (!await ask(`${name} verwijderen uit ${teamLabel(t)}? Hij kan het team dan niet meer zien of wijzigen.`, 'Verwijderen')) return;
+  try { await cloud.api.teamRemoveMember(c.id, uid); } catch(e){ await tell('Verwijderen lukt niet. (' + (e.message || e) + ')'); return; }
+  if (t.people) delete t.people[uid]; commit();
+}
+async function leaveTeam(t){
+  if (!await ask(`${teamLabel(t)} verlaten? Het team blijft op dit apparaat staan, maar je kunt niet meer samen met de andere trainers werken.`, 'Verlaten')) return;
+  const c = cloudCfg(t.id);
+  try { await cloud.api.teamRemoveMember(c.id, myUid()); } catch(e){ console.error(e); }
+  unlinkLive(t.id); const map = cloudMap(); delete map[t.id]; setCloudMap(map);
+  cloud.api.userRemoveTeam(myUid(), c.id).catch(() => {});
+  if (t.people) delete t.people[myUid()];
+  save(); setCloudStatus(); render();
+}
+async function joinRemote(rid, iid, replaceTid){
+  const uid = myUid(), api = cloud.api;
+  let r = await api.teamGet(rid).catch(() => null);
+  if (!r){
+    const inv = await api.inviteGet(iid).catch(() => null);
+    if (!inv || inv.team !== rid) throw new Error('Deze uitnodiging werkt niet (meer). Vraag de trainer om een nieuwe link.');
+    if (!inv.multi){
+      if (inv.usedBy && inv.usedBy !== uid) throw new Error('Deze uitnodiging is al door iemand anders gebruikt. Vraag de trainer om een nieuwe link.');
+      if (!inv.usedBy) await api.inviteClaim(iid, uid, myName());
+    }
+    await api.teamJoin(rid, uid, iid);
+    r = await api.teamGet(rid);
+  }
+  const td = teamFromRemote(r, null); if (!td) throw new Error('Dit team kon niet geladen worden.');
+  td.people = td.people || {}; td.people[uid] = {name: myName() || 'Trainer', joined: Date.now()};
+  td.invites = (td.invites || []).filter(x => x.id !== iid);
+  let tid;
+  if (replaceTid && S.teams.some(t => t.id === replaceTid)){
+    tid = replaceTid; S.teams[S.teams.findIndex(t => t.id === tid)] = {...td, id: tid};
+    const map = cloudMap(); map[tid] = {id: rid, v: 7}; setCloudMap(map); normalize();
+  } else tid = placeTeam(td, rid);
+  await saveUserTeams();
+  save();
+  listenTeam(tid);
+  cloudPushTeam(tid, true);
+  return tid;
+}
+async function openInvite(iid){
+  if (!cloudAvailable()){ await tell('Deze app is nog niet gekoppeld aan de online opslag.'); return; }
+  const api = await firebaseApi();
+  const inv = await api.inviteGet(iid).catch(() => null);
+  if (!inv){ await tell('Deze uitnodiging werkt niet (meer). Vraag de trainer om een nieuwe link.'); return; }
+  const have = Object.keys(cloudMap()).find(k => cloudMap()[k].id === inv.team && S.teams.some(t => t.id === k));
+  if (have){ S.active.team = have; ui.tab = 'matches'; commit(); toast(`${teamLabel(team())} staat al in je app`); return; }
+  if (!await inviteSheet(inv, inviteUrl(iid))) return;
+  if (!await needLogin(`Log in of maak een account om mee te doen met ${inv.teamLabel || 'het team'}. Daarna staat het team ook op je andere telefoons zodra je daar inlogt.`)) return;
+  try {
+    const tid = await joinRemote(inv.team, iid);
+    S.active.team = tid; ui.tab = 'matches'; ui.matchId = null; commit(); window.scrollTo(0, 0);
+    toast(`${teamLabel(team())} toegevoegd ☁️`);
+  } catch(e){ console.error(e); await tell(e.message && !/permission/i.test(e.message) ? e.message : 'Meedoen lukt niet. Deze uitnodiging is misschien ingetrokken of verlopen. Vraag de trainer om een nieuwe link.'); }
+}
+async function openLegacyInvite(cid){
+  const api = await firebaseApi(); const r = await api.get(cid).catch(() => null);
+  if (r && r.kind === 'moved' && r.invite) return openInvite(r.invite);
+  await tell('Deze uitnodigingslink is van een oudere versie. Vraag de trainer om een nieuwe link.');
+}
+function parseInvite(text){
+  try {
+    const u = new URL(String(text).trim().match(/https?:\/\/\S+/)?.[0] || String(text).trim());
+    const iid = u.searchParams.get('uitnodiging'); if (iid) return {iid};
+    const cid = u.searchParams.get('team'); if (cid && /^[0-9a-f]{64}$/.test(cid)) return {cid};
+  } catch(e){}
+  return null;
+}
+async function pasteInvite(){
+  const r = await askText('Plak hier de uitnodigingslink die je via WhatsApp hebt gekregen.', '');
+  if (r === null) return;
+  const p = parseInvite(r);
+  if (!p){ await tell('Dit is geen geldige uitnodigingslink. Kopieer de hele link uit het bericht (houd de link ingedrukt → Kopieer).'); return; }
+  if (p.iid) await openInvite(p.iid); else await openLegacyInvite(p.cid);
+}
+
+// ---------- uitnodigingspagina + op beginscherm zetten ----------
+let installEvt = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; const b = document.getElementById('installBtn'); if (b) b.hidden = false; });
+const platform = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) ? 'ios' : /Android/.test(navigator.userAgent) ? 'android' : 'other';
+function installSteps(){
+  const pf = platform();
+  const ios = `<div class="istep"><b>🍏 iPhone / iPad</b><ol>
+      <li>Open deze pagina in <b>Safari</b>. Zit je in WhatsApp? Tik op het kompas of op ••• → <i>Open in Safari</i>.</li>
+      <li>Tik onderin op de <b>deelknop</b> (vierkantje met pijl omhoog).</li>
+      <li>Scroll omlaag en kies <b>Zet op beginscherm</b> → <b>Voeg toe</b>.</li>
+      <li>Open LineUp vanaf je beginscherm en <b>log in met hetzelfde account</b>. Je teams staan er dan meteen in.</li>
+    </ol></div>`;
+  const and = `<div class="istep"><b>🤖 Android</b><ol>
+      <li>Open deze pagina in <b>Chrome</b>. Zit je in WhatsApp? Tik op ⋮ → <i>Openen in Chrome</i>.</li>
+      <li>Tik rechtsboven op <b>⋮</b> → <b>App installeren</b> of <b>Toevoegen aan startscherm</b>.</li>
+      <li>Open LineUp vanaf je startscherm. Ben je hier al ingelogd, dan staat het team er meteen in; anders log je daar in met hetzelfde account.</li>
+    </ol><button class="btn sm" id="installBtn" data-r="install" ${installEvt ? '' : 'hidden'}>📲 Installeer LineUp nu</button></div>`;
+  return pf === 'android' ? and + `<details><summary class="muted">Heb je een iPhone?</summary>${ios}</details>`
+    : pf === 'ios' ? ios + `<details><summary class="muted">Heb je een Android-telefoon?</summary>${and}</details>`
+    : ios + and;
+}
+function installCard(){
+  if (isStandalone()) return '';
+  return `<div class="card"><h2>📲 LineUp op je beginscherm</h2><div class="muted" style="margin-bottom:6px">Dan open je LineUp voortaan als een gewone app.</div>${installSteps()}</div>`;
+}
+function inviteSheet(inv, url){
+  return new Promise(res => {
+    const d = document.createElement('div'); d.className = 'modal';
+    const standalone = isStandalone();
+    const lbl = inv.teamLabel || 'een team';
+    d.innerHTML = iconize(`<div class="box" style="max-height:90vh;overflow:auto">
+      <div class="svhead" style="margin:0 0 10px"><div class="logo">${LOGO_MARK}</div><div><div class="club">${esc(inv.club || 'LineUp')}</div><div class="svteam">${esc(lbl)}</div></div></div>
+      <p style="margin-top:0;font-size:15px;font-weight:500;line-height:1.45">Hoi ${esc(inv.multi ? 'trainer' : (inv.name || 'trainer'))}! <b>${esc(inv.byName || 'Een trainer')}</b> deelt <b>${esc(lbl)}</b> met je in LineUp. Samen maken jullie de opstellingen; wijzigingen zien jullie bij elkaar meteen.</p>
+      <div class="muted" style="margin:-4px 0 12px;font-size:13px">🔒 Je logt één keer in met Google of met je e-mailadres. Zo kan alleen jij bij jouw teams.</div>
+      <button class="btn pri full big" data-r="ok">✅ Meedoen</button>
+      ${standalone ? '' : `<div class="sgroup" style="margin-top:16px">📲 LineUp op je beginscherm zetten</div>
+      <div class="muted" style="margin-bottom:8px">Doe eerst mee, zet LineUp daarna op je beginscherm en log daar in. Dan open je LineUp voortaan als een gewone app.</div>
+      ${installSteps()}`}
+      <button class="btn full" style="margin-top:12px" data-r="no">Niet nu</button></div>`);
+    document.body.appendChild(d);
+    d.addEventListener('click', async e => {
+      e.stopPropagation();
+      const b = e.target.closest('[data-r]'); if (!b) return;
+      const r = b.dataset.r;
+      if (r === 'install'){ if (installEvt){ installEvt.prompt(); installEvt = null; b.hidden = true; } return; }
+      d.remove(); res(r === 'ok');
+      setTimeout(() => { try { flushPending(); } catch(_){} }, 0);
+    });
+  });
+}
+
+// ---------- kaarten in Instellingen → Team ----------
+function accountCard(){
+  if (!cloudAvailable()) return '';
+  if (!cloud.user) return `
+  <div class="card">
+    <h2>👤 Account</h2>
+    <div class="muted" style="margin-bottom:12px">Log in om je teams veilig online te bewaren en met andere trainers te delen. Op een nieuwe telefoon log je gewoon opnieuw in en staan al je teams er weer.</div>
+    <button class="btn pri full" data-act="login">Inloggen of account maken</button>
+  </div>`;
+  return `
+  <div class="card">
+    <h2>👤 Account</h2>
+    <div class="mrow"><span class="mav">${esc((myName() || '?').charAt(0).toUpperCase())}</span><span class="grow"><b>${esc(myName() || 'Naam onbekend')}</b><small>${esc(cloud.user.email || '')}</small></span><button class="btn sm" data-act="editMyName">✏️</button></div>
+    <button class="btn full" style="margin-top:10px" data-act="logout">Uitloggen</button>
+  </div>`;
 }
 function cloudCard(t = team()){
   const c = cloudCfg(t.id), L = cloud.links[t.id];
@@ -2156,201 +2527,39 @@ function cloudCard(t = team()){
       : window.__cfgError ? '<b>firebase-config.js bevat een fout:</b> ' + esc(window.__cfgError) + '. Controleer of je alleen het deel tussen { } hebt geplakt, met alle komma\'s en aanhalingstekens.'
       : '<b>firebase-config.js is gevonden, maar er staat nog geen koppeling in</b> (nog <code>null</code>?). Of je ziet nog de oude versie: wacht een minuut en ververs.'}</div>
   </div>`;
-  const st = cloud.outdated ? 'old' : (L ? L.status : 'busy');
-  const others = sortedTeams().filter(x => x.id !== t.id && cloudCfg(x.id));
-  const foot = others.length ? `<div class="muted" style="margin-top:8px;font-size:12px">Ook gedeeld op dit apparaat: ${others.map(x => esc(teamLabel(x))).join(', ')}</div>` : '';
-  if (c) return `
-  <div class="card">
-    <h2>☁️ Samenwerken · ${esc(teamLabel(t))}</h2>
-    <div class="set"><div class="lbl">Gedeeld team<small>${c.code ? 'teamcode ' + esc(c.code) : 'via uitnodigingslink'}</small></div><b class="cloud ${st}">${{ok:'✓ Opgeslagen', busy:'… Bezig', err:'⚠️ Geen verbinding', old:'⬆️ Ververs de app', off:'—'}[st]}</b></div>
-    <div class="muted" style="margin:8px 0 0">Alleen dit team (<b>${esc(teamLabel(t))}</b>) wordt gedeeld. Wijzigingen zie je bij elkaar meteen.</div>
-    ${membersCard(t, c)}
-    <button class="btn full" style="margin-top:8px" data-act="cloudOff">Dit team loskoppelen op dit apparaat</button>${foot}
-  </div>`;
-  return `
-  <div class="card">
-    <h2>☁️ Samenwerken · ${esc(teamLabel(t))}</h2>
-    <div class="muted" style="margin-bottom:12px">Deel <b>dit team</b> met andere trainers. Je stuurt elke trainer een eigen link via WhatsApp; daarna maken jullie samen de opstellingen en zie je hier met wie je het team deelt.</div>
-    <button class="btn pri full" data-act="shareTeam">📤 Team delen met een trainer</button>
+  const head = `<h2>☁️ Samenwerken · ${esc(teamLabel(t))}</h2>`;
+  if (!cloud.user) return `
+  <div class="card">${head}
+    <div class="muted" style="margin-bottom:12px">${c ? '🔒 Dit team was al gedeeld. Samenwerken is nu beveiligd: log in om verder samen te werken.' : 'Log in om dit team met andere trainers te delen. Je stuurt elke trainer een eigen link via WhatsApp.'}</div>
+    <button class="btn pri full" data-act="login">Inloggen of account maken</button>
     <button class="btn full" style="margin-top:8px" data-act="pasteInvite">🔗 Ik heb een uitnodigingslink gekregen</button>
-    <details style="margin-top:12px"><summary class="muted">🔑 Verbinden met teamcode en pincode</summary>
-      <div class="muted" style="margin:8px 0">Iedereen die dezelfde combinatie invult, werkt in dit team. Staat het team al online, dan wordt dit team vervangen door de online versie.</div>
-      <div class="grid2"><input id="cloudCode" placeholder="Teamcode" autocapitalize="off" autocomplete="off"><input id="cloudPin" placeholder="Pincode" inputmode="numeric" autocomplete="off"></div>
-      <button class="btn full" style="margin-top:10px" data-act="cloudConnect">☁️ Verbinden</button>
-    </details>${foot}
+  </div>`;
+  if (!c || isLegacy(c)) return `
+  <div class="card">${head}
+    <div class="muted" style="margin-bottom:12px">Deel <b>dit team</b> met andere trainers. Je stuurt elke trainer een eigen link via WhatsApp; hij logt één keer in en daarna maken jullie samen de opstellingen.</div>
+    <button class="btn pri full" data-act="inviteTrainer">📤 Team delen met een trainer (link via WhatsApp)</button>
+    <button class="btn full" style="margin-top:8px" data-act="pasteInvite">🔗 Ik heb een uitnodigingslink gekregen</button>
+  </div>`;
+  const st = cloud.outdated ? 'old' : (L ? L.status : 'busy');
+  const members = L ? L.members : {}, people = t.people || {}, owner = isOwner(t.id);
+  const ids = Object.keys(members).sort((a, b) => (members[b] === 'owner') - (members[a] === 'owner') || (people[a]?.name || '').localeCompare(people[b]?.name || ''));
+  return `
+  <div class="card">${head}
+    <div class="set"><div class="lbl">Online bewaard<small>${owner ? 'Jij beheert dit team' : 'Gedeeld door ' + esc(people[ids.find(x => members[x] === 'owner')]?.name || 'een trainer')}</small></div><b class="cloud ${st}">${{ok:'✓ Opgeslagen', busy:'… Bezig', err:'⚠️ Geen verbinding', old:'⬆️ Ververs de app', off:'—'}[st] || ''}</b></div>
+    <div class="sgroup" style="margin-top:14px">Gedeeld met</div>
+    <div class="mlist">
+      ${ids.map(u => { const me = u === myUid(), p = people[u] || {}; return `<div class="mrow"><span class="mav">${esc((p.name || '?').charAt(0).toUpperCase())}</span><span class="grow"><b>${esc(p.name || 'Trainer')}${me ? ' (jij)' : ''}</b><small>${members[u] === 'owner' ? 'Beheerder' : 'Trainer'}${p.joined ? ' · sinds ' + new Date(p.joined).toLocaleDateString('nl-NL', {day:'numeric', month:'short'}) : ''}</small></span>${owner && !me ? `<button class="x" data-act="removeMember" data-id="${esc(u)}" aria-label="Verwijderen">×</button>` : ''}</div>`; }).join('')}
+      ${(t.invites || []).map(iv => `<div class="mrow inv"><span class="mav">${esc((iv.name || '?').charAt(0).toUpperCase())}</span><span class="grow"><b>${esc(iv.name)}</b><small>Uitgenodigd · nog niet meegedaan</small></span><button class="btn sm" data-act="reInvite" data-id="${esc(iv.id)}">📤</button><button class="x" data-act="cancelInvite" data-id="${esc(iv.id)}" aria-label="Intrekken">×</button></div>`).join('')}
+    </div>
+    <button class="btn pri full" style="margin-top:12px" data-act="inviteTrainer">＋ Trainer uitnodigen (link via WhatsApp)</button>
+    ${owner ? '' : `<button class="btn full" style="margin-top:8px" data-act="leaveTeam">Dit team verlaten</button>`}
   </div>`;
 }
-
-/* ===================== Team delen met trainers (link) ===================== */
-const ME_KEY = 'opstellingmaker.me';
-const myName = () => localStorage.getItem(ME_KEY) || '';
-async function askMyName(force){
-  if (myName() && !force) return myName();
-  let n = '';
-  while (!n){ const r = await askText('Wat is je naam? Dan zien de andere trainers met wie ze het team delen.', myName()); if (r === null) return null; n = String(r).trim().slice(0, 40); }
-  try { localStorage.setItem(ME_KEY, n); } catch(e){}
-  return n;
-}
-const hex64 = () => { const a = new Uint8Array(32); crypto.getRandomValues(a); return [...a].map(x => x.toString(16).padStart(2, '0')).join(''); };
-const inviteUrl = (cid, inv) => location.origin + location.pathname + `?team=${cid}&inv=${inv}`;
-const isStandalone = () => !!(navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches));
-const activeMembers = t => (t.members || []).filter(x => x.status !== 'weg');
-
-async function shareTeam(t){
-  if (!cloudAvailable()){ await tell('Hiervoor moet de online opslag (Firebase) ingesteld zijn.'); return; }
-  const me = await askMyName(); if (!me) return;
-  const map = cloudMap();
-  if (!map[t.id]){
-    const mid = uid();
-    t.members = [{id: mid, name: me, status: 'actief', owner: true, joined: Date.now()}];
-    map[t.id] = {code: '', id: hex64(), mid}; setCloudMap(map);
-    save(); await cloudStart();
-  }
-  await inviteTrainer(t);
-}
-async function inviteTrainer(t){
-  const c = cloudCfg(t.id); if (!c) return shareTeam(t);
-  const n = await askText(`Wie nodig je uit voor ${teamLabel(t)}? (naam van de trainer)`, '');
-  if (n === null) return;
-  const name = String(n).trim().slice(0, 40) || 'Trainer';
-  const inv = {id: uid() + uid(), name, status: 'uitgenodigd', created: Date.now(), by: myName()};
-  t.members = t.members || []; t.members.push(inv); commit();
-  sendInvite(t, inv);
-}
-function sendInvite(t, inv){
-  const c = cloudCfg(t.id); if (!c) return;
-  const url = inviteUrl(c.id, inv.id);
-  const txt = `⚽ Hoi ${inv.name}! Ik deel ${teamLabel(t)} met je in LineUp, dan kunnen we samen de opstellingen maken. Open deze link om mee te doen: ${url}`;
-  if (navigator.share) navigator.share({title: 'LineUp – ' + teamLabel(t), text: txt}).catch(() => {});
-  else navigator.clipboard?.writeText(txt).then(() => toast('Uitnodiging gekopieerd – plak hem in WhatsApp'), () => tell(url));
-}
-async function revokeMember(t, id){
-  const mbr = (t.members || []).find(x => x.id === id); if (!mbr) return;
-  if (!await ask(`${mbr.name} verwijderen? ${mbr.status === 'actief' ? 'Het team verdwijnt niet van zijn telefoon, maar wijzigingen worden niet meer gedeeld.' : 'De uitnodigingslink werkt dan niet meer.'}`, 'Verwijderen')) return;
-  mbr.status = 'weg'; mbr.removed = Date.now(); commit();
-}
-async function ensureMember(tid){
-  const map = cloudMap(), c = map[tid], t = S.teams.find(x => x.id === tid); if (!c || !t) return;
-  const mine = c.mid && (t.members || []).find(x => x.id === c.mid);
-  if (mine) return;
-  const me = await askMyName();
-  try { flushPending(); } catch(e){}
-  if (!cloudCfg(tid)) return;
-  const tt = S.teams.find(x => x.id === tid); if (!tt) return;
-  if (c.mid && (tt.members || []).some(x => x.id === c.mid)) return;
-  const mid = c.mid || uid();
-  tt.members = tt.members || []; tt.members.push({id: mid, name: me || 'Trainer', status: 'actief', joined: Date.now()});
-  map[tid].mid = mid; setCloudMap(map); save(); render();
-}
-async function checkMembership(tid){
-  const c = cloudCfg(tid), t = S.teams.find(x => x.id === tid), L = cloud.links[tid]; if (!c || !t || !L) return;
-  const mine = c.mid && (t.members || []).find(x => x.id === c.mid);
-  if (mine && mine.status === 'weg'){
-    const map = cloudMap(); delete map[tid]; setCloudMap(map); unlinkLive(tid); setCloudStatus(); render();
-    await tell(`${teamLabel(t)} wordt niet meer met je gedeeld. Het team blijft op dit apparaat staan, maar wijzigingen van de andere trainers komen niet meer binnen.`);
-    return;
-  }
-  if (!mine && !L.joining){ L.joining = true; setTimeout(() => ensureMember(tid), 300); }
-}
-function parseInvite(text){
-  try { const u = new URL(String(text).trim().match(/https?:\/\/\S+/)?.[0] || String(text).trim()); const cid = u.searchParams.get('team'), inv = u.searchParams.get('inv'); return cid && /^[0-9a-f]{64}$/.test(cid) && inv ? {cid, inv} : null; } catch(e){ return null; }
-}
-async function joinTeam(cid, invId){
-  if (!cloudAvailable()){ await tell('Deze app is nog niet gekoppeld aan de online opslag.'); return; }
-  const map = cloudMap();
-  const have = Object.keys(map).find(k => map[k].id === cid && S.teams.some(t => t.id === k));
-  if (have){ S.active.team = have; ui.tab = 'matches'; commit(); toast(`${teamLabel(team())} staat al in je app`); return; }
-  let remote, api;
-  try { api = await firebaseApi(); remote = await api.get(cid); }
-  catch(e){ await tell('De uitnodiging openen lukt niet. Controleer je internet en probeer het opnieuw. (' + (e.message || e) + ')'); return; }
-  const td = remote && teamFromRemote(remote, null);
-  if (!td){ await tell('Deze uitnodiging werkt niet (meer). Vraag de trainer om een nieuwe link.'); return; }
-  if ((remote.version || 0) > DATA_VERSION){ showOutdated(); await tell('Er is een nieuwere versie van de app. Ververs eerst.'); return; }
-  const inv = (td.members || []).find(x => x.id === invId);
-  if (!inv || inv.status === 'weg'){ await tell('Deze uitnodiging is ingetrokken. Vraag de trainer om een nieuwe link.'); return; }
-  const owner = (td.members || []).find(x => x.owner) || {};
-  if (!await inviteSheet(td, owner, inv, inviteUrl(cid, invId))) return;
-  if (!myName() && inv.name && inv.name !== 'Trainer'){ try { localStorage.setItem(ME_KEY, inv.name); } catch(e){} }
-  const same = S.teams.find(t => teamLabel(t) === teamLabel(td) && !map[t.id]);
-  let tid;
-  if (same && await ask(`Je hebt zelf al een team ${teamLabel(same)}. Dat team vervangen door het gedeelde team? (Kies Annuleren om het gedeelde team er als apart team bij te zetten.)`, 'Vervangen')){
-    tid = same.id; const i = S.teams.indexOf(same); S.teams[i] = {...td, id: tid};
-  } else {
-    tid = uid(); S.teams.push({...td, id: tid});
-  }
-  const t = S.teams.find(x => x.id === tid);
-  inv.status = 'actief'; inv.joined = Date.now();
-  t.members = td.members;
-  map[tid] = {code: '', id: cid, mid: inv.id}; setCloudMap(map);
-  normalize(); S.active.team = tid; ui.tab = 'matches'; ui.matchId = null;
-  await cloudStart();
-  commit(); window.scrollTo(0, 0);
-  toast(`${teamLabel(t)} toegevoegd ☁️`);
-
-}
-let installEvt = null;
-window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; const b = document.getElementById('installBtn'); if (b) b.hidden = false; });
-const platform = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) ? 'ios' : /Android/.test(navigator.userAgent) ? 'android' : 'other';
-function installSteps(url){
-  const pf = platform();
-  const ios = `<div class="istep"><b>🍏 iPhone / iPad</b><ol>
-      <li>Open deze pagina in <b>Safari</b>. Zit je in WhatsApp? Tik rechtsboven op het kompas of op ••• → <i>Open in Safari</i>.</li>
-      <li>Tik onderin op de <b>deelknop</b> (vierkantje met pijl omhoog).</li>
-      <li>Scroll omlaag en kies <b>Zet op beginscherm</b> → <b>Voeg toe</b>.</li>
-      <li>Open LineUp vanaf je beginscherm, tik op <b>＋</b> → <b>Gedeeld team toevoegen</b> en plak de link. (Op de iPhone begint de beginscherm-app leeg, daarom plak je de link daar nog één keer.)</li>
-    </ol>${url ? `<button class="btn sm" data-r="copy">📋 Kopieer de uitnodigingslink</button>` : ''}</div>`;
-  const and = `<div class="istep"><b>🤖 Android</b><ol>
-      <li>Open deze pagina in <b>Chrome</b>. Zit je in WhatsApp? Tik op ⋮ → <i>Openen in Chrome</i>.</li>
-      <li>Tik eerst hierboven op <b>Meedoen</b>.</li>
-      <li>Tik rechtsboven op <b>⋮</b> → <b>App installeren</b> of <b>Toevoegen aan startscherm</b>.</li>
-      <li>Klaar: LineUp staat op je startscherm, met het team erin.</li>
-    </ol><button class="btn sm" id="installBtn" data-r="install" ${installEvt ? '' : 'hidden'}>📲 Installeer LineUp nu</button></div>`;
-  return pf === 'android' ? and + `<details><summary class="muted">Heb je een iPhone?</summary>${ios}</details>`
-    : pf === 'ios' ? ios + `<details><summary class="muted">Heb je een Android-telefoon?</summary>${and}</details>`
-    : ios + and;
-}
-function inviteSheet(td, owner, inv, url){
-  return new Promise(res => {
-    const d = document.createElement('div'); d.className = 'modal';
-    const pf = platform(), standalone = isStandalone();
-    d.innerHTML = iconize(`<div class="box" style="max-height:90vh;overflow:auto">
-      <div class="svhead" style="margin:0 0 10px"><div class="logo">${LOGO_MARK}</div><div><div class="club">${esc(td.club || 'LineUp')}</div><div class="svteam">${esc(teamLabel(td))}</div></div></div>
-      <p style="margin-top:0;font-size:15px;font-weight:500;line-height:1.45">Hoi ${esc(inv.name || 'trainer')}! <b>${esc(owner.name || 'Een trainer')}</b> deelt <b>${esc(teamLabel(td))}</b> met je in LineUp (${td.seasons[0].players.length} spelers, ${td.seasons[0].matches.length} wedstrijden). Samen maken jullie de opstellingen; wijzigingen zien jullie bij elkaar meteen.</p>
-      <button class="btn pri full big" data-r="ok">✅ Meedoen</button>
-      ${standalone ? '' : `<div class="sgroup" style="margin-top:16px">📲 LineUp op je beginscherm zetten</div>
-      <div class="muted" style="margin-bottom:8px">Dan open je LineUp voortaan als een gewone app.${pf === 'ios' ? ' <b>Tip voor iPhone:</b> zet de app éérst op je beginscherm en plak daar de link.' : ''}</div>
-      ${installSteps(url)}`}
-      <button class="btn full" style="margin-top:12px" data-r="no">Niet nu</button></div>`);
-    document.body.appendChild(d);
-    d.addEventListener('click', async e => {
-      e.stopPropagation();
-      const b = e.target.closest('[data-r]'); if (!b) return;
-      const r = b.dataset.r;
-      if (r === 'copy'){ try { await navigator.clipboard.writeText(url); toast('Link gekopieerd'); } catch(_){ b.outerHTML = '<div style="word-break:break-all;font-size:12px;user-select:all">' + esc(url) + '</div>'; } return; }
-      if (r === 'install'){ if (installEvt){ installEvt.prompt(); installEvt = null; b.hidden = true; } return; }
-      d.remove(); res(r === 'ok');
-      setTimeout(() => { try { flushPending(); } catch(_){} }, 0);
-    });
-  });
-}
-async function pasteInvite(){
-  const r = await askText('Plak hier de uitnodigingslink die je via WhatsApp hebt gekregen.', '');
-  if (r === null) return;
-  const p = parseInvite(r);
-  if (!p){ await tell('Dit is geen geldige uitnodigingslink. Kopieer de hele link uit het bericht (houd de link ingedrukt → Kopieer).'); return; }
-  await joinTeam(p.cid, p.inv);
-}
-function membersCard(t, c){
-  const ms = activeMembers(t);
-  return `
-    <div class="sgroup" style="margin-top:14px">Gedeeld met</div>
-    <div class="mlist">${ms.length ? ms.map(x => {
-      const me = x.id === c.mid;
-      return `<div class="mrow"><span class="mav">${esc((x.name || '?').charAt(0).toUpperCase())}</span><span class="grow"><b>${esc(x.name || 'Trainer')}${me ? ' (jij)' : ''}</b><small>${x.status === 'uitgenodigd' ? 'Uitgenodigd · nog niet geopend' : (x.owner ? 'Heeft het team gedeeld' : 'Doet mee') + (x.joined ? ' · sinds ' + new Date(x.joined).toLocaleDateString('nl-NL', {day:'numeric', month:'short'}) : '')}</small></span>
-        ${x.status === 'uitgenodigd' ? `<button class="btn sm" data-act="reInvite" data-id="${x.id}">📤</button>` : ''}
-        ${me ? '' : `<button class="x" data-act="revokeMember" data-id="${x.id}" aria-label="Verwijderen">×</button>`}</div>`;
-    }).join('') : `<div class="muted">Nog niemand in de lijst. Trainers die met de teamcode verbonden zijn, verschijnen hier zodra ze de app openen.</div>`}</div>
-    <button class="btn pri full" style="margin-top:12px" data-act="inviteTrainer">＋ Trainer uitnodigen (link via WhatsApp)</button>`;
+function loginBanner(){
+  if (!cloudAvailable() || !cloud.authKnown || cloud.user) return '';
+  const shared = Object.keys(cloudMap()).filter(k => S.teams.some(t => t.id === k));
+  if (!shared.length) return '';
+  return `<div class="lbanner" data-act="login">🔒 <span><b>Samenwerken is nu beveiligd.</b> Log in om ${esc(shared.map(k => teamLabel(S.teams.find(t => t.id === k))).join(' en '))} weer met de andere trainers te delen.</span><b>Inloggen ›</b></div>`;
 }
 
 /* ===================== Slepen ===================== */
@@ -2456,8 +2665,10 @@ if (SURVEY_ID) bootSurvey(SURVEY_ID); else render();
 document.getElementById('nav').innerHTML = iconize(document.getElementById('nav').innerHTML);
 if (!SURVEY_ID){
   loadLogo();
-  const qp = new URLSearchParams(location.search), jc = qp.get('team'), ji = qp.get('inv');
-  cloudStart().then(() => { if (jc && ji){ history.replaceState(null, '', location.pathname); joinTeam(jc, ji); } });
+  const qp = new URLSearchParams(location.search), iv = qp.get('uitnodiging'), jc = qp.get('team');
+  cloudStart().then(() => {
+    if (iv || jc){ history.replaceState(null, '', location.pathname); if (iv) openInvite(iv); else openLegacyInvite(jc); }
+  });
 }
 </script>
 </body>

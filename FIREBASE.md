@@ -21,7 +21,7 @@ Eenmalig, ongeveer 15 minuten. Daarna bewaart de app alles automatisch online en
 2. Haal alles weg en plak de inhoud van **`firestore.rules`** uit deze repo.
 3. Klik **Publish / Publiceren**.
 
-Wat dit doet: alleen wie de teamcode én pincode kent, kan jullie gegevens lezen of opslaan. Niemand kan een lijst opvragen of iets verwijderen.
+Wat dit doet: alleen ingelogde trainers die bij een team horen, kunnen dat team lezen of wijzigen. Spelers kunnen via de spelerslink alleen hun eigen antwoord insturen.
 
 ## 4. Web-app koppelen
 1. Klik linksboven op het **tandwiel ⚙️ → Projectinstellingen**.
@@ -45,22 +45,21 @@ Wat dit doet: alleen wie de teamcode én pincode kent, kan jullie gegevens lezen
    (met jouw waarden uit stap 4)
 3. Klik **Commit changes**. Na ±1 minuut staat het live.
 
-> De `apiKey` van Firebase is geen geheim wachtwoord; die mag in een openbare repo staan. De beveiliging zit in de regels van stap 3 en jullie teamcode + pincode.
+> De `apiKey` van Firebase is geen geheim wachtwoord; die mag in een openbare repo staan. De beveiliging zit in het inloggen en de regels van stap 3.
 
-## 6. Verbinden in de app
-1. Open de app (ververs de pagina) → **Instellingen → 💾 Meer → ☁️ Samenwerken**.
-2. Bedenk een **teamcode** (bv. `maliskamp-trainers`) en een **pincode** van minstens 4 tekens.
-3. Tik **Verbinden** → **Aanmaken**. De gegevens van jouw telefoon worden nu online gezet.
-4. Rechtsboven in de rode kop zie je **☁️ ✓** als alles is opgeslagen.
+## 6. Inloggen aanzetten (Authentication)
+1. Ga in het linkermenu naar **Security → Authentication** (soms **Build → Authentication**) en klik **Get started / Aan de slag**.
+2. Tabblad **Sign-in method**:
+   - Klik **Email/Password** → zet de eerste schakelaar (**Email/Password**) aan → **Save**. (De tweede, *Email link*, mag uit blijven.)
+   - Klik **Add new provider → Google** → zet aan, kies bij *Support email* je eigen e-mailadres → **Save**.
+3. Tabblad **Settings → Authorized domains** → **Add domain** → vul `mark346.github.io` in → **Add**.
 
-## 7. Andere trainers
-1. Stuur ze de link van de app (en eventueel: Deel → Zet op beginscherm).
-2. Zij gaan naar **Instellingen → 💾 Meer → ☁️ Samenwerken**, vullen **dezelfde teamcode en pincode** in en tikken **Verbinden → Laden**.
-3. Klaar: wijzigingen verschijnen binnen een paar seconden bij iedereen.
+## 7. In de app
+1. Open de app → **Instellingen → Team → 👤 Account** → **Inloggen of account maken** (met Google of e-mail + wachtwoord).
+2. Al je teams worden nu veilig online bewaard onder jouw account. Op een nieuwe telefoon log je in en staan ze er weer.
+3. Rechtsboven in de kop zie je **☁️ ✓** als alles is opgeslagen.
 
-## Goed om te weten
-- **Updaten van de app:** vervang alleen `index.html`. Laat `firebase-config.js` staan.
-- **Welk team je bekijkt** blijft per telefoon; de rest is gedeeld.
-- **Tegelijk aanpassen:** de laatste wijziging wint. Spreek af wie tijdens de wedstrijd de wissels bijhoudt.
-- **Status rechtsboven:** ☁️ ✓ opgeslagen · ☁️ … bezig · ☁️ ⚠️ geen verbinding (wordt opgeslagen zodra je weer online bent, zolang de app open blijft) · ⬆️ ververs = er is een nieuwere versie van de app.
-- **Pincode vergeten/gelekt?** Verbind met een nieuwe teamcode + pincode (eerst op jouw telefoon → *Aanmaken*), en laat de anderen opnieuw verbinden.
+## 8. Andere trainers
+1. Ga naar het team → **Instellingen → Team → Samenwerken → Trainer uitnodigen** en stuur de link via WhatsApp.
+2. De trainer opent de link, tikt **Meedoen** en logt één keer in. Een link werkt maar voor één persoon.
+3. Onder **Gedeeld met** zie je wie meedoet. Met × verwijder je iemand; hij kan het team dan echt niet meer openen.
