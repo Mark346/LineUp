@@ -407,10 +407,25 @@
   .aabtn{position:absolute;top:10px;right:10px;z-index:2;width:46px;height:46px;border-radius:14px;border:0;background:#ffd52e;color:#0c3d1f;font-family:"Archivo",sans-serif;font-weight:900;font-size:20px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:10px;gap:1px;cursor:pointer;box-shadow:0 3px 10px rgba(12,61,31,.15)}
   .aabtn small{font-size:14px}
   .mhead:has(.aabtn) .scorebug,.mhead:has(.aabtn) .mt{margin-right:52px}
-  .fsopts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .fsopts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.fsopts button[data-r="3"]{grid-column:1/-1;background:#000;color:#ffd52e;border:3px solid #000;flex-direction:row;gap:14px}.fsopts button[data-r="3"] span{font-size:16px;color:#fff}
   .fsopts button{height:88px;border-radius:16px;border:1px solid var(--line);background:#f3f8f4;color:#0c3d1f;font-family:"Archivo",sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer}
   .fsopts button b{font-weight:900;line-height:1}.fsopts button span{font-size:13px;font-weight:800}
   .fsopts button.on{background:#ffd52e;border:3px solid #0c3d1f}
+  .fsopts button[data-r="3"].on{background:#000;border:4px solid #ffd52e;box-shadow:0 0 0 3px #0c3d1f}
+  /* Lijst · hoog contrast */
+  .card.hc{background:#000;color:#fff;border:3px solid #000;padding:14px}
+  .hcnav{display:flex;align-items:center;gap:10px;border-bottom:3px solid #ffd52e;padding-bottom:12px;margin-bottom:6px}
+  .hcarrow{width:56px;height:56px;flex:none;border-radius:14px;border:3px solid #ffd52e;background:#000;color:#ffd52e;font-size:34px;font-weight:900;line-height:1;cursor:pointer}
+  .hcarrow:disabled{opacity:.3}
+  .hcblk{flex:1;text-align:center;display:flex;flex-direction:column}.hcblk b{font-size:30px;font-weight:900;color:#ffd52e;line-height:1.1}.hcblk span{font-size:19px;font-weight:700}
+  .hcw{display:grid;gap:6px;margin:10px 0;padding:10px 12px;border:2px solid #fff;border-radius:14px;font-size:24px;font-weight:900}
+  .hcw>div{display:flex;gap:10px;align-items:baseline}.hcw b{flex:none;width:78px;font-size:17px;letter-spacing:.06em}.hcw b.out{color:#ff9f6b}.hcw b.in{color:#ffd52e}
+  .hcrow{display:flex;align-items:center;gap:12px;min-height:62px;border-bottom:2px solid #3a3a3a}.hcrow:last-child{border-bottom:0}
+  .hcpos{width:66px;flex:none;text-align:center;font-size:24px;font-weight:900;color:#ffd52e}
+  .hcnm{font-size:36px;font-weight:900;line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hcbank{display:flex;align-items:baseline;gap:12px;margin-top:10px;padding-top:12px;border-top:3px solid #ffd52e}.hcbank span{font-size:17px;font-weight:900;color:#ffd52e;letter-spacing:.08em}.hcbank b{font-size:26px;font-weight:900}
+  .btn.hcbtn{width:100%;margin-top:14px;min-height:72px;font-size:24px;font-weight:900;background:#ffd52e;color:#000;border:0;border-radius:18px}
+  .fs3 .mhead{background:#000;color:#fff;border-color:#000}.fs3 .mhead .mt{color:#fff}.fs3 .mhead .muted{color:#ddd}
   /* Groot */
   .fs1 .scorebug{height:46px;font-size:22px}.fs1 .scorebug .sbst{font-size:16px}
   .fs1 .mhead .mt{font-size:26px}.fs1 .mhead .muted{font-size:16px}
@@ -1086,25 +1101,50 @@ function viewMatch(){
   if (ph === 'prep') body = `${infoCard}${presenceCard}${lineupCard}${minutesCard}
     <button class="btn pri full big" data-act="phase" data-v="live">▶️ Start wedstrijd</button>
     <div class="grid2" style="margin-bottom:12px"><button class="btn" data-act="share">📤 Delen</button><button class="btn" data-act="print">🖨️ Printen</button></div>`;
-  else if (ph === 'live') body = `${lineupCard}${minutesCard}${presenceCard}`;
+  else if (ph === 'live') body = fontLevel() === 3 ? `${listCard(m, times, cur, last)}${presenceCard}${minutesCard}` : `${lineupCard}${minutesCard}${presenceCard}`;
   else if (ph === 'post') body = `${postCard}<div style="height:12px"></div>${lineupCard}${minutesCard}`;
   else body = `${doneCard}${minutesCard}${lineupCard}
     <div class="grid2" style="margin-bottom:12px"><button class="btn" data-act="share">📤 Delen</button><button class="btn" data-act="print">🖨️ Printen</button></div>
     <button class="btn full" style="margin-bottom:12px" data-act="phase" data-v="post">✏️ Uitslag of doelpunten aanpassen</button>`;
 
   const fs = ph === 'live' ? fontLevel() : 0;
-  return `<div class="fsz fs${fs}">
+  return `<div class="fsz fs${fs}${fs === 3 ? ' fs2' : ''}">
   ${phaseBar}${header}${body}
   <button class="btn red full" data-act="delMatch">Wedstrijd verwijderen</button></div>`;
 }
 
 const FS_KEY = 'opstellingmaker.fs';
-const fontLevel = () => { const v = +localStorage.getItem(FS_KEY); return v === 1 || v === 2 ? v : 0; };
+const fontLevel = () => { const v = +localStorage.getItem(FS_KEY); return [1, 2, 3].includes(v) ? v : 0; };
+function listCard(m, times, cur, last){
+  const s = ui.seg, lu = m.segments[s], pos = matchPositions(m);
+  const rows = pos.map((p, i) => ({p, id: lu[i]})).sort((a, b) => (b.p.y - a.p.y) || (a.p.x - b.p.x));
+  const bench = benchIds(m, s);
+  let wissel = '';
+  if (s > 0){
+    const prev = m.segments[s - 1];
+    const ins = lu.filter(id => id && !prev.includes(id)), outs = prev.filter(id => id && !lu.includes(id));
+    if (ins.length || outs.length) wissel = `<div class="hcw"><div><b class="out">ERUIT</b>${outs.map(id => esc(pname(id))).join(', ') || '–'}</div><div><b class="in">ERIN</b>${ins.map(id => esc(pname(id))).join(', ') || '–'}</div></div>`;
+  }
+  return `
+  <div class="card hc">
+    <div class="hcnav">
+      <button class="hcarrow" data-act="seg" data-i="${Math.max(0, s - 1)}" ${s === 0 ? 'disabled' : ''} aria-label="Vorig blok">‹</button>
+      <div class="hcblk"><b>${esc(blockLabel(m, s))}</b><span>${times[s][0]}'–${times[s][1]}'${s === cur ? ' · nu' : s > cur ? ' · straks' : ' · geweest'}</span></div>
+      <button class="hcarrow" data-act="seg" data-i="${Math.min(last, s + 1)}" ${s === last ? 'disabled' : ''} aria-label="Volgend blok">›</button>
+    </div>
+    ${wissel}
+    <div class="hclist">${rows.map(r => `<div class="hcrow"><span class="hcpos">${r.p.line === 'K' ? 'K' : esc(r.p.code)}</span><span class="hcnm">${r.id ? esc(pname(r.id)) : '—'}</span></div>`).join('')}</div>
+    <div class="hcbank"><span>BANK</span><b>${bench.map(id => esc(pname(id))).join(' · ') || '–'}</b></div>
+    ${cur < last
+      ? `<button class="btn hcbtn" data-act="nextSeg">Wissel doorvoeren (${times[cur + 1][0]}')</button>`
+      : `<button class="btn hcbtn" data-act="phase" data-v="post">Wedstrijd afgelopen</button>`}
+  </div>`;
+}
 function fontDialog(){
   return new Promise(res => {
     const d = document.createElement('div'); d.className = 'modal';
     const cur = fontLevel();
-    const opts = [[0, 'Normaal', 18], [1, 'Groot', 26], [2, 'Extra groot', 34]];
+    const opts = [[0, 'Normaal', 18], [1, 'Groot', 26], [2, 'Extra groot', 34], [3, 'Lijst · hoog contrast', 30]];
     d.innerHTML = iconize(`<div class="box"><p>Lettergrootte tijdens de wedstrijd</p>
       <div class="muted" style="margin:-4px 0 12px">Handig als je zonder bril langs de lijn staat. Je keuze blijft bewaard op deze telefoon.</div>
       <div class="fsopts">${opts.map(([v, n, px]) => `<button class="${v === cur ? 'on' : ''}" data-r="${v}"><b style="font-size:${px}px">Aa</b><span>${n}</span></button>`).join('')}</div>
