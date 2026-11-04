@@ -456,6 +456,33 @@
   .fs2 table.ov td,.fs2 table.ov th{font-size:18px}
   .fs2 .whop{font-size:21px;padding:11px 15px}
   .fs2 .phases button{font-size:16px}
+  .attgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .attb{min-height:56px;border-radius:16px;font-family:"Archivo",sans-serif;font-size:17px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;padding:6px 8px;line-height:1.1}
+  .attb .ic{width:18px;height:18px;flex:none}
+  .attb.ja{border:0;background:#0f6b35;color:#fff}.attb.ja .ic{color:#ffd52e}
+  .attb.nee{border:2px dashed #9db8a6;background:#e3ece6;color:#5d7a66;font-weight:800}.attb.nee span{text-decoration:line-through}
+  .attb.geen{border:2px solid #e0b400;background:#fff7cc;color:#0c3d1f}.attb.geen .ic{color:#8a6d00}
+  .attb[data-me]{box-shadow:0 0 0 3px #0c3d1f,0 0 0 6px #ffd52e}
+  .attleg{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;font-weight:700;color:var(--muted);margin:0 0 10px}.attleg span{display:flex;align-items:center;gap:6px}
+  .attleg i{width:14px;height:14px;border-radius:4px;display:inline-block}.attleg i.ja{background:#0f6b35}.attleg i.nee{background:#e3ece6;border:2px dashed #9db8a6}.attleg i.geen{background:#fff7cc;border:2px solid #e0b400}
+  .atthead{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:8px}.atthead h2{margin:0}
+  .attcount{font-size:17px;font-weight:900;white-space:nowrap}.attcount b{font-size:34px;color:#0f6b35;line-height:1;margin-right:4px}
+  .arv{display:flex;flex-direction:column;gap:8px;border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:8px;cursor:pointer}
+  .arv.on{border:3px solid #0f6b35;background:#eef7f0}
+  .arh{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:900}.arh input{width:22px;height:22px;accent-color:#0f6b35;flex:none}
+  .arr{display:flex;align-items:center;gap:8px;padding-left:32px;font-size:15px;font-weight:700}.arr input{width:72px;text-align:center;font-weight:900;font-size:18px}
+  .arv small{padding-left:32px;color:var(--muted);font-size:12px;font-weight:600}
+  input.arin{border:2px solid #e0b400;background:#fff7cc}
+  .wiehead{background:#0f6b35;color:#fff;border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:8px}
+  .wiedate{font-size:13px;font-weight:800;letter-spacing:.12em;color:#ffd52e;margin-top:6px}
+  .wietitle{font-family:var(--disp);font-size:27px;font-weight:900;line-height:1.08}
+  .wietimes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .wietimes span{background:rgba(255,255,255,.12);border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;gap:2px}
+  .wietimes small{font-size:11px;font-weight:800;letter-spacing:.1em;color:#c9efd5}.wietimes b{font-size:20px;font-weight:900}
+  .wietimes span.hl{background:#ffd52e;color:#0c3d1f}.wietimes span.hl small{color:#0c3d1f}
+  .wiebig{height:96px;border-radius:20px;font-family:"Archivo",sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:19px;font-weight:900}
+  .wiebig.ja{border:0;background:#0f6b35;color:#fff}.wiebig.nee{border:2px dashed #9db8a6;background:#e3ece6;color:#0c3d1f}
+  .wiebig .ic{width:28px;height:28px}
   .nm2{display:flex;gap:6px}.nm2 input{padding:6px 8px;min-width:0;flex:1}
   .svhead{display:flex;align-items:center;gap:12px;margin:2px 2px 14px}
   .svhead .logo{width:52px;height:52px}
@@ -651,7 +678,7 @@ let S;
 try { S = JSON.parse(localStorage.getItem(KEY)); } catch(e){ S = null; }
 if (!S || !Array.isArray(S.teams) || !S.teams.length) S = defaultState();
 normalize();
-const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} if (typeof cloudPush === 'function') cloudPush(); };
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} if (typeof cloudPush === 'function') cloudPush(); if (typeof pollSync === 'function') pollSync(); };
 
 // Clublogo: eigen upload (bewaard op apparaat) of logo.png in de repo
 const LOGO_KEY = 'opstellingmaker.logo';
@@ -877,6 +904,7 @@ function renderHeader(){
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === ui.tab));
 }
 function render(){
+  if (typeof WIE_ID !== 'undefined' && WIE_ID){ renderWie(); return; }
   if (typeof SURVEY_ID !== 'undefined' && SURVEY_ID){ renderSurvey(); return; }
   renderHeader();
   try { setCloudStatus(); } catch(e){}
@@ -1061,12 +1089,21 @@ function viewMatch(){
     </details>
   </div>`;
 
+  const guestCard = `
+  <div class="card">
+    <h2>🧤 Invallers</h2>
+    <div class="row"><input id="guestName" placeholder="Invaller (naam)" list="otherNames" style="flex:3"><button class="btn sm" style="flex:none" data-act="addGuest">＋ Invaller</button></div>
+    <datalist id="otherNames">${S.teams.flatMap(t => t.id === team().id ? [] : t.seasons[t.seasons.length - 1].players.map(p => `<option value="${esc(p.name)}">`)).join('')}</datalist>
+    ${(m.guests || []).length ? `<div class="who" style="margin-top:10px">${m.guests.map(g => { const on = isIn(m, g.id); return `<button class="whop ${on ? 'on' : ''}" data-act="togglePresent" data-id="${g.id}">${on ? '✅' : '❌'} ${esc(pshort(g))}</button>`; }).join('')}</div><div class="muted" style="margin-top:6px">${m.guests.map(g => `${esc(pshort(g))} <button class="x" style="font-size:16px" data-act="delGuest" data-id="${g.id}">×</button>`).join(' ')}</div>` : '<div class="muted" style="margin-top:6px">Speler van een ander team die meedoet.</div>'}
+  </div>`;
+
   const infoCard = `
   <div class="card">
     <div class="grid2">
       <label class="f">Tegenstander<input data-m="opponent" value="${esc(m.opponent)}" placeholder="bv. VV Oranje"></label>
       <label class="f">Datum<input type="date" data-m="date" value="${esc(m.date)}"></label>
     </div>
+    ${timesFields(m, se)}
     <div class="segc"><button class="${m.home !== false ? 'on' : ''}" data-act="home" data-v="1">🏠 Thuis</button><button class="${m.home === false ? 'on' : ''}" data-act="home" data-v="0">🚌 Uit</button></div>
     <div class="muted" style="margin-top:10px">⚙️ ${settingsLine(st)} · <a href="#" data-act="goSettings2">wijzigen bij Instellingen</a></div>
   </div>`;
@@ -1098,7 +1135,7 @@ function viewMatch(){
   </div>`;
 
   let body;
-  if (ph === 'prep') body = `${infoCard}${presenceCard}${lineupCard}${minutesCard}
+  if (ph === 'prep') body = `${infoCard}${attCard(m)}${guestCard}${lineupCard}${minutesCard}
     <button class="btn pri full big" data-act="phase" data-v="live">▶️ Start wedstrijd</button>
     <div class="grid2" style="margin-bottom:12px"><button class="btn" data-act="share">📤 Delen</button><button class="btn" data-act="print">🖨️ Printen</button></div>`;
   else if (ph === 'live') body = fontLevel() === 3 ? `${listCard(m, times, cur, last)}${presenceCard}${minutesCard}` : `${lineupCard}${minutesCard}${presenceCard}`;
@@ -1329,7 +1366,7 @@ function viewSettings(){
   </div>`;
   else if (st === 'spelers'){ body = viewPlayers(); if (se.survey && !ui.surveyBusy && Date.now() - (ui.surveyFetched || 0) > 20000){ ui.surveyFetched = Date.now(); setTimeout(() => fetchSurvey(se, true), 50); } }
   else if (st === 'stats') body = viewStats();
-  else body = teamInfoCard(t) + `<div class="sgroup">Samenwerken</div>${accountCard()}${cloudCard()}${installCard()}`;
+  else body = teamInfoCard(t) + arriveCard(se) + `<div class="sgroup">Samenwerken</div>${accountCard()}${cloudCard()}${installCard()}`;
   return `
   <div class="stabs">${tabs.map(([k, l]) => `<button class="${k === st ? 'on' : ''}" data-act="stab" data-v="${k}">${l}</button>`).join('')}</div>${body}`;
 }
@@ -1452,6 +1489,7 @@ document.addEventListener('click', async e => {
     case 'stab': e.preventDefault(); ui.stab = el.dataset.v; render(); break;
     case 'togglePresent': {
       const pid = el.dataset.id, from = m.phase === 'live' ? (m.cur || 0) : 0;
+      if (m.phase === 'prep' && season().players.some(p => p.id === pid)){ m.att = m.att || {}; m.att[pid] = isIn(m, pid) ? 'nee' : 'ja'; if (m.poll && cloud.api && myUid()) cloud.api.pollAnswer(m.poll.id, pid, m.att[pid]).catch(() => {}); }
       if (isIn(m, pid)){
         const played = from > 0 && m.segments.slice(0, from).some(lu => lu.includes(pid));
         if (played){ m.out = m.out || {}; m.out[pid] = from; }
@@ -1516,7 +1554,10 @@ document.addEventListener('click', async e => {
       tgt.keeperMode = el.dataset.v;
       if (el.dataset.scope === 'match'){ m.keepers = {}; regenIfNeeded(m); }
       commit(); break;
-    case 'home': m.home = el.dataset.v === '1'; commit(); break;
+    case 'home': m.home = el.dataset.v === '1'; commit(); pollSync(); break;
+    case 'arriveReset': e.preventDefault(); delete m.arriveTime; commit(); pollSync(); break;
+    case 'startPoll': await startPoll(m); break;
+    case 'coachAtt': await coachAnswer(m, id); break;
     case 'gen': case 'mix':
       if (m.segments && m.edited && !await ask('Je handmatige wissels worden overschreven. Doorgaan?')) return;
       m.manual = false; generate(m, act === 'mix'); ui.seg = 0; ui.sel = null; ui.open.setup = false; commit();
@@ -1707,11 +1748,14 @@ document.addEventListener('change', e => {
     const tgt = el.dataset.scope === 'match' ? m.settings : se;
     tgt.formation = el.value; if (el.dataset.scope === 'match'){ delete m.posOverride; regenIfNeeded(m); } commit(); return;
   }
+  if (el.dataset.arrive){ m.arriveTime = el.value; commit(); pollSync(); return; }
+  if (el.dataset.arv){ se.arrive = {...arriveCfg(se), mode: el.dataset.arv}; commit(); pollSync(); return; }
+  if (el.dataset.arvmin){ se.arrive = {...arriveCfg(se), min: Math.max(0, Math.min(180, +el.value || 0))}; commit(); pollSync(); return; }
   if (el.dataset.m){
     const k = el.dataset.m;
     if (k === 'keeper'){ m.keepers[el.dataset.slot] = el.value; if (m.segments){ generate(m, false); toast('Kieper aangepast'); } }
     else m[k] = el.value;
-    commit(); return;
+    commit(); pollSync(); return;
   }
   if (el.dataset.s){ se[el.dataset.s] = el.value.trim() || se[el.dataset.s]; commit(); return; }
   if (el.dataset.pn){ const p = player(el.dataset.id), nm = splitName(p.name); nm[el.dataset.pn] = el.value.trim().replace(/\s+/g, ' '); if (!nm.first){ el.value = splitName(p.name).first; return; } p.name = `${nm.first} ${nm.last}`.trim(); commit(); return; }
@@ -2078,6 +2122,185 @@ document.addEventListener('click', async e => {
   }
 });
 
+/* ===================== Wie zijn erbij? (aanwezigheid via de team-app) ===================== */
+const arriveCfg = se => ({mode: (se.arrive && se.arrive.mode) || 'std', min: se.arrive && se.arrive.min != null ? +se.arrive.min : 30});
+function arriveTime(m, se = season()){
+  if (m.arriveTime) return m.arriveTime;
+  const c = arriveCfg(se);
+  if (c.mode !== 'std' || !m.kickoff) return '';
+  const [h, mi] = m.kickoff.split(':').map(Number); if (isNaN(h)) return '';
+  let t = h * 60 + mi - c.min; t = (t + 1440) % 1440;
+  return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
+}
+const hhmm = t => t ? t.replace(/^0(\d):/, '$1:') : '';
+const attOf = (m, pid) => (m.att || {})[pid] || '';
+function arriveCard(se){
+  const c = arriveCfg(se);
+  return `
+  <div class="card">
+    <h2>⏰ Aanwezig zijn</h2>
+    <div class="muted" style="margin-bottom:10px">Hoe laat moeten de spelers er zijn? Dit staat bovenaan de link voor de team-app en bij de wedstrijd.</div>
+    <label class="arv ${c.mode === 'std' ? 'on' : ''}"><span class="arh"><input type="radio" name="arvmode" data-arv="std" ${c.mode === 'std' ? 'checked' : ''}>Standaard voor de aftrap</span>
+      <span class="arr"><input type="number" inputmode="numeric" min="0" max="180" value="${c.min}" data-arvmin="1" aria-label="Minuten voor de aftrap"> minuten voor de aftrap</span>
+      <small>Voorbeeld: aftrap 9:45 → aanwezig ${hhmm(arriveTime({kickoff:'09:45'}, {arrive:{mode:'std', min:c.min}}))}. Per wedstrijd kun je het altijd nog aanpassen.</small></label>
+    <label class="arv ${c.mode === 'custom' ? 'on' : ''}"><span class="arh"><input type="radio" name="arvmode" data-arv="custom" ${c.mode === 'custom' ? 'checked' : ''}>Aangepast per wedstrijd</span>
+      <small>Je vult bij elke wedstrijd zelf de tijd in.</small></label>
+  </div>`;
+}
+function timesFields(m, se){
+  const c = arriveCfg(se), at = arriveTime(m, se);
+  return `
+    <div class="grid2" style="margin-top:10px">
+      <label class="f">Aftrap<input type="time" data-m="kickoff" value="${esc(m.kickoff || '')}"></label>
+      <label class="f">Aanwezig<input type="time" class="arin" data-arrive="1" value="${esc(at)}"></label>
+    </div>
+    <div class="muted" style="margin-top:-4px;font-size:12px">${m.arriveTime ? `Aangepast voor deze wedstrijd · <a href="#" data-act="arriveReset">terug naar standaard</a>` : c.mode === 'std' ? `Standaard ${c.min} minuten voor de aftrap` : 'Vul zelf de tijd in (instelling van het team)'}</div>`;
+}
+// knoppen met namen (3 standen)
+function attButtons(list, stateOf, act){
+  return `<div class="attgrid">${list.map(p => { const st = stateOf(p.id); return `<button class="attb ${st || 'geen'}" data-act="${act}" data-id="${esc(p.id)}">${st === 'ja' ? '✅' : st === 'nee' ? '❌' : '⏱️'} <span>${esc(p.n)}</span></button>`; }).join('')}</div>`;
+}
+const attLegend = `<div class="attleg"><span><i class="ja"></i>Erbij</span><span><i class="nee"></i>Kan niet</span><span><i class="geen"></i>Nog niet gekozen</span></div>`;
+
+// ---- trainer: link maken en antwoorden binnenhalen
+const pollUrl = pid => location.origin + location.pathname + '?wie=' + pid;
+const polls = {};   // pid -> {unsub}
+function pollPayload(m, t = team(), se = season()){
+  return {team: cloudCfg(t.id) && !isLegacy(cloudCfg(t.id)) ? cloudCfg(t.id).id : '', teamLabel: teamLabel(t), club: t.club || '',
+    opponent: m.opponent || '', home: m.home !== false, date: m.date || '', kickoff: m.kickoff || '', arrive: arriveTime(m, se),
+    players: se.players.map(p => ({id: p.id, n: pshort(p)}))};
+}
+async function startPoll(m){
+  if (!await needLogin('Log in om een link voor de team-app te maken.')) return;
+  let t = team();
+  if (!cloudCfg(t.id) || isLegacy(cloudCfg(t.id))){ try { await createRemoteTeam(t); await saveUserTeams(); save(); listenTeam(t.id); } catch(e){ await tell('Online bewaren lukt niet. (' + (e.message || e) + ')'); return; } }
+  if (!m.poll){
+    const pid = randId(22), pl = pollPayload(m);
+    try { await cloud.api.pollCreate(pid, {...pl, answers: m.att || {}, by: myUid(), created: Date.now(), updated: Date.now()}); }
+    catch(e){ console.error(e); await tell('De link maken lukt niet. Staan de nieuwe Firestore-regels erin? (' + (e.message || e) + ')'); return; }
+    m.poll = {id: pid, last: JSON.stringify(pl)}; commit(); watchPolls();
+  }
+  sharePoll(m);
+}
+function sharePoll(m){
+  const at = arriveTime(m), d = m.date ? new Date(m.date + 'T12:00').toLocaleDateString('nl-NL', {weekday:'long', day:'numeric', month:'long'}) : 'de wedstrijd';
+  const txt = `⚽ ${d.charAt(0).toUpperCase() + d.slice(1)} spelen we ${m.home === false ? 'uit' : 'thuis'}${m.opponent ? ' tegen ' + m.opponent : ''}.${at ? ' Aanwezig om ' + hhmm(at) + '.' : ''}${m.kickoff ? ' Aftrap ' + hhmm(m.kickoff) + '.' : ''} Tik op je naam en laat weten of je erbij bent: ${pollUrl(m.poll.id)}`;
+  if (navigator.share) navigator.share({title: 'Wie zijn erbij?', text: txt}).catch(() => {});
+  else navigator.clipboard?.writeText(txt).then(() => toast('Bericht gekopieerd – plak het in de team-app'), () => tell(txt));
+}
+function applyAnswers(m, answers){
+  m.att = {...answers};
+  Object.entries(m.att).forEach(([pid, v]) => {
+    if (m.phase !== 'prep') return;
+    if (v === 'ja' && !m.present.includes(pid)) m.present.push(pid);
+    if (v === 'nee' && m.present.includes(pid)){ m.present = m.present.filter(x => x !== pid); m.segments.forEach(lu => lu.forEach((x, i) => { if (x === pid) lu[i] = null; })); }
+  });
+}
+function watchPolls(){
+  if (!cloud.api || !cloud.api.pollListen || !myUid()) return;
+  const want = new Set();
+  S.teams.forEach(t => t.seasons.forEach(se => se.matches.forEach(m => {
+    if (!m.poll || m.phase === 'done') return;
+    want.add(m.poll.id);
+    if (polls[m.poll.id]) return;
+    const mid = m.id;
+    polls[m.poll.id] = {unsub: cloud.api.pollListen(m.poll.id, d => {
+      if (!d) return;
+      const mm = S.teams.flatMap(x => x.seasons).flatMap(x => x.matches).find(x => x.id === mid); if (!mm) return;
+      if (JSON.stringify(d.answers || {}) === JSON.stringify(mm.att || {})) return;
+      applyAnswers(mm, d.answers || {}); save();
+      const a = document.activeElement;
+      if (!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) && !document.querySelector('.modal')) render();
+    }, e => console.error(e))};
+  })));
+  Object.keys(polls).forEach(pid => { if (!want.has(pid)){ polls[pid].unsub && polls[pid].unsub(); delete polls[pid]; } });
+}
+let pollSyncTimer = null;
+function pollSync(){
+  if (!cloud.api || !cloud.api.pollUpdate || !myUid()) return;
+  clearTimeout(pollSyncTimer);
+  pollSyncTimer = setTimeout(() => {
+    S.teams.forEach(t => t.seasons.forEach(se => se.matches.forEach(m => {
+      if (!m.poll || m.phase === 'done') return;
+      const pl = JSON.stringify(pollPayload(m, t, se));
+      if (pl === m.poll.last) return;
+      m.poll.last = pl;
+      cloud.api.pollUpdate(m.poll.id, {...JSON.parse(pl), updated: Date.now()}).catch(e => console.error(e));
+    })));
+    watchPolls();
+  }, 800);
+}
+async function coachAnswer(m, pid){
+  const cur = attOf(m, pid), v = cur === 'ja' ? 'nee' : 'ja';
+  m.att = m.att || {}; m.att[pid] = v;
+  applyAnswers(m, m.att); commit();
+  if (m.poll && cloud.api && myUid()) cloud.api.pollAnswer(m.poll.id, pid, v).catch(e => console.error(e));
+}
+function attCard(m){
+  const se = season(), list = se.players.map(p => ({id: p.id, n: pshort(p)}));
+  const ja = list.filter(p => attOf(m, p.id) === 'ja').length;
+  return `
+  <div class="card">
+    <div class="atthead"><h2>👥 Wie zijn erbij?</h2><span class="attcount"><b>${ja}</b> aanwezig</span></div>
+    ${attLegend}
+    ${attButtons(list, pid => attOf(m, pid), 'coachAtt')}
+    <div class="muted" style="margin:8px 0 10px;font-size:12px">Tik op een naam om het zelf aan te passen. "Kan niet" haalt de speler uit de opstelling.</div>
+    <button class="btn pri full" data-act="startPoll">📣 ${m.poll ? 'Link opnieuw delen in de team-app' : 'Vraag het in de team-app (link delen)'}</button>
+  </div>`;
+}
+
+// ---- pagina voor spelers en ouders (via ?wie=...)
+const WIE = {id: null, d: null, err: '', sel: null, unsub: null};
+const WIE_ME = 'lineup.wie.me';
+function viewWie(){
+  if (WIE.err) return `<div class="card empty"><b>⚠️</b>${esc(WIE.err)}</div>`;
+  const d = WIE.d; if (!d) return `<div class="card empty"><b>⚽</b>Even laden…</div>`;
+  const ans = d.answers || {}, me = localStorage.getItem(WIE_ME);
+  const ja = (d.players || []).filter(p => ans[p.id] === 'ja').length;
+  const dt = d.date ? new Date(d.date + 'T12:00').toLocaleDateString('nl-NL', {weekday:'long', day:'numeric', month:'long'}).toUpperCase() : '';
+  const title = d.home === false ? `${d.opponent || 'Tegenstander'} – ${d.club || d.teamLabel}` : `${d.club || d.teamLabel} – ${d.opponent || 'Tegenstander'}`;
+  return `
+  <div class="wiehead">
+    <div class="svhead" style="margin:0"><div class="logo">${LOGO_MARK}</div><div><div class="club" style="color:#c9efd5">${esc(d.club || '')}</div><div class="svteam" style="color:#fff">${esc(d.teamLabel)}</div></div></div>
+    <div class="wiedate">${esc(dt)}</div>
+    <div class="wietitle">${esc(title)}</div>
+    <div class="wietimes"><span class="hl"><small>AANWEZIG</small><b>${esc(hhmm(d.arrive) || '–')}</b></span><span><small>AFTRAP</small><b>${esc(hhmm(d.kickoff) || '–')}</b></span><span><small>WAAR</small><b>${d.home === false ? 'Uit' : 'Thuis'}</b></span></div>
+  </div>
+  <div class="atthead" style="margin:14px 2px 8px"><h2 style="margin:0">Tik op je naam</h2><span class="attcount"><b>${ja}</b> aanwezig</span></div>
+  ${attLegend}
+  ${attButtons(d.players || [], pid => ans[pid] || '', 'wiePick').replace(`data-id="${esc(me || '-')}"`, `data-id="${esc(me || '-')}" data-me="1"`)}
+  <div class="muted" style="margin-top:12px;text-align:center">Je kunt je keuze altijd nog veranderen via dezelfde link.</div>`;
+}
+function renderWie(){ app.innerHTML = iconize(viewWie()); }
+async function bootWie(id){
+  WIE.id = id; document.body.classList.add('survey');
+  renderWie();
+  try {
+    const api = await firebaseApi();
+    if (!api || !api.pollListen) throw new Error('Deze link werkt nog niet: de online opslag is niet ingesteld.');
+    WIE.unsub = api.pollListen(id, d => { if (!d){ WIE.err = 'Deze link bestaat niet (meer). Vraag je trainer om een nieuwe link.'; } else { WIE.d = d; WIE.err = ''; } if (!document.querySelector('.modal')) renderWie(); }, e => { WIE.err = 'Laden lukt niet. Controleer je internet en probeer het opnieuw.'; renderWie(); });
+  } catch(e){ WIE.err = e.message || String(e); renderWie(); }
+}
+function wieSheet(p){
+  return new Promise(res => {
+    const d = document.createElement('div'); d.className = 'modal';
+    d.innerHTML = iconize(`<div class="box"><p style="font-size:26px;font-weight:900;margin-bottom:12px">${esc(p.n)}, ben je erbij?</p>
+      <div class="grid2"><button class="wiebig ja" data-r="ja">✅<span>Ik ben erbij</span></button><button class="wiebig nee" data-r="nee">❌<span>Ik kan niet</span></button></div>
+      <button class="btn full" style="margin-top:10px" data-r="no">Annuleren</button></div>`);
+    document.body.appendChild(d);
+    d.addEventListener('click', e => { e.stopPropagation(); const b = e.target.closest('[data-r]'); if (!b && e.target !== d) return; const r = b ? b.dataset.r : 'no'; d.remove(); res(r === 'no' ? null : r); });
+  });
+}
+document.addEventListener('click', async e => {
+  const el = e.target.closest('[data-act="wiePick"]'); if (!el || !WIE.d) return;
+  const p = (WIE.d.players || []).find(x => x.id === el.dataset.id); if (!p) return;
+  const v = await wieSheet(p); if (!v){ renderWie(); return; }
+  try { localStorage.setItem(WIE_ME, p.id); } catch(_){}
+  WIE.d.answers = {...(WIE.d.answers || {}), [p.id]: v}; renderWie();
+  try { await (await firebaseApi()).pollAnswer(WIE.id, p.id, v); toast(v === 'ja' ? `Top, ${p.n} is erbij!` : `Jammer, ${p.n} kan niet`); }
+  catch(err){ tell('Opslaan lukt niet. Probeer het zo nog eens.'); }
+});
+
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
 const DATA_VERSION = 7;               // ophogen als de opbouw van de gegevens verandert
 const FIREBASE_SDK = '10.12.2';
@@ -2138,6 +2361,11 @@ function firebaseApi(){
       userGet: async uid => data(await fs.getDoc(d('users', uid))),
       userSet: (uid, v) => fs.setDoc(d('users', uid), v, {merge: true}),
       userRemoveTeam: (uid, rid) => fs.updateDoc(d('users', uid), {['teams.' + rid]: fs.deleteField()}),
+      // wie zijn erbij
+      pollCreate: (id, v) => fs.setDoc(d('polls', id), v),
+      pollUpdate: (id, v) => fs.setDoc(d('polls', id), v, {merge: true}),
+      pollAnswer: (id, pid, v) => fs.updateDoc(d('polls', id), {['answers.' + pid]: v, updated: Date.now()}),
+      pollListen: (id, cb, err) => fs.onSnapshot(d('polls', id), s => cb(data(s)), err),
       // vraag het de spelers
       getSurvey: async sid => data(await fs.getDoc(d('surveys', sid))),
       createSurvey: (sid, v) => fs.setDoc(d('surveys', sid), v),
@@ -2255,6 +2483,7 @@ async function syncAccount(){
     save();
     Object.keys(cloudMap()).forEach(listenTeam);
     setCloudStatus();
+    pollSync();
   } finally { cloud.syncing = false; }
 }
 function placeTeam(td, rid){
@@ -2762,8 +2991,9 @@ function buildPrint(m){
 }
 
 if (!S.active.team) S.active.team = S.teams[0].id;
-const SURVEY_ID = new URLSearchParams(location.search).get('vraag');
-if (SURVEY_ID) bootSurvey(SURVEY_ID); else render();
+const SURVEY_ID = new URLSearchParams(location.search).get('vraag') || (new URLSearchParams(location.search).get('wie') ? 'wie' : null);
+const WIE_ID = new URLSearchParams(location.search).get('wie');
+if (WIE_ID) bootWie(WIE_ID); else if (SURVEY_ID) bootSurvey(SURVEY_ID); else render();
 document.getElementById('nav').innerHTML = iconize(document.getElementById('nav').innerHTML);
 if (!SURVEY_ID){
   loadLogo();
