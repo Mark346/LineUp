@@ -14,7 +14,7 @@
 <link rel="apple-touch-icon-precomposed" sizes="180x180" href="apple-touch-icon.png?v=6">
 <meta name="theme-color" content="#0f6b35">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,500;0,600;0,700;0,800;0,900;1,800;1,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,500;0,600;0,700;0,800;0,900;1,800;1,900&family=Barlow:wght@500;600;700;800&family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@500;600;700;800;900&family=Roboto+Slab:wght@700;800;900&display=swap" rel="stylesheet">
 <title>LineUp</title>
 <style>
   /* ===================== Thema's ===================== */
@@ -47,7 +47,7 @@
   .row{display:flex;gap:8px;align-items:center}
   .row>*{flex:1}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  label.f{display:block;font-size:13px;color:var(--muted);margin-bottom:10px}
+  label.f,div.f{display:block;font-size:13px;color:var(--muted);margin-bottom:10px}div.f>span{margin-bottom:4px}
   label.f>*{margin-top:5px}
   details summary{cursor:pointer;font-weight:700;list-style:none}
   details summary::-webkit-details-marker{display:none}
@@ -299,132 +299,134 @@
   .toast{bottom:calc(24px + env(safe-area-inset-bottom))}
   /* ===================== Grasveld Licht ===================== */
   :root, body[data-theme="graslicht"]{
-    --bg:#eef7f0; --bg2:none; --surf:#ffffff; --surf2:#f3f8f4; --solid:#ffffff; --line:rgba(15,107,53,.14);
-    --txt:#0c3d1f; --muted:#4f7a5d; --acc:#ffd52e; --acc2:#0f6b35; --on-acc:#0c3d1f;
-    --hdr:#0f6b35; --hdr-txt:#fff; --hdr-glow:none; --pitch1:#16893f; --pitch2:#1a9446; --pline:rgba(255,255,255,.85); --kp:#0f6b35;
-    --ok:#0f6b35; --red:#d9363e; --shadow:0 4px 14px rgba(12,61,31,.07); --blur:none; --radius:16px;
+    --bg:#eef7f0; --bg2:none; --surf:#ffffff; --surf2:var(--surf2); --solid:#ffffff; --line:rgba(15,107,53,.14);
+    --txt:var(--ink); --muted:var(--muted); --acc:var(--y); --acc2:var(--g); --on-acc:var(--ink);
+    --hdr:var(--g); --hdr-txt:#fff; --hdr-glow:none; --pitch1:var(--g2); --pitch2:#1a9446; --pline:rgba(255,255,255,.85); --kp:var(--g);
+    --ok:var(--g); --red:#d9363e; --shadow:0 4px 14px rgba(12,61,31,.07); --blur:none; --radius:16px;
     --font:"Archivo",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; --disp:"Archivo",sans-serif;
     --soft:rgba(255,213,46,.22); color-scheme:light;
+    --y:#ffd52e; --on-y:#0c3d1f; --ink:#0c3d1f; --g:#0f6b35; --g2:#16893f; --ysoft:#fff7cc; --ysoft2:#fff3b0; --ybd:#e0b400; --ytxt:#8a6d00;
+    --gsoft:#e3f1e7; --hdr-sub:#c9efd5; --hdr-bg:repeating-linear-gradient(90deg,#0f6b35 0 60px,#0e6532 60px 120px); --dot-bg:#ffffff; --dot-txt:#0c3d1f; --dot-ring:transparent;
   }
-  body[data-theme="graslicht"]{background:#eef7f0}
-  header{background:repeating-linear-gradient(90deg,#0f6b35 0 60px,#0e6532 60px 120px);border-bottom:0;color:#fff}
+  body[data-theme="graslicht"]{background:var(--bg)}
+  header{background:var(--hdr-bg);border-bottom:0;color:#fff}
   header::before,header::after{display:none}
   h2,.mt,.benchtitle{font-weight:800;color:var(--txt)}
   .card,.summary,.tcard,.trow,.tile{background:#fff;border-color:var(--line);box-shadow:var(--shadow)}
   .card{border-radius:16px}
-  input,select,textarea{background:#f3f8f4;border-color:rgba(15,107,53,.2);color:var(--txt)}
+  input,select,textarea{background:var(--surf2);border-color:rgba(15,107,53,.2);color:var(--txt)}
   input::placeholder,textarea::placeholder{color:#8aa895}
-  input:focus,select:focus,textarea:focus{border-color:#16893f;box-shadow:0 0 0 3px rgba(22,137,63,.15)}
+  input:focus,select:focus,textarea:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(22,137,63,.15)}
   /* knoppen en tabs */
-  .btn{background:#f3f8f4;border-color:var(--line);color:var(--txt)}
-  .btn.pri,.mbig{background:#ffd52e;color:#0c3d1f;border-color:transparent;box-shadow:0 6px 16px rgba(201,160,0,.25)}
+  .btn{background:var(--surf2);border-color:var(--line);color:var(--txt)}
+  .btn.pri,.mbig{background:var(--y);color:var(--on-y);border-color:transparent;box-shadow:0 6px 16px rgba(201,160,0,.25)}
   .mbig{animation:none!important}
-  .mbig .mph{background:#0c3d1f;color:#ffd52e}
+  .mbig .mph{background:var(--ink);color:var(--y)}
   .mbig.live .mph::before{background:#ff6b5b;box-shadow:none}
-  .btn.pri2{border-color:#0f6b35;color:#0f6b35}
+  .btn.pri2{border-color:var(--g);color:var(--g)}
   .btn.red{color:#d9363e;border-color:rgba(217,54,62,.4);background:#fff}
   nav#nav{background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.16);border-radius:16px}
   nav#nav button{color:rgba(255,255,255,.9);border-radius:12px}
-  nav#nav button.on{background:#ffd52e;color:#0c3d1f}
+  nav#nav button.on{background:var(--y);color:var(--on-y)}
   header .pill.tpill{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.25);color:#fff}
-  header .pill.tpill.on{background:#ffd52e;color:#0c3d1f;border-color:#ffd52e;box-shadow:none}
+  header .pill.tpill.on{background:var(--y);color:var(--on-y);border-color:var(--y);box-shadow:none}
   header .pill.addt{border-color:rgba(255,255,255,.45);color:#fff;background:transparent}
   .cloud{background:rgba(255,255,255,.16);color:#fff}
   .stabs{background:rgba(255,255,255,.96);border-color:var(--line)}
   .stabs button{color:var(--muted)}
-  .stabs button.on,.segc button.on,.segs .pill.on,.tag.on{background:#ffd52e;color:#0c3d1f}
+  .stabs button.on,.segc button.on,.segs .pill.on,.tag.on{background:var(--y);color:var(--on-y)}
   .phases{background:rgba(255,255,255,.97);border-bottom:1px solid var(--line)}
   .phases button{color:var(--muted)}
   .phases .pback{color:var(--txt)}
-  .phases button.on{background:#ffd52e;color:#0c3d1f}
-  .phases button.past{color:#16893f}
-  .segs .pill{background:#f3f8f4;border-color:var(--line);color:var(--txt)}
-  .pill.now:not(.on){border-color:#16893f;color:#0f6b35}
-  .pill{background:#f3f8f4;color:var(--txt)}
+  .phases button.on{background:var(--y);color:var(--on-y)}
+  .phases button.past{color:var(--g2)}
+  .segs .pill{background:var(--surf2);border-color:var(--line);color:var(--txt)}
+  .pill.now:not(.on){border-color:var(--g2);color:var(--g)}
+  .pill{background:var(--surf2);color:var(--txt)}
   /* veld */
   .pitch{border:2px solid rgba(15,107,53,.25);box-shadow:inset 0 0 40px rgba(0,0,0,.10)}
-  .pl .dot{background:#ffffff;color:#0c3d1f;box-shadow:0 4px 10px rgba(0,0,0,.28)}
-  .pl.k .dot{background:#0c3d1f;color:#fff;box-shadow:0 0 0 3px #ffd52e,0 4px 10px rgba(0,0,0,.28)}
+  .pl .dot{background:var(--dot-bg);color:var(--dot-txt);box-shadow:0 0 0 3px var(--dot-ring),0 4px 10px rgba(0,0,0,.28)}
+  .pl.k .dot{background:var(--ink);color:#fff;box-shadow:0 0 0 3px var(--y),0 4px 10px rgba(0,0,0,.28)}
   .pl.emptyp .dot{background:rgba(0,0,0,.18);color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.75)}
   .pl .nm{background:rgba(0,0,0,.4);color:#fff}
-  .pl .mb{background:#ffd52e;color:#0c3d1f}
+  .pl .mb{background:var(--y);color:var(--on-y)}
   /* bank, lijsten, statistiek */
-  .benchp{background:#f3f8f4;border-color:var(--line);color:var(--txt)}
-  .benchp .bd,.num,.tbadge{background:#ffd52e!important;color:#0c3d1f!important}
-  .benchp.low{border-color:#e0b400;background:#fff7cc}
-  .benchp.low i{color:#8a6d00}
-  .pp{color:#16893f}
-  .bar{background:#e3f1e7}
-  .bar i{background:#16893f}
-  .tile b,.bigscore{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:#0f6b35}
+  .benchp{background:var(--surf2);border-color:var(--line);color:var(--txt)}
+  .benchp .bd,.num,.tbadge{background:var(--y)!important;color:var(--ink)!important}
+  .benchp.low{border-color:var(--ybd);background:var(--ysoft)}
+  .benchp.low i{color:var(--ytxt)}
+  .pp{color:var(--g2)}
+  .bar{background:var(--gsoft)}
+  .bar i{background:var(--g2)}
+  .tile b,.bigscore{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:var(--g)}
   table.ov .cur{background:rgba(255,213,46,.25)}
-  table.ov .kp{color:#0f6b35}
-  .whop{background:#f3f8f4;color:var(--muted)}
-  .whop.on{background:#e6f5ea;border-color:#16893f;color:var(--txt)}
-  .wissel{background:#fff7cc}
-  .knvb{background:#fff7cc;border-color:#ffd52e}
-  .knvb span{color:#0f6b35}
-  .knvb.ok{background:#f3f8f4;border-color:var(--line)}
-  .switch{background:#e3f1e7}
+  table.ov .kp{color:var(--g)}
+  .whop{background:var(--surf2);color:var(--muted)}
+  .whop.on{background:var(--gsoft);border-color:var(--g2);color:var(--txt)}
+  .wissel{background:var(--ysoft)}
+  .knvb{background:var(--ysoft);border-color:var(--y)}
+  .knvb span{color:var(--g)}
+  .knvb.ok{background:var(--surf2);border-color:var(--line)}
+  .switch{background:var(--gsoft)}
   .switch i{background:#9fb8a7}
-  .switch.on{background:#fff3b0;border-color:#e0b400}
-  .switch.on i{background:#0f6b35;box-shadow:none}
-  .badge{background:#e3f1e7;color:#4f7a5d}
-  .badge.ok{background:#d8f3e0;color:#0f6b35}
-  .badge.live{background:#fff3b0;color:#0c3d1f}
+  .switch.on{background:var(--ysoft2);border-color:var(--ybd)}
+  .switch.on i{background:var(--g);box-shadow:none}
+  .badge{background:var(--gsoft);color:var(--muted)}
+  .badge.ok{background:var(--gsoft);color:var(--g)}
+  .badge.live{background:var(--ysoft2);color:var(--ink)}
   .modal .box{background:#ffffff;color:var(--txt)}
-  .toast{background:#0c3d1f;color:#ffffff}
-  #outdated{background:#ffd52e;color:#0c3d1f}
-  .sgroup{color:#4f7a5d}
+  .toast{background:var(--ink);color:#ffffff}
+  #outdated{background:var(--y);color:var(--on-y)}
+  .sgroup{color:var(--muted)}
   /* woordmerk en logo (in de groene kop) */
-  .wordmark{font-family:"Archivo",sans-serif;font-style:italic;font-weight:900;color:#fff}
-  .wordmark span{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:#ffd52e}
-  .wordmark .speed{background:linear-gradient(90deg,transparent,#ffd52e) 6px 1px/14px 2.5px no-repeat,linear-gradient(90deg,transparent,#ffd52e) 0 6px/20px 3px no-repeat,linear-gradient(90deg,transparent,#ffd52e) 8px 11px/12px 2.5px no-repeat}
-  .brand .club{color:#c9efd5}
+  .wordmark{font-family:var(--disp);font-style:italic;font-weight:900;color:#fff}
+  .wordmark span{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:var(--y)}
+  .wordmark .speed{background:linear-gradient(90deg,transparent,var(--y)) 6px 1px/14px 2.5px no-repeat,linear-gradient(90deg,transparent,var(--y)) 0 6px/20px 3px no-repeat,linear-gradient(90deg,transparent,var(--y)) 8px 11px/12px 2.5px no-repeat}
+  .brand .club{color:var(--hdr-sub)}
   .logo{box-shadow:0 4px 12px rgba(0,0,0,.25)}
   /* scorebalk */
-  .scorebug{display:flex;align-items:stretch;height:36px;margin:-2px 0 12px;font-family:"Archivo",sans-serif;font-weight:900;font-style:italic;font-size:18px;width:max-content;max-width:100%;border-radius:10px;overflow:hidden;box-shadow:0 3px 10px rgba(12,61,31,.12)}
-  .scorebug .sbt{background:#0f6b35;color:#ffffff;padding:0 12px;display:flex;align-items:center}
-  .scorebug .sbs{background:#ffd52e;color:#0c3d1f;padding:0 14px;display:flex;align-items:center;white-space:nowrap}
-  .scorebug .sbst{background:#e3f1e7;color:#0c3d1f;padding:0 12px;display:flex;align-items:center;gap:7px;font-size:13px;font-style:normal;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .scorebug{display:flex;align-items:stretch;height:36px;margin:-2px 0 12px;font-family:var(--disp);font-weight:900;font-style:italic;font-size:18px;width:max-content;max-width:100%;border-radius:10px;overflow:hidden;box-shadow:0 3px 10px rgba(12,61,31,.12)}
+  .scorebug .sbt{background:var(--g);color:#ffffff;padding:0 12px;display:flex;align-items:center}
+  .scorebug .sbs{background:var(--y);color:var(--on-y);padding:0 14px;display:flex;align-items:center;white-space:nowrap}
+  .scorebug .sbst{background:var(--gsoft);color:var(--ink);padding:0 12px;display:flex;align-items:center;gap:7px;font-size:13px;font-style:normal;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .scorebug .sbdot{width:8px;height:8px;border-radius:50%;background:#e5383b;animation:blink 1s infinite;flex:none}
   .benchtitle span{text-transform:none}
-  h2 .ic,.benchtitle .ic{color:#16893f}
-  .summary span,a{color:#0f6b35}
-  .step button{color:#0f6b35}
+  h2 .ic,.benchtitle .ic{color:var(--g2)}
+  .summary span,a{color:var(--g)}
+  .step button{color:var(--g)}
   body.survey #nav,body.survey #teams,body.survey #logoBox,body.survey #cloudDot{display:none}
   .mlist{display:grid;gap:6px}.mrow{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:14px;background:var(--surf2)}
   .mrow small{display:block;color:var(--muted);font-size:12px;font-weight:600}.mrow .grow{min-width:0;flex:1}
-  .mav{width:34px;height:34px;border-radius:50%;background:#0f6b35;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;flex:none}
+  .mav{width:34px;height:34px;border-radius:50%;background:var(--g);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;flex:none}
   [hidden]{display:none!important}
   .istep{background:var(--surf2);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:8px 0}
   .istep ol{margin:6px 0 8px;padding-left:20px;font-size:14px;line-height:1.45}.istep li{margin:3px 0}
   .gbtn{display:flex;align-items:center;justify-content:center;gap:10px;background:#fff;color:#1f1f1f;border:1px solid var(--line)}
   .ordiv{display:flex;align-items:center;gap:10px;margin:14px 0 8px;color:var(--muted);font-size:12px;font-weight:700}.ordiv:before,.ordiv:after{content:'';flex:1;height:1px;background:var(--line)}
-  .aumsg{background:#fff3f3;color:var(--red);border-radius:12px;padding:8px 10px;font-size:13px;font-weight:600;margin:4px 0 10px}.aumsg.ok{background:#eefaf1;color:#0f6b35}
-  .lbanner{display:flex;gap:10px;align-items:center;background:#fff8d6;border:1px solid #ffd52e;border-radius:16px;padding:10px 12px;margin:0 0 12px;font-size:13px;cursor:pointer}.lbanner span{flex:1}
+  .aumsg{background:#fff3f3;color:var(--red);border-radius:12px;padding:8px 10px;font-size:13px;font-weight:600;margin:4px 0 10px}.aumsg.ok{background:#eefaf1;color:var(--g)}
+  .lbanner{display:flex;gap:10px;align-items:center;background:#fff8d6;border:1px solid var(--y);border-radius:16px;padding:10px 12px;margin:0 0 12px;font-size:13px;cursor:pointer}.lbanner span{flex:1}
   .mrow.inv{border-style:dashed}
-  .aabtn{position:absolute;top:10px;right:10px;z-index:2;width:46px;height:46px;border-radius:14px;border:0;background:#ffd52e;color:#0c3d1f;font-family:"Archivo",sans-serif;font-weight:900;font-size:20px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:10px;gap:1px;cursor:pointer;box-shadow:0 3px 10px rgba(12,61,31,.15)}
+  .aabtn{position:absolute;top:10px;right:10px;z-index:2;width:46px;height:46px;border-radius:14px;border:0;background:var(--y);color:var(--on-y);font-family:var(--disp);font-weight:900;font-size:20px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:10px;gap:1px;cursor:pointer;box-shadow:0 3px 10px rgba(12,61,31,.15)}
   .aabtn small{font-size:14px}
   .mhead:has(.aabtn) .scorebug,.mhead:has(.aabtn) .mt{margin-right:52px}
-  .fsopts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.fsopts button[data-r="3"]{grid-column:1/-1;background:#000;color:#ffd52e;border:3px solid #000;flex-direction:row;gap:14px}.fsopts button[data-r="3"] span{font-size:16px;color:#fff}
-  .fsopts button{height:88px;border-radius:16px;border:1px solid var(--line);background:#f3f8f4;color:#0c3d1f;font-family:"Archivo",sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer}
+  .fsopts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.fsopts button[data-r="3"]{grid-column:1/-1;background:#000;color:var(--y);border:3px solid #000;flex-direction:row;gap:14px}.fsopts button[data-r="3"] span{font-size:16px;color:#fff}
+  .fsopts button{height:88px;border-radius:16px;border:1px solid var(--line);background:var(--surf2);color:var(--ink);font-family:var(--disp);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer}
   .fsopts button b{font-weight:900;line-height:1}.fsopts button span{font-size:13px;font-weight:800}
-  .fsopts button.on{background:#ffd52e;border:3px solid #0c3d1f}
-  .fsopts button[data-r="3"].on{background:#000;border:4px solid #ffd52e;box-shadow:0 0 0 3px #0c3d1f}
+  .fsopts button.on{background:var(--y);border:3px solid var(--ink)}
+  .fsopts button[data-r="3"].on{background:#000;border:4px solid var(--y);box-shadow:0 0 0 3px var(--ink)}
   /* Lijst · hoog contrast */
   .card.hc{background:#000;color:#fff;border:3px solid #000;padding:14px}
-  .hcnav{display:flex;align-items:center;gap:10px;border-bottom:3px solid #ffd52e;padding-bottom:12px;margin-bottom:6px}
-  .hcarrow{width:56px;height:56px;flex:none;border-radius:14px;border:3px solid #ffd52e;background:#000;color:#ffd52e;font-size:34px;font-weight:900;line-height:1;cursor:pointer}
+  .hcnav{display:flex;align-items:center;gap:10px;border-bottom:3px solid var(--y);padding-bottom:12px;margin-bottom:6px}
+  .hcarrow{width:56px;height:56px;flex:none;border-radius:14px;border:3px solid var(--y);background:#000;color:var(--y);font-size:34px;font-weight:900;line-height:1;cursor:pointer}
   .hcarrow:disabled{opacity:.3}
-  .hcblk{flex:1;text-align:center;display:flex;flex-direction:column}.hcblk b{font-size:30px;font-weight:900;color:#ffd52e;line-height:1.1}.hcblk span{font-size:19px;font-weight:700}
+  .hcblk{flex:1;text-align:center;display:flex;flex-direction:column}.hcblk b{font-size:30px;font-weight:900;color:var(--y);line-height:1.1}.hcblk span{font-size:19px;font-weight:700}
   .hcw{display:grid;gap:6px;margin:10px 0;padding:10px 12px;border:2px solid #fff;border-radius:14px;font-size:24px;font-weight:900}
-  .hcw>div{display:flex;gap:10px;align-items:baseline}.hcw b{flex:none;width:78px;font-size:17px;letter-spacing:.06em}.hcw b.out{color:#ff9f6b}.hcw b.in{color:#ffd52e}
+  .hcw>div{display:flex;gap:10px;align-items:baseline}.hcw b{flex:none;width:78px;font-size:17px;letter-spacing:.06em}.hcw b.out{color:#ff9f6b}.hcw b.in{color:var(--y)}
   .hcrow{display:flex;align-items:center;gap:12px;min-height:62px;border-bottom:2px solid #3a3a3a}.hcrow:last-child{border-bottom:0}
-  .hcpos{width:66px;flex:none;text-align:center;font-size:24px;font-weight:900;color:#ffd52e}
+  .hcpos{width:66px;flex:none;text-align:center;font-size:24px;font-weight:900;color:var(--y)}
   .hcnm{font-size:36px;font-weight:900;line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .hcbank{display:flex;align-items:baseline;gap:12px;margin-top:10px;padding-top:12px;border-top:3px solid #ffd52e}.hcbank span{font-size:17px;font-weight:900;color:#ffd52e;letter-spacing:.08em}.hcbank b{font-size:26px;font-weight:900}
-  .btn.hcbtn{width:100%;margin-top:14px;min-height:72px;font-size:24px;font-weight:900;background:#ffd52e;color:#000;border:0;border-radius:18px}
+  .hcbank{display:flex;align-items:baseline;gap:12px;margin-top:10px;padding-top:12px;border-top:3px solid var(--y)}.hcbank span{font-size:17px;font-weight:900;color:var(--y);letter-spacing:.08em}.hcbank b{font-size:26px;font-weight:900}
+  .btn.hcbtn{width:100%;margin-top:14px;min-height:72px;font-size:24px;font-weight:900;background:var(--y);color:#000;border:0;border-radius:18px}
   .fs3 .mhead{background:#000;color:#fff;border-color:#000}.fs3 .mhead .mt{color:#fff}.fs3 .mhead .muted{color:#ddd}
   /* Groot */
   .fs1 .scorebug{height:46px;font-size:22px}.fs1 .scorebug .sbst{font-size:16px}
@@ -457,32 +459,38 @@
   .fs2 .whop{font-size:21px;padding:11px 15px}
   .fs2 .phases button{font-size:16px}
   .attgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-  .attb{min-height:56px;border-radius:16px;font-family:"Archivo",sans-serif;font-size:17px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;padding:6px 8px;line-height:1.1}
+  .attb{min-height:56px;border-radius:16px;font-family:var(--disp);font-size:17px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;padding:6px 8px;line-height:1.1}
   .attb .ic{width:18px;height:18px;flex:none}
-  .attb.ja{border:0;background:#0f6b35;color:#fff}.attb.ja .ic{color:#ffd52e}
+  .attb.ja{border:0;background:var(--g);color:#fff}.attb.ja .ic{color:var(--y)}
   .attb.nee{border:2px dashed #9db8a6;background:#e3ece6;color:#5d7a66;font-weight:800}.attb.nee span{text-decoration:line-through}
-  .attb.geen{border:2px solid #e0b400;background:#fff7cc;color:#0c3d1f}.attb.geen .ic{color:#8a6d00}
-  .attb[data-me]{box-shadow:0 0 0 3px #0c3d1f,0 0 0 6px #ffd52e}
+  .attb.geen{border:2px solid var(--ybd);background:var(--ysoft);color:var(--ink)}.attb.geen .ic{color:var(--ytxt)}
+  .attb[data-me]{box-shadow:0 0 0 3px var(--ink),0 0 0 6px var(--y)}
   .attleg{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;font-weight:700;color:var(--muted);margin:0 0 10px}.attleg span{display:flex;align-items:center;gap:6px}
-  .attleg i{width:14px;height:14px;border-radius:4px;display:inline-block}.attleg i.ja{background:#0f6b35}.attleg i.nee{background:#e3ece6;border:2px dashed #9db8a6}.attleg i.geen{background:#fff7cc;border:2px solid #e0b400}
+  .attleg i{width:14px;height:14px;border-radius:4px;display:inline-block}.attleg i.ja{background:var(--g)}.attleg i.nee{background:#e3ece6;border:2px dashed #9db8a6}.attleg i.geen{background:var(--ysoft);border:2px solid var(--ybd)}
   .atthead{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:8px}.atthead h2{margin:0}
-  .attcount{font-size:17px;font-weight:900;white-space:nowrap}.attcount b{font-size:34px;color:#0f6b35;line-height:1;margin-right:4px}
+  .attcount{font-size:17px;font-weight:900;white-space:nowrap}.attcount b{font-size:34px;color:var(--g);line-height:1;margin-right:4px}
   .arv{display:flex;flex-direction:column;gap:8px;border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:8px;cursor:pointer}
-  .arv.on{border:3px solid #0f6b35;background:#eef7f0}
-  .arh{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:900}.arh input{width:22px;height:22px;accent-color:#0f6b35;flex:none}
+  .arv.on{border:3px solid var(--g);background:#eef7f0}
+  .arh{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:900}.arh input{width:22px;height:22px;accent-color:var(--g);flex:none}
   .arr{display:flex;align-items:center;gap:8px;padding-left:32px;font-size:15px;font-weight:700}.arr input{width:72px;text-align:center;font-weight:900;font-size:18px}
   .arv small{padding-left:32px;color:var(--muted);font-size:12px;font-weight:600}
-  input.arin{border:2px solid #e0b400;background:#fff7cc}
-  .wiehead{background:#0f6b35;color:#fff;border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:8px}
-  .wiedate{font-size:13px;font-weight:800;letter-spacing:.12em;color:#ffd52e;margin-top:6px}
+  input.arin{border:2px solid var(--ybd);background:var(--ysoft)}
+  .wiehead{background:var(--g);color:#fff;border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:8px}
+  .wiedate{font-size:13px;font-weight:800;letter-spacing:.12em;color:var(--y);margin-top:6px}
   .wietitle{font-family:var(--disp);font-size:27px;font-weight:900;line-height:1.08}
   .wietimes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
   .wietimes span{background:rgba(255,255,255,.12);border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;gap:2px}
-  .wietimes small{font-size:11px;font-weight:800;letter-spacing:.1em;color:#c9efd5}.wietimes b{font-size:20px;font-weight:900}
-  .wietimes span.hl{background:#ffd52e;color:#0c3d1f}.wietimes span.hl small{color:#0c3d1f}
-  .wiebig{height:96px;border-radius:20px;font-family:"Archivo",sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:19px;font-weight:900}
-  .wiebig.ja{border:0;background:#0f6b35;color:#fff}.wiebig.nee{border:2px dashed #9db8a6;background:#e3ece6;color:#0c3d1f}
+  .wietimes small{font-size:11px;font-weight:800;letter-spacing:.1em;color:var(--hdr-sub)}.wietimes b{font-size:20px;font-weight:900}
+  .wietimes span.hl{background:var(--y);color:var(--on-y)}.wietimes span.hl small{color:var(--ink)}
+  .wiebig{height:96px;border-radius:20px;font-family:var(--disp);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:19px;font-weight:900}
+  .wiebig.ja{border:0;background:var(--g);color:#fff}.wiebig.nee{border:2px dashed #9db8a6;background:#e3ece6;color:var(--ink)}
   .wiebig .ic{width:28px;height:28px}
+  .tsel{display:flex;align-items:center;gap:4px}.tsel select{flex:1;min-width:0;text-align:center;font-size:19px;font-weight:900;padding:10px 6px}.tsel b{font-size:20px}
+  .tsel.arin select{border:2px solid var(--ybd);background:var(--ysoft)}
+  .f>span{display:block}
+  .maplink{display:inline-flex;align-items:center;gap:6px;margin-top:4px;font-weight:800}
+  .wieaddr{margin:12px 0 0;display:flex;flex-direction:column;gap:10px}.wieaddr small{display:block;font-size:12px;font-weight:900;letter-spacing:.1em;color:var(--muted)}.wieaddr b{font-size:18px}
+  .wieaddr a.btn{text-decoration:none;display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px}
   .nm2{display:flex;gap:6px}.nm2 input{padding:6px 8px;min-width:0;flex:1}
   .svhead{display:flex;align-items:center;gap:12px;margin:2px 2px 14px}
   .svhead .logo{width:52px;height:52px}
@@ -516,6 +524,63 @@
     #print td,#print th{border:1px solid #999;padding:4px;text-align:center}
   }
   #print{display:none}
+
+  /* ===================== Clubkleuren ===================== */
+  .logo.clublogo{width:auto;height:46px;min-width:46px;padding:4px 8px;border-radius:12px;background:#fff}
+  .logo.clublogo img{width:auto;height:100%;max-width:150px}
+  /* RKVV Maliskamp: rood, groen en wit */
+  body[data-club="maliskamp"] .brand .club,body[data-club="emplina"] .brand .club{display:none}
+  body[data-club="maliskamp"] .wiehead .logo.clublogo{background:#fff;padding:4px 8px}
+  body[data-club="maliskamp"]{
+    --bg:#f5f4f2; --surf2:#f7f6f4; --line:rgba(29,29,27,.12); --txt:#1d1d1b; --muted:#5c5a56;
+    --y:#e3061a; --on-y:#ffffff; --ink:#1d1d1b; --g:#3c854e; --g2:#3c854e; --ysoft:#fde8ea; --ysoft2:#fbd5d9; --ybd:#e3061a; --ytxt:#9c0414;
+    --gsoft:#e5f0e8; --hdr-sub:#5c5a56; --hdr-bg:#ffffff; --dot-bg:#ffffff; --dot-txt:#e3061a; --dot-ring:#e3061a;
+    --acc:#e3061a; --on-acc:#ffffff; --acc2:#3c854e; --kp:#1d1d1b; --pitch1:#3c854e; --pitch2:#357745;
+    --font:"Barlow",-apple-system,sans-serif; --disp:"Barlow Condensed","Barlow",sans-serif;
+  }
+  body[data-club="maliskamp"] header{color:#1d1d1b;border-bottom:4px solid #e3061a;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+  body[data-club="maliskamp"] .wordmark{color:#1d1d1b}
+  body[data-club="maliskamp"] .wordmark span{color:#e3061a}
+  body[data-club="maliskamp"] .wordmark .speed{background:linear-gradient(90deg,transparent,#e3061a) 6px 1px/14px 2.5px no-repeat,linear-gradient(90deg,transparent,#e3061a) 0 6px/20px 3px no-repeat,linear-gradient(90deg,transparent,#e3061a) 8px 11px/12px 2.5px no-repeat}
+  body[data-club="maliskamp"] .brand .club{color:#5c5a56}
+  body[data-club="maliskamp"] nav#nav{background:#f5f4f2;border-color:#e4e1dc}
+  body[data-club="maliskamp"] nav#nav button{color:#5c5a56}
+  body[data-club="maliskamp"] nav#nav button.on{background:#e3061a;color:#fff}
+  body[data-club="maliskamp"] header .pill.tpill{background:#fff;border-color:#e4e1dc;color:#1d1d1b}
+  body[data-club="maliskamp"] header .pill.tpill.on{background:#e3061a;border-color:#e3061a;color:#fff}
+  body[data-club="maliskamp"] header .pill.addt{border-color:#c9c5bf;color:#1d1d1b}
+  body[data-club="maliskamp"] .cloud{background:#f5f4f2;color:#1d1d1b}
+  body[data-club="maliskamp"] .logo.clublogo{padding:0;background:none;box-shadow:none}
+  body[data-club="maliskamp"] .mbig .mph{background:#fff;color:#e3061a}
+  body[data-club="maliskamp"] .scorebug .sbt{background:#e3061a}
+  body[data-club="maliskamp"] .scorebug .sbs{background:#ffffff;color:#e3061a;box-shadow:inset 0 0 0 2px #e3061a}
+  body[data-club="maliskamp"] .summary span,body[data-club="maliskamp"] a{color:#c00418}
+  body[data-club="maliskamp"] .wiehead{background:#e3061a;border-bottom:4px solid #3c854e}
+  body[data-club="maliskamp"] .wiedate{color:#fff}
+  body[data-club="maliskamp"] .wietimes span.hl{background:#fff;color:#e3061a}
+  body[data-club="maliskamp"] .wietimes span.hl small{color:#e3061a}
+  body[data-club="maliskamp"] .toast{background:#1d1d1b}
+  body[data-club="maliskamp"] .wietimes small,body[data-club="maliskamp"] .wiehead .club{color:rgba(255,255,255,.88)!important}
+  body[data-club="maliskamp"] .wietimes span.hl small{color:#e3061a!important}
+  body[data-club="maliskamp"] .attb.ja .ic,body[data-club="maliskamp"] .wiebig.ja .ic{color:#fff}
+  body[data-club="maliskamp"] .attb.geen{background:#fff4d6;border-color:#d9a400}body[data-club="maliskamp"] .attb.geen .ic{color:#8a6d00}
+  body[data-club="maliskamp"] .attleg i.geen{background:#fff4d6;border-color:#d9a400}
+  /* RKVV Emplina: geel en blauw */
+  body[data-club="emplina"]{
+    --bg:#eef3fa; --surf2:#f2f6fb; --line:rgba(0,74,153,.14); --txt:#0b2547; --muted:#4a5d7a;
+    --y:#ffed00; --on-y:#002f63; --ink:#002f63; --g:#004a99; --g2:#1d63b3; --ysoft:#fff9c2; --ysoft2:#fff59a; --ybd:#c9b800; --ytxt:#5b4f00;
+    --gsoft:#e3ecf7; --hdr-sub:#d7e5f7; --hdr-bg:#004a99; --dot-bg:#ffed00; --dot-txt:#002f63; --dot-ring:#002f63;
+    --acc:#ffed00; --on-acc:#002f63; --acc2:#004a99; --kp:#004a99; --pitch1:#2f8a49; --pitch2:#2a7c42;
+    --font:"Inter",-apple-system,sans-serif; --disp:"Roboto Slab",Georgia,serif;
+  }
+  body[data-club="emplina"] header{border-bottom:4px solid #ffed00}
+  body[data-club="emplina"] .wordmark{font-family:"Roboto Slab",serif}
+  body[data-club="emplina"] .brand .club{color:#d7e5f7}
+  body[data-club="emplina"] .logo.clublogo{background:none;box-shadow:none;padding:0}
+  body[data-club="emplina"] .pl .nm{background:rgba(0,47,99,.75)}
+  body[data-club="emplina"] .scorebug .sbt{background:#002f63}
+  body[data-club="emplina"] input,body[data-club="emplina"] select,body[data-club="emplina"] textarea{border-color:rgba(0,74,153,.2)}
+  body[data-club="emplina"] .wiehead{border-bottom:4px solid #ffed00}
 </style>
 </head>
 <body>
@@ -683,7 +748,11 @@ const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch
 // Clublogo: eigen upload (bewaard op apparaat) of logo.png in de repo
 const LOGO_KEY = 'opstellingmaker.logo';
 let logoSrc = null;
-function renderLogo(){ const b = document.getElementById('logoBox'); if (b) b.innerHTML = LOGO_MARK; const c = document.getElementById('clubName'); if (c && logoSrc && c.textContent && !c.querySelector('img')) c.insertAdjacentHTML('afterbegin', `<img src="${logoSrc}" alt="" class="clubimg">`); }
+const CLUBS = {maliskamp: {logo: 'club-maliskamp.png', name: 'Maliskamp'}, emplina: {logo: 'club-emplina.png', name: 'Emplina'}};
+const clubKey = name => { const n = String(name || '').toLowerCase(); return Object.keys(CLUBS).find(k => n.includes(k)) || ''; };
+function applyClub(name){ const k = clubKey(name); if (document.body.dataset.club !== k) document.body.dataset.club = k; return k; }
+const clubLogo = name => { const k = clubKey(name); return k ? `<img src="${CLUBS[k].logo}" alt="Logo ${esc(CLUBS[k].name)}">` : LOGO_MARK; };
+function renderLogo(){ const b = document.getElementById('logoBox'), k = applyClub(team().club); const tc = document.querySelector('meta[name=theme-color]'); if (tc) tc.content = k === 'maliskamp' ? '#ffffff' : k === 'emplina' ? '#004a99' : '#0f6b35'; if (b){ b.classList.toggle('clublogo', !!k); b.innerHTML = clubLogo(team().club); } const c = document.getElementById('clubName'); if (c && logoSrc && c.textContent && !c.querySelector('img')) c.insertAdjacentHTML('afterbegin', `<img src="${logoSrc}" alt="" class="clubimg">`); }
 function loadLogo(){
   const own = localStorage.getItem(LOGO_KEY);
   if (own){ logoSrc = own; render(); return; }
@@ -1105,6 +1174,8 @@ function viewMatch(){
     </div>
     ${timesFields(m, se)}
     <div class="segc"><button class="${m.home !== false ? 'on' : ''}" data-act="home" data-v="1">🏠 Thuis</button><button class="${m.home === false ? 'on' : ''}" data-act="home" data-v="0">🚌 Uit</button></div>
+    ${m.home === false ? `<label class="f" style="margin-top:10px">Adres van de uitwedstrijd<input data-m="address" value="${esc(m.address || '')}" placeholder="bv. Sportpark De Wei, Utrecht" autocomplete="off"></label>
+    ${m.address ? `<a class="maplink" href="${esc(mapsUrl(m.address))}" target="_blank" rel="noopener">📍 Bekijk in Google Maps</a>` : ''}` : ''}
     <div class="muted" style="margin-top:10px">⚙️ ${settingsLine(st)} · <a href="#" data-act="goSettings2">wijzigen bij Instellingen</a></div>
   </div>`;
 
@@ -1748,7 +1819,17 @@ document.addEventListener('change', e => {
     const tgt = el.dataset.scope === 'match' ? m.settings : se;
     tgt.formation = el.value; if (el.dataset.scope === 'match'){ delete m.posOverride; regenIfNeeded(m); } commit(); return;
   }
-  if (el.dataset.arrive){ m.arriveTime = el.value; commit(); pollSync(); return; }
+  if (el.dataset.tsel){
+    const key = el.dataset.tsel, cur = (key === 'kickoff' ? m.kickoff : arriveTime(m, se)) || '';
+    let [h, mi] = cur ? cur.split(':') : ['', ''];
+    if (el.dataset.part === 'h') h = el.value; else mi = el.value;
+    if (h && !mi) mi = '00';
+    if (!h && mi) h = key === 'kickoff' ? '10' : '09';
+    const v = h ? `${h}:${mi}` : '';
+    if (key === 'kickoff'){ m.kickoff = v; if (arriveCfg(se).mode === 'std') delete m.arriveTime; }
+    else m.arriveTime = v;
+    commit(); pollSync(); return;
+  }
   if (el.dataset.arv){ se.arrive = {...arriveCfg(se), mode: el.dataset.arv}; commit(); pollSync(); return; }
   if (el.dataset.arvmin){ se.arrive = {...arriveCfg(se), min: Math.max(0, Math.min(180, +el.value || 0))}; commit(); pollSync(); return; }
   if (el.dataset.m){
@@ -2059,7 +2140,8 @@ function viewSurvey(){
   const d = SV.data;
   if (SV.step === 'load') return `<div class="card empty"><b>⚽</b>Even laden…</div>`;
   if (SV.step === 'error') return `<div class="card empty"><b>⚠️</b>${esc(SV.err)}</div>`;
-  const head = `<div class="svhead"><div class="logo">${LOGO_MARK}</div><div><div class="club">${esc(d.club || '')}</div><div class="svteam">${esc(d.team)}</div></div></div>`;
+  applyClub(d.club);
+  const head = `<div class="svhead"><div class="logo ${clubKey(d.club) ? 'clublogo' : ''}">${clubLogo(d.club)}</div><div><div class="club">${esc(d.club || '')}</div><div class="svteam">${esc(d.team)}</div></div></div>`;
   if (SV.step === 'done') return head + `<div class="card empty"><b>🎉</b><h2 style="margin:6px 0">Bedankt, ${esc(niceFirst(SV.first))}!</h2>Je trainer ziet nu je favoriete posities.<br><br><button class="btn" data-sv="again">Opnieuw invullen</button></div>`;
   if (SV.step === 'name') return head + `
   <div class="card">
@@ -2151,11 +2233,19 @@ function timesFields(m, se){
   const c = arriveCfg(se), at = arriveTime(m, se);
   return `
     <div class="grid2" style="margin-top:10px">
-      <label class="f">Aftrap<input type="time" data-m="kickoff" value="${esc(m.kickoff || '')}"></label>
-      <label class="f">Aanwezig<input type="time" class="arin" data-arrive="1" value="${esc(at)}"></label>
+      <div class="f"><span>Aftrap</span>${timeSel('kickoff', m.kickoff, '')}</div>
+      <div class="f"><span>Aanwezig</span>${timeSel('arrive', at, 'arin')}</div>
     </div>
     <div class="muted" style="margin-top:-4px;font-size:12px">${m.arriveTime ? `Aangepast voor deze wedstrijd · <a href="#" data-act="arriveReset">terug naar standaard</a>` : c.mode === 'std' ? `Standaard ${c.min} minuten voor de aftrap` : 'Vul zelf de tijd in (instelling van het team)'}</div>`;
 }
+function timeSel(key, val, cls){
+  const [h, mi] = val ? val.split(':') : ['', ''];
+  const hs = Array.from({length: 24}, (_, i) => String(i).padStart(2, '0'));
+  const ms = Array.from({length: 12}, (_, i) => String(i * 5).padStart(2, '0'));
+  if (mi && !ms.includes(mi)) ms.push(mi), ms.sort();
+  return `<div class="tsel ${cls}"><select data-tsel="${key}" data-part="h" aria-label="Uur">${h ? '' : '<option value="">––</option>'}${hs.map(x => `<option ${x === h ? 'selected' : ''}>${x}</option>`).join('')}</select><b>:</b><select data-tsel="${key}" data-part="m" aria-label="Minuten">${mi ? '' : '<option value="">––</option>'}${ms.map(x => `<option ${x === mi ? 'selected' : ''}>${x}</option>`).join('')}</select></div>`;
+}
+const mapsUrl = a => 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(a);
 // knoppen met namen (3 standen)
 function attButtons(list, stateOf, act){
   return `<div class="attgrid">${list.map(p => { const st = stateOf(p.id); return `<button class="attb ${st || 'geen'}" data-act="${act}" data-id="${esc(p.id)}">${st === 'ja' ? '✅' : st === 'nee' ? '❌' : '⏱️'} <span>${esc(p.n)}</span></button>`; }).join('')}</div>`;
@@ -2167,7 +2257,7 @@ const pollUrl = pid => location.origin + location.pathname + '?wie=' + pid;
 const polls = {};   // pid -> {unsub}
 function pollPayload(m, t = team(), se = season()){
   return {team: cloudCfg(t.id) && !isLegacy(cloudCfg(t.id)) ? cloudCfg(t.id).id : '', teamLabel: teamLabel(t), club: t.club || '',
-    opponent: m.opponent || '', home: m.home !== false, date: m.date || '', kickoff: m.kickoff || '', arrive: arriveTime(m, se),
+    opponent: m.opponent || '', home: m.home !== false, address: m.home === false ? (m.address || '') : '', date: m.date || '', kickoff: m.kickoff || '', arrive: arriveTime(m, se),
     players: se.players.map(p => ({id: p.id, n: pshort(p)}))};
 }
 async function startPoll(m){
@@ -2184,7 +2274,7 @@ async function startPoll(m){
 }
 function sharePoll(m){
   const at = arriveTime(m), d = m.date ? new Date(m.date + 'T12:00').toLocaleDateString('nl-NL', {weekday:'long', day:'numeric', month:'long'}) : 'de wedstrijd';
-  const txt = `⚽ ${d.charAt(0).toUpperCase() + d.slice(1)} spelen we ${m.home === false ? 'uit' : 'thuis'}${m.opponent ? ' tegen ' + m.opponent : ''}.${at ? ' Aanwezig om ' + hhmm(at) + '.' : ''}${m.kickoff ? ' Aftrap ' + hhmm(m.kickoff) + '.' : ''} Tik op je naam en laat weten of je erbij bent: ${pollUrl(m.poll.id)}`;
+  const txt = `⚽ ${d.charAt(0).toUpperCase() + d.slice(1)} spelen we ${m.home === false ? 'uit' : 'thuis'}${m.opponent ? ' tegen ' + m.opponent : ''}.${at ? ' Aanwezig om ' + hhmm(at) + '.' : ''}${m.kickoff ? ' Aftrap ' + hhmm(m.kickoff) + '.' : ''}${m.home === false && m.address ? ' Adres: ' + m.address + '.' : ''} Tik op je naam en laat weten of je erbij bent: ${pollUrl(m.poll.id)}`;
   if (navigator.share) navigator.share({title: 'Wie zijn erbij?', text: txt}).catch(() => {});
   else navigator.clipboard?.writeText(txt).then(() => toast('Bericht gekopieerd – plak het in de team-app'), () => tell(txt));
 }
@@ -2261,17 +2351,18 @@ function viewWie(){
   const title = d.home === false ? `${d.opponent || 'Tegenstander'} – ${d.club || d.teamLabel}` : `${d.club || d.teamLabel} – ${d.opponent || 'Tegenstander'}`;
   return `
   <div class="wiehead">
-    <div class="svhead" style="margin:0"><div class="logo">${LOGO_MARK}</div><div><div class="club" style="color:#c9efd5">${esc(d.club || '')}</div><div class="svteam" style="color:#fff">${esc(d.teamLabel)}</div></div></div>
+    <div class="svhead" style="margin:0"><div class="logo ${clubKey(d.club) ? 'clublogo' : ''}">${clubLogo(d.club)}</div><div><div class="club" style="color:var(--hdr-sub)">${esc(d.club || '')}</div><div class="svteam" style="color:#fff">${esc(d.teamLabel)}</div></div></div>
     <div class="wiedate">${esc(dt)}</div>
     <div class="wietitle">${esc(title)}</div>
     <div class="wietimes"><span class="hl"><small>AANWEZIG</small><b>${esc(hhmm(d.arrive) || '–')}</b></span><span><small>AFTRAP</small><b>${esc(hhmm(d.kickoff) || '–')}</b></span><span><small>WAAR</small><b>${d.home === false ? 'Uit' : 'Thuis'}</b></span></div>
   </div>
+  ${d.home === false && d.address ? `<div class="card wieaddr"><div><small>${me && ans[me] === 'ja' ? 'JE BENT ERBIJ · ZO KOM JE ER' : 'ADRES UITWEDSTRIJD'}</small><b>${esc(d.address)}</b></div><a class="btn pri full" href="${esc(mapsUrl(d.address))}" target="_blank" rel="noopener">📍 Route in Google Maps</a></div>` : ''}
   <div class="atthead" style="margin:14px 2px 8px"><h2 style="margin:0">Tik op je naam</h2><span class="attcount"><b>${ja}</b> aanwezig</span></div>
   ${attLegend}
   ${attButtons(d.players || [], pid => ans[pid] || '', 'wiePick').replace(`data-id="${esc(me || '-')}"`, `data-id="${esc(me || '-')}" data-me="1"`)}
   <div class="muted" style="margin-top:12px;text-align:center">Je kunt je keuze altijd nog veranderen via dezelfde link.</div>`;
 }
-function renderWie(){ app.innerHTML = iconize(viewWie()); }
+function renderWie(){ if (WIE.d) applyClub(WIE.d.club); app.innerHTML = iconize(viewWie()); }
 async function bootWie(id){
   WIE.id = id; document.body.classList.add('survey');
   renderWie();
@@ -2812,7 +2903,7 @@ function inviteSheet(inv, url){
     const standalone = isStandalone();
     const lbl = inv.teamLabel || 'een team';
     d.innerHTML = iconize(`<div class="box" style="max-height:90vh;overflow:auto">
-      <div class="svhead" style="margin:0 0 10px"><div class="logo">${LOGO_MARK}</div><div><div class="club">${esc(inv.club || 'LineUp')}</div><div class="svteam">${esc(lbl)}</div></div></div>
+      <div class="svhead" style="margin:0 0 10px"><div class="logo ${clubKey(inv.club) ? 'clublogo' : ''}">${clubLogo(inv.club)}</div><div><div class="club">${esc(inv.club || 'LineUp')}</div><div class="svteam">${esc(lbl)}</div></div></div>
       <p style="margin-top:0;font-size:15px;font-weight:500;line-height:1.45">Hoi ${esc(inv.multi ? 'trainer' : (inv.name || 'trainer'))}! <b>${esc(inv.byName || 'Een trainer')}</b> deelt <b>${esc(lbl)}</b> met je in LineUp. Samen maken jullie de opstellingen; wijzigingen zien jullie bij elkaar meteen.</p>
       <div class="muted" style="margin:-4px 0 12px;font-size:13px">🔒 Je logt één keer in met Google of met je e-mailadres. Zo kan alleen jij bij jouw teams.</div>
       <button class="btn pri full big" data-r="ok">✅ Meedoen</button>
