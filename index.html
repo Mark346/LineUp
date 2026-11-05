@@ -466,6 +466,8 @@
   .attb.geen{border:2px solid var(--ybd);background:var(--ysoft);color:var(--ink)}.attb.geen .ic{color:var(--ytxt)}
   .attb[data-me]{box-shadow:0 6px 0 var(--me-under,var(--y))}
   .attgrid{row-gap:12px}
+  .coachopts{display:grid;gap:8px}.coachopts .attb{min-height:58px;font-size:18px}.coachopts .attb.sel{outline:3px solid var(--ink);outline-offset:2px}
+  .attb small{font-size:11px;font-weight:700;opacity:.8;margin-left:4px}
   body[data-club="maliskamp"] .attb[data-me]{--me-under:#e3061a}
   body[data-club="maliskamp"] .attb.ja[data-me]{background:#3c854e}
   .attleg{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;font-weight:700;color:var(--muted);margin:0 0 10px}.attleg span{display:flex;align-items:center;gap:6px}
@@ -1153,8 +1155,8 @@ function viewMatch(){
   <div class="card">
     <details data-key="who" ${(ui.open.who ?? ph === 'prep') ? 'open' : ''}>
     <summary>👥 Wie zijn er? <span class="muted" style="font-weight:400">${nIn} van ${roster.length}</span></summary>
-    <div class="who" style="margin-top:10px">
-      ${roster.map(p => { const on = isIn(m, p.id); return `<button class="whop ${on ? 'on' : ''}" data-act="togglePresent" data-id="${p.id}">${on ? '✅' : '❌'} ${esc(pshort(p))}${p.guest ? ' <small>invaller</small>' : ''}</button>`; }).join('') || '<span class="muted">Nog geen spelers – voeg ze toe bij Instellingen.</span>'}
+    <div class="attgrid" style="margin-top:10px">
+      ${roster.map(p => { const on = isIn(m, p.id); return `<button class="attb ${on ? 'ja' : 'nee'}" data-act="togglePresent" data-id="${p.id}">${on ? '✅' : '❌'} <span>${esc(pshort(p))}${p.guest ? ' <small>invaller</small>' : ''}</span></button>`; }).join('') || '<span class="muted">Nog geen spelers – voeg ze toe bij Instellingen.</span>'}
     </div>
     <div class="muted" style="margin-top:6px">Tik op een naam om iemand af of aan te melden.${ph === 'live' ? ' Tijdens de wedstrijd geldt dat vanaf het huidige blok; zijn plek wordt opgevuld door de reserve met de minste minuten.' : ''}</div>
     <div class="row" style="margin-top:10px"><input id="guestName" placeholder="Invaller (naam)" list="otherNames" style="flex:3"><button class="btn sm" style="flex:none" data-act="addGuest">＋ Invaller</button></div>
@@ -1168,7 +1170,7 @@ function viewMatch(){
     <h2>🧤 Invallers</h2>
     <div class="row"><input id="guestName" placeholder="Invaller (naam)" list="otherNames" style="flex:3"><button class="btn sm" style="flex:none" data-act="addGuest">＋ Invaller</button></div>
     <datalist id="otherNames">${S.teams.flatMap(t => t.id === team().id ? [] : t.seasons[t.seasons.length - 1].players.map(p => `<option value="${esc(p.name)}">`)).join('')}</datalist>
-    ${(m.guests || []).length ? `<div class="who" style="margin-top:10px">${m.guests.map(g => { const on = isIn(m, g.id); return `<button class="whop ${on ? 'on' : ''}" data-act="togglePresent" data-id="${g.id}">${on ? '✅' : '❌'} ${esc(pshort(g))}</button>`; }).join('')}</div><div class="muted" style="margin-top:6px">${m.guests.map(g => `${esc(pshort(g))} <button class="x" style="font-size:16px" data-act="delGuest" data-id="${g.id}">×</button>`).join(' ')}</div>` : '<div class="muted" style="margin-top:6px">Speler van een ander team die meedoet.</div>'}
+    ${(m.guests || []).length ? `<div class="attgrid" style="margin-top:10px">${m.guests.map(g => { const on = isIn(m, g.id); return `<button class="attb ${on ? 'ja' : 'nee'}" data-act="togglePresent" data-id="${g.id}">${on ? '✅' : '❌'} <span>${esc(pshort(g))}</span></button>`; }).join('')}</div><div class="muted" style="margin-top:6px">${m.guests.map(g => `${esc(pshort(g))} <button class="x" style="font-size:16px" data-act="delGuest" data-id="${g.id}">×</button>`).join(' ')}</div>` : '<div class="muted" style="margin-top:6px">Speler van een ander team die meedoet.</div>'}
   </div>`;
 
   const infoCard = `
@@ -2325,11 +2327,28 @@ function pollSync(){
     watchPolls();
   }, 800);
 }
+function coachSheet(name, cur){
+  return new Promise(res => {
+    const d = document.createElement('div'); d.className = 'modal';
+    d.innerHTML = iconize(`<div class="box"><p style="font-size:24px;font-weight:900;margin-bottom:12px">${esc(name)}</p>
+      <div class="coachopts">
+        <button class="attb ja ${cur === 'ja' ? 'sel' : ''}" data-r="ja">✅ <span>Erbij</span></button>
+        <button class="attb nee ${cur === 'nee' ? 'sel' : ''}" data-r="nee">❌ <span>Kan niet</span></button>
+        <button class="attb geen ${!cur ? 'sel' : ''}" data-r="geen">⏱️ <span>Nog niet gekozen</span></button>
+      </div>
+      <button class="btn full" style="margin-top:10px" data-r="no">Annuleren</button></div>`);
+    document.body.appendChild(d);
+    d.addEventListener('click', e => { e.stopPropagation(); const b = e.target.closest('[data-r]'); if (!b && e.target !== d) return; const r = b ? b.dataset.r : 'no'; d.remove(); res(r === 'no' ? null : r); setTimeout(() => { try { flushPending(); } catch(_){} }, 0); });
+  });
+}
 async function coachAnswer(m, pid){
-  const cur = attOf(m, pid), v = cur === 'ja' ? 'nee' : 'ja';
-  m.att = m.att || {}; m.att[pid] = v;
+  const p = player(pid); if (!p) return;
+  const v = await coachSheet(pshort(p), attOf(m, pid)); if (!v) return;
+  m.att = m.att || {};
+  if (v === 'geen'){ delete m.att[pid]; if (m.phase === 'prep' && !m.present.includes(pid)) m.present.push(pid); }
+  else m.att[pid] = v;
   applyAnswers(m, m.att); commit();
-  if (m.poll && cloud.api && myUid()) cloud.api.pollAnswer(m.poll.id, pid, v).catch(e => console.error(e));
+  if (m.poll && cloud.api && myUid()) cloud.api.pollAnswer(m.poll.id, pid, v === 'geen' ? '' : v).catch(e => console.error(e));
 }
 function attCard(m){
   const se = season(), list = se.players.map(p => ({id: p.id, n: pshort(p)}));
