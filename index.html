@@ -511,6 +511,11 @@
   .ivmode{margin-bottom:12px}.ivmode button{min-height:70px;border-radius:16px;border:1px solid var(--line);background:var(--surf2);color:var(--txt);font:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer}
   .ivmode button b{font-size:16px}.ivmode button small{font-size:12px;font-weight:600;color:var(--muted)}.ivmode button.on{border:3px solid var(--y);background:var(--ysoft)}
   body.has-admin nav#nav button{font-size:12px;padding-left:5px;padding-right:5px;gap:4px}
+  body.gate #nav,body.gate #teams,body.gate #cloudDot,body.gate #logoBox{display:none}
+  .gatebox{max-width:420px;margin:40px auto 0;text-align:center;padding:24px 18px;background:var(--card);border:1px solid var(--line);border-radius:24px}
+  .gatelogo{width:76px;height:76px;margin:0 auto 10px;border-radius:20px;background:var(--g);display:flex;align-items:center;justify-content:center}.gatelogo svg{width:62px;height:62px}
+  .gatebox h1{margin:0 0 6px;font-size:40px;font-weight:900;font-style:italic;letter-spacing:-.03em}.gatebox h1 span{color:var(--g)}
+  .gatebox p{margin:0 0 18px;color:var(--muted);font-size:16px;line-height:1.4}
   .nm2{display:flex;gap:6px}.nm2 input{padding:6px 8px;min-width:0;flex:1}
   .svhead{display:flex;align-items:center;gap:12px;margin:2px 2px 14px}
   .svhead .logo{width:52px;height:52px}
@@ -997,6 +1002,8 @@ function renderHeader(){
 function render(){
   if (typeof WIE_ID !== 'undefined' && WIE_ID){ renderWie(); return; }
   if (typeof SURVEY_ID !== 'undefined' && SURVEY_ID){ renderSurvey(); return; }
+  if (gateActive()){ renderGate(); return; }
+  document.body.classList.remove('gate');
   renderHeader();
   try { setCloudStatus(); } catch(e){}
   let ban = ''; try { ban = loginBanner(); } catch(e){}
@@ -2868,8 +2875,9 @@ function chooseDialog(text, opts){
 async function cloudStart(){
   if (!cloudAvailable()){ setCloudStatus('off'); return; }
   await migrateOldCloud();
-  try { cloud.api = await firebaseApi(); } catch(e){ console.error(e); setCloudStatus('err'); return; }
+  try { cloud.api = await firebaseApi(); } catch(e){ console.error(e); cloud.failed = true; setCloudStatus('err'); render(); return; }
   if (!cloud.api){ setCloudStatus('off'); return; }
+  cloud.failed = false;
   if (cloud.authUnsub) return;
   await new Promise(res => {
     let first = true;
@@ -2877,6 +2885,7 @@ async function cloudStart(){
       const was = myUid();
       cloud.user = u; cloud.authKnown = true;
       if (u && u.displayName) try { localStorage.setItem(ME_KEY, u.displayName); } catch(e){}
+      if (u) try { localStorage.setItem(LAST_UID, u.uid); } catch(e){}
       if (u && u.uid !== was) await syncAccount();
       if (!u) stopAll();
       render();
@@ -2930,6 +2939,8 @@ async function syncAccount(){
       const td = teamFromRemote(r, null); if (!td) continue;
       placeTeam(td, rid);
     }
+    // lege voorbeeldteams weghalen als het account al teams heeft
+    if (Object.keys(cloudMap()).length){ const keep = S.teams.filter(t => cloudCfg(t.id) || hasContent(t)); if (keep.length && keep.length < S.teams.length){ S.teams = keep; if (!S.teams.some(t => t.id === S.active.team)) S.active.team = S.teams[0].id; } }
     // 3. eigen teams met spelers of wedstrijden online bewaren
     for (const t of S.teams.slice()) if (!cloudCfg(t.id) && hasContent(t)) await createRemoteTeam(t).catch(e => console.error(e));
     await saveUserTeams();
@@ -3131,8 +3142,21 @@ async function changeMyName(){
   render();
 }
 async function logout(){
-  if (!await ask('Uitloggen op dit apparaat? Je teams blijven op dit apparaat staan, maar worden niet meer gedeeld tot je weer inlogt.', 'Uitloggen')) return;
-  stopAll(); await cloud.api.signOut(); adm.owner = false; adm.clubs = []; adm.data = null; adm.myReq = null; updateAdminTab(); render();
+  if (!await ask('Uitloggen? Alle teams worden van dit apparaat gewist. Ze staan veilig in je account en komen terug zodra je weer inlogt.', 'Uitloggen')) return;
+  // eerst alles wat nog onderweg is opslaan
+  const busy = Object.keys(cloud.links).filter(tid => cloud.links[tid].timer || JSON.stringify(S.teams.find(t => t.id === tid)) !== cloud.links[tid].last);
+  busy.forEach(tid => cloudPushTeam(tid, true));
+  await waitFor(() => !Object.values(cloud.links).some(L => L.timer || L.status === 'busy'), 5000);
+  const unsaved = S.teams.filter(t => hasContent(t) && (!cloudCfg(t.id) || isLegacy(cloudCfg(t.id))));
+  if (unsaved.length && !await ask(`${unsaved.map(teamLabel).join(', ')} ${unsaved.length === 1 ? 'staat' : 'staan'} nog niet online en ${unsaved.length === 1 ? 'gaat' : 'gaan'} verloren. Toch uitloggen?`, 'Toch uitloggen')) return;
+  stopAll();
+  Object.keys(polls).forEach(pid => { polls[pid].unsub && polls[pid].unsub(); delete polls[pid]; });
+  await cloud.api.signOut();
+  [KEY, CLOUD_MAP_KEY, ME_KEY, LAST_UID, FS_KEY].forEach(k => { try { localStorage.removeItem(k); } catch(e){} });
+  S = defaultState(); normalize();
+  adm.owner = false; adm.clubs = []; adm.data = null; adm.myReq = null; updateAdminTab();
+  ui.tab = 'matches'; ui.matchId = null;
+  render(); window.scrollTo(0, 0);
 }
 
 // ---------- trainers uitnodigen ----------
@@ -3353,6 +3377,30 @@ function cloudCard(t = team()){
     <button class="btn pri full" style="margin-top:12px" data-act="inviteTrainer">＋ Trainer uitnodigen (link via WhatsApp)</button>
     ${owner ? '' : `<button class="btn full" style="margin-top:8px" data-act="leaveTeam">Dit team verlaten</button>`}
   </div>`;
+}
+const LAST_UID = 'opstellingmaker.lastuid';
+function gateActive(){
+  if (typeof cloud === 'undefined' || !cloudAvailable() || myUid()) return false;
+  const last = localStorage.getItem(LAST_UID);
+  if (cloud.failed && last) return false;          // offline: vorige inlog op dit apparaat, app blijft werken
+  return cloud.authKnown || !last;
+}
+function renderGate(){
+  document.body.classList.add('gate');
+  try { applyClub(''); } catch(e){}
+  const el = document.getElementById('cloudDot'); if (el) el.innerHTML = '';
+  app.innerHTML = iconize(`
+  <div class="gatebox">
+    <div class="gatelogo">${LOGO_MARK}</div>
+    <h1>Line<span>Up</span></h1>
+    <p>Opstellingen, wissels en speeltijd voor je team. Log in om je teams te openen.</p>
+    ${cloud.authKnown || cloud.failed
+      ? `<button class="btn pri full big" data-act="login">Inloggen of account maken</button>
+         <button class="btn full" style="margin-top:10px" data-act="pasteInvite">🔗 Ik heb een uitnodigingslink gekregen</button>
+         ${cloud.failed ? '<div class="muted" style="margin-top:12px">Geen verbinding met de online opslag. Controleer je internet en probeer het opnieuw.</div>' : ''}`
+      : `<div class="muted">Even laden…</div>`}
+    <div class="muted" style="margin-top:18px;font-size:12px">Je teams worden veilig bewaard in je account. Alleen trainers die je uitnodigt kunnen erbij.</div>
+  </div>`);
 }
 function loginBanner(){
   if (!cloudAvailable() || !cloud.authKnown || cloud.user) return '';
