@@ -516,6 +516,13 @@
   .gatelogo{width:76px;height:76px;margin:0 auto 10px;border-radius:20px;background:var(--g);display:flex;align-items:center;justify-content:center}.gatelogo svg{width:62px;height:62px}
   .gatebox h1{margin:0 0 6px;font-size:40px;font-weight:900;font-style:italic;letter-spacing:-.03em}.gatebox h1 span{color:var(--g)}
   .gatebox p{margin:0 0 18px;color:var(--muted);font-size:16px;line-height:1.4}
+  .arvbox{min-height:48px;box-sizing:border-box;border-radius:12px;border:2px solid var(--ybd);background:var(--ysoft);padding:6px 10px;display:flex;flex-direction:column;justify-content:center;gap:1px}
+  .arvbox b{font-size:15px;font-weight:900;color:var(--txt);line-height:1.15}.arvbox small{font-size:12px;font-weight:700;color:var(--muted)}.arvbox a,.arvnote a{font-weight:800}
+  .arvnote{display:block;margin-top:4px;font-size:12px;font-weight:600;color:var(--muted)}
+  .grid2>*{min-width:0}
+  input[type="date"]{display:block;width:100%;min-width:0;max-width:100%;box-sizing:border-box;-webkit-appearance:none;appearance:none;text-align:left}
+  input[type="date"]::-webkit-date-and-time-value{text-align:left;margin:0}
+  input[type="date"]::-webkit-calendar-picker-indicator{margin-left:auto}
   .nm2{display:flex;gap:6px}.nm2 input{padding:6px 8px;min-width:0;flex:1}
   .svhead{display:flex;align-items:center;gap:12px;margin:2px 2px 14px}
   .svhead .logo{width:52px;height:52px}
@@ -1659,7 +1666,8 @@ document.addEventListener('click', async e => {
       if (el.dataset.scope === 'match'){ m.keepers = {}; regenIfNeeded(m); }
       commit(); break;
     case 'home': m.home = el.dataset.v === '1'; commit(); pollSync(); break;
-    case 'arriveReset': e.preventDefault(); delete m.arriveTime; commit(); pollSync(); break;
+    case 'arriveReset': e.preventDefault(); delete m.arriveTime; ui.arriveEdit = null; commit(); pollSync(); break;
+    case 'arriveEdit': e.preventDefault(); ui.arriveEdit = m.id; render(); break;
     case 'startPoll': await startPoll(m); break;
     case 'coachAtt': await coachAnswer(m, id); break;
     case 'gen': case 'mix':
@@ -2564,9 +2572,10 @@ function timesFields(m, se){
   return `
     <div class="grid2" style="margin-top:10px">
       <div class="f"><span>Aftrap</span>${timeSel('kickoff', m.kickoff, '')}</div>
-      <div class="f"><span>Aanwezig</span>${timeSel('arrive', at, 'arin')}</div>
-    </div>
-    <div class="muted" style="margin-top:-4px;font-size:12px">${m.arriveTime ? `Aangepast voor deze wedstrijd · <a href="#" data-act="arriveReset">terug naar standaard</a>` : c.mode === 'std' ? `Standaard ${c.min} minuten voor de aftrap` : 'Vul zelf de tijd in (instelling van het team)'}</div>`;
+      <div class="f"><span>Aanwezig</span>${c.mode === 'std' && !m.arriveTime && ui.arriveEdit !== m.id
+        ? `<div class="arvbox"><b>${c.min} min voor de aftrap</b><small>${at ? hhmm(at) + ' · ' : ''}<a href="#" data-act="arriveEdit">wijzigen</a></small></div>`
+        : `${timeSel('arrive', at, 'arin')}<small class="arvnote">${m.arriveTime && c.mode === 'std' ? `Aangepast · <a href="#" data-act="arriveReset">terug naar ${c.min} min</a>` : c.mode === 'std' ? `<a href="#" data-act="arriveReset">annuleren</a>` : 'Zelf invullen per wedstrijd'}</small>`}</div>
+    </div>`;
 }
 function timeSel(key, val, cls){
   const [h, mi] = val ? val.split(':') : ['', ''];
