@@ -492,6 +492,25 @@
   .maplink{display:inline-flex;align-items:center;gap:6px;margin-top:4px;font-weight:800}
   .wieaddr{margin:12px 0 0;display:flex;flex-direction:column;gap:10px}.wieaddr small{display:block;font-size:12px;font-weight:900;letter-spacing:.1em;color:var(--muted)}.wieaddr b{font-size:18px}
   .wieaddr a.btn{text-decoration:none;display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px}
+  .admhead{display:flex;align-items:center;gap:10px;margin:2px 0 10px}.admhead select{flex:1}.admhead b{flex:1;font-size:16px}
+  .admrole{font-size:12px;font-weight:900;letter-spacing:.12em;padding:5px 10px;border-radius:999px;background:var(--y);color:var(--on-y)}
+  .admhead .btn.sm{margin-left:auto}
+  .admsubs{display:flex;gap:6px;margin-bottom:12px}.admsubs button{flex:1;padding:10px 0;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--txt);font:inherit;font-weight:800;font-size:14px;cursor:pointer}
+  .admsubs button.on{background:var(--g);color:#fff;border-color:var(--g)}
+  .atiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}.card .atiles{margin-bottom:0}
+  .atile{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:2px}
+  .atile b{font-family:var(--disp);font-size:26px;font-weight:900;color:var(--g);line-height:1}.atile small{font-size:12px;font-weight:700;color:var(--muted);line-height:1.2}
+  .ahead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}.ahead h2{margin:0}
+  .arow{display:flex;align-items:center;gap:10px;padding:9px 0;border:0;border-bottom:1px solid var(--line);background:none;width:100%;text-align:left;font:inherit;color:inherit}
+  button.arow{cursor:pointer}.arow:last-child{border-bottom:0}.arow .grow{flex:1;min-width:0;display:flex;flex-direction:column}
+  .arow b{font-size:15px}.arow small{font-size:12px;color:var(--muted);font-weight:600;overflow:hidden;text-overflow:ellipsis}
+  .achip{font-size:12px;font-weight:800;padding:5px 10px;border-radius:999px;background:var(--surf2);border:1px solid var(--line);color:var(--txt);white-space:nowrap;font-family:inherit;cursor:default}
+  button.achip{cursor:pointer;min-height:36px}.achip.on{background:var(--y);color:var(--on-y);border-color:var(--y)}
+  .achips{display:flex;flex-wrap:wrap;gap:6px}
+  .akv{display:flex;justify-content:space-between;gap:10px;font-size:14px;padding:7px 0;border-bottom:1px solid var(--line)}.akv span{color:var(--muted);font-weight:700}.akv b{text-align:right}
+  .ivmode{margin-bottom:12px}.ivmode button{min-height:70px;border-radius:16px;border:1px solid var(--line);background:var(--surf2);color:var(--txt);font:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer}
+  .ivmode button b{font-size:16px}.ivmode button small{font-size:12px;font-weight:600;color:var(--muted)}.ivmode button.on{border:3px solid var(--y);background:var(--ysoft)}
+  body.has-admin nav#nav button{font-size:12px;padding-left:5px;padding-right:5px;gap:4px}
   .nm2{display:flex;gap:6px}.nm2 input{padding:6px 8px;min-width:0;flex:1}
   .svhead{display:flex;align-items:center;gap:12px;margin:2px 2px 14px}
   .svhead .logo{width:52px;height:52px}
@@ -981,7 +1000,7 @@ function render(){
   renderHeader();
   try { setCloudStatus(); } catch(e){}
   let ban = ''; try { ban = loginBanner(); } catch(e){}
-  app.innerHTML = iconize(ban + ({matches: ui.matchId ? viewMatch : viewMatches, stats: viewStats, settings: viewSettings}[ui.tab] || viewMatches)());
+  app.innerHTML = iconize(ban + ({matches: ui.matchId ? viewMatch : viewMatches, stats: viewStats, settings: viewSettings, beheer: viewBeheer}[ui.tab] || viewMatches)());
 }
 
 /* ===================== Schermen ===================== */
@@ -1551,6 +1570,10 @@ document.addEventListener('click', async e => {
   if (!el || el.tagName === 'SELECT' || (el.tagName === 'INPUT')) return;
   if (el.dataset.tab){ if (el.dataset.tab === 'settings') ui.sOpen = true; go(el.dataset.tab); return; }
   const act = el.dataset.act, id = el.dataset.id, se = season(), m = match();
+  if (/^adm|^req(Ok|No)$/.test(act)){ await admAction(act, id); return; }
+  if (act === 'reqSend'){ await sendRequest(); return; }
+  if (act === 'reqCancel'){ await cloud.api.reqDel(myUid()).catch(() => {}); adm.myReq = null; render(); return; }
+  if (act === 'verifyMail'){ try { await cloud.api.sendVerify(); tell('We hebben je een e-mail gestuurd. Klik op de link erin en log daarna opnieuw in.'); } catch(e){ tell('Versturen lukt niet: ' + (e.message || e)); } return; }
   const tgt = el.dataset.scope === 'match' ? m && m.settings : se;
   switch (act){
     case 'team': S.active.team = id; ui.matchId = null; ui.sel = null; ui.tab = 'matches'; commit(); window.scrollTo(0, 0); break;
@@ -1795,6 +1818,8 @@ document.addEventListener('click', async e => {
 
 document.addEventListener('change', e => {
   const el = e.target, se = season(), m = match();
+  if (el.dataset.admclub){ adm.club = el.value; adm.data = null; adm.view = null; render(); return; }
+  if (el.dataset.admq){ adm.q = el.value; render(); return; }
     if (el.id === 'logoFile'){
     const f = el.files[0]; if (!f) return;
     const img = new Image();
@@ -2207,6 +2232,301 @@ document.addEventListener('click', async e => {
   }
 });
 
+/* ===================== Beheer (eigenaar en clubbeheer) ===================== */
+const clubSlug = name => String(name || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\b(rkvv|rksv|rkav|vv|sv|vsv|v\.v\.|s\.v\.)\b/g, ' ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
+const adm = {role: null, owner: false, clubs: [], sub: 'overzicht', view: null, data: null, loading: false, err: '', club: null};
+// welke beheerrol heeft deze gebruiker?
+async function detectAdmin(){
+  adm.owner = false; adm.clubs = [];
+  const uid = myUid(); if (!uid || !cloud.api || !cloud.api.clubAdminsList) return updateAdminTab();
+  try { await cloud.api.usersList(1); adm.owner = true; } catch(e){}
+  try { const cs = await cloud.api.clubAdminsList(); adm.clubs = cs.filter(c => c.uids && c.uids[uid]).map(c => ({key: c.id, name: c.name || c.id})); adm.allClubs = cs; } catch(e){}
+  if (!adm.club && adm.clubs.length) adm.club = adm.clubs[0].key;
+  updateAdminTab();
+}
+function updateAdminTab(){
+  const nav = document.getElementById('nav'); if (!nav) return;
+  let b = nav.querySelector('[data-tab="beheer"]');
+  const show = adm.owner || adm.clubs.length > 0;
+  if (show && !b){ nav.insertAdjacentHTML('beforeend', iconize(`<button data-tab="beheer"><b>🛡️</b>Beheer</button>`)); }
+  if (!show && b){ b.remove(); if (ui.tab === 'beheer'){ ui.tab = 'matches'; render(); } }
+  document.body.classList.toggle('has-admin', show);
+}
+const fmtD = t => t ? new Date(t).toLocaleDateString('nl-NL', {day:'numeric', month:'short', year: new Date(t).getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined}) : '–';
+const ago = t => { if (!t) return 'nooit'; const m = Math.round((Date.now() - t) / 60000); return m < 2 ? 'zojuist' : m < 60 ? m + ' min geleden' : m < 1440 ? Math.round(m / 60) + ' uur geleden' : m < 2880 ? 'gisteren' : Math.round(m / 1440) + ' dagen geleden'; };
+function parseTeamDoc(d){
+  let t = null; try { t = JSON.parse(d.data); } catch(e){}
+  const se = t && t.seasons ? t.seasons[t.seasons.length - 1] : null;
+  const week = Date.now() - 7 * 864e5, next = Date.now() + 7 * 864e5;
+  return {id: d.id, club: d.club || '', label: d.label || (t ? teamLabel(t) : '?'), clubName: t ? t.club || '' : '', members: d.members || {}, people: (t && t.people) || {},
+    players: se ? se.players : [], matches: se ? se.matches : [], played: se ? se.matches.filter(m => m.phase === 'done').length : 0,
+    won: se ? se.matches.filter(m => m.phase === 'done' && (m.goalsFor || 0) > (m.goalsAgainst || 0)).length : 0,
+    thisWeek: se ? se.matches.filter(m => { const x = m.date ? Date.parse(m.date + 'T12:00') : 0; return x > week && x < next; }).length : 0,
+    updated: d.updated || 0, invites: (t && t.invites) || []};
+}
+async function loadAdmin(force){
+  if (adm.loading || (adm.data && !force)) return;
+  adm.loading = true; adm.err = ''; render();
+  const api = cloud.api;
+  try {
+    const out = {teams: [], users: [], clubs: [], requests: [], blocked: [], pending: []};
+    if (adm.owner){
+      const [teams, users, clubs, reqs, blocked] = await Promise.all([api.teamList(), api.usersList(), api.clubAdminsList(), api.reqList(), api.blockList()]);
+      out.teams = teams.map(parseTeamDoc); out.users = users; out.clubs = clubs; out.requests = reqs; out.blocked = blocked.map(b => b.id);
+      for (const c of new Set([...clubs.map(c => c.id), ...out.teams.map(t => t.club).filter(Boolean)])) out.pending.push(...(await api.pendingList(c).catch(() => [])).map(p => ({...p, club: c})));
+    } else {
+      const c = adm.club; out.clubs = (adm.allClubs || []).filter(x => x.id === c);
+      const idx = await api.idxList(c);
+      out.teams = (await Promise.all(idx.map(i => api.teamGet(i.id).then(d => d ? parseTeamDoc({...d, id: i.id}) : null).catch(() => null)))).filter(Boolean).filter(t => t.club === c);
+      out.pending = (await api.pendingList(c).catch(() => [])).map(p => ({...p, club: c}));
+    }
+    adm.data = out;
+  } catch(e){ console.error(e); adm.err = 'Laden lukt niet: ' + (e.message || e); }
+  adm.loading = false; render();
+}
+// trainers samenvoegen uit teams (+ users voor de eigenaar)
+function adminTrainers(){
+  const d = adm.data, map = {};
+  d.teams.forEach(t => Object.entries(t.members).forEach(([u, role]) => {
+    const p = t.people[u] || {};
+    const x = map[u] = map[u] || {uid: u, name: p.name || '', email: p.email || '', teams: []};
+    if (!x.name && p.name) x.name = p.name; if (!x.email && p.email) x.email = p.email;
+    x.teams.push({id: t.id, label: t.label, clubName: t.clubName, role});
+  }));
+  (d.users || []).forEach(us => { const x = map[us.id] = map[us.id] || {uid: us.id, teams: []}; Object.assign(x, {name: us.name || x.name, email: us.email || x.email, provider: us.provider, created: us.created, lastActive: us.lastActive}); });
+  Object.values(map).forEach(x => { x.blocked = (d.blocked || []).includes(x.uid); x.clubAdmin = (d.clubs || []).filter(c => c.uids && c.uids[x.uid]).map(c => c.name || c.id); x.isOwner = x.email === (cloud.user && adm.owner ? cloud.user.email : '#'); });
+  return Object.values(map).sort((a, b) => (a.name || a.email || '').localeCompare(b.name || b.email || ''));
+}
+const tile = (v, l) => `<span class="atile"><b>${v}</b><small>${esc(l)}</small></span>`;
+const arow = (av, title, sub, right = '', act = '', id = '') => `<${act ? `button class="arow" data-act="${act}" data-id="${esc(id)}"` : 'div class="arow"'}><span class="mav">${esc(String(av || '?').charAt(0).toUpperCase())}</span><span class="grow"><b>${title}</b><small>${sub}</small></span>${right}</${act ? 'button' : 'div'}>`;
+const achip = (x, strong) => `<span class="achip ${strong ? 'on' : ''}">${esc(x)}</span>`;
+function viewBeheer(){
+  if (!myUid()) return `<div class="card empty"><b>🔒</b>Log in om de beheeromgeving te gebruiken.</div>`;
+  if (!adm.owner && !adm.clubs.length) return `<div class="card empty"><b>🛡️</b>Je hebt geen beheerrechten.</div>`;
+  if (!adm.data){ setTimeout(() => loadAdmin(), 0); return `<div class="card empty"><b>⏳</b>Beheergegevens laden…</div>`; }
+  if (adm.err) return `<div class="card empty"><b>⚠️</b>${esc(adm.err)}<br><br><button class="btn" data-act="admReload">Opnieuw</button></div>`;
+  const subs = adm.owner ? [['overzicht', 'Overzicht'], ['clubs', 'Clubs'], ['trainers', 'Trainers']] : [['overzicht', 'Overzicht'], ['teams', 'Teams'], ['trainers', 'Trainers']];
+  let head = `<div class="admhead"><span class="admrole">${adm.owner ? 'EIGENAAR' : 'CLUBBEHEER'}</span>${!adm.owner && adm.clubs.length > 1 ? `<select data-admclub="1">${adm.clubs.map(c => `<option value="${esc(c.key)}" ${c.key === adm.club ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select>` : !adm.owner ? `<b>${esc((adm.clubs[0] || {}).name || '')}</b>` : ''}<button class="btn sm" data-act="admReload" aria-label="Vernieuwen">🔄</button></div>
+    <div class="admsubs">${subs.map(([k, n]) => `<button class="${adm.sub === k && !adm.view ? 'on' : ''}" data-act="admSub" data-id="${k}">${n}</button>`).join('')}</div>`;
+  if (adm.view){
+    const [kind, id] = adm.view;
+    const back = `<button class="btn sm" data-act="admBack">‹ Terug</button>`;
+    if (kind === 'team') return head + back + admTeamView(id);
+    if (kind === 'trainer') return head + back + admTrainerView(id);
+    if (kind === 'club') return head + back + admClubView(id);
+  }
+  if (adm.sub === 'trainers') return head + admTrainersList();
+  if (adm.sub === 'clubs' && adm.owner) return head + admClubsList();
+  if (adm.sub === 'teams') return head + admTeamsCard(adm.data.teams);
+  return head + admOverview();
+}
+function admOverview(){
+  const d = adm.data, tr = adminTrainers();
+  const players = d.teams.reduce((n, t) => n + t.players.length, 0), week = d.teams.reduce((n, t) => n + t.thisWeek, 0);
+  const active = adm.owner ? tr.filter(x => x.lastActive && Date.now() - x.lastActive < 7 * 864e5).length : d.teams.filter(t => Date.now() - t.updated < 7 * 864e5).length;
+  const clubsCount = new Set(d.teams.map(t => t.club).filter(Boolean)).size;
+  const tiles = adm.owner
+    ? [tile(clubsCount, 'clubs'), tile(d.teams.length, 'teams'), tile(tr.length, 'trainers'), tile(players, 'spelers'), tile(week, 'wedstrijden deze week'), tile(active, 'actief 7 dagen')]
+    : [tile(d.teams.length, 'teams'), tile(tr.length, 'trainers'), tile(players, 'spelers'), tile(week, 'wedstrijden deze week'), tile(d.teams.reduce((n, t) => n + t.won, 0), 'gewonnen'), tile(d.pending.length, 'uitnodigingen open')];
+  let req = '';
+  if (adm.owner && d.requests.length) req = `<div class="card"><div class="ahead"><h2>Aanvragen clubbeheer</h2>${achip(d.requests.length + ' nieuw', 1)}</div>
+    ${d.requests.map(r => `${arow(r.name, esc(r.name || r.email), `wil beheerder worden van ${esc(r.clubName)}${r.func ? ' · ' + esc(r.func) : ''} · ${esc(r.email || '')}`)}<div class="grid2" style="margin:4px 0 10px"><button class="btn pri" data-act="reqOk" data-id="${esc(r.id)}">Goedkeuren</button><button class="btn" data-act="reqNo" data-id="${esc(r.id)}">Afwijzen</button></div>`).join('')}</div>`;
+  const recent = d.teams.slice().sort((a, b) => b.updated - a.updated).slice(0, 5);
+  return `<div class="atiles">${tiles.join('')}</div>${req}
+    ${adm.owner ? admClubsList(true) : admTeamsCard(d.teams)}
+    <div class="card"><h2>Laatst actief</h2>${recent.map(t => arow(t.label, esc(t.label) + (t.clubName && adm.owner ? ' · ' + esc(t.clubName) : ''), ago(t.updated), '', 'admTeam', t.id)).join('') || '<div class="muted">Nog geen teams.</div>'}</div>`;
+}
+function admClubsList(compact){
+  const d = adm.data, keys = [...new Set([...d.clubs.map(c => c.id), ...d.teams.map(t => t.club)])];
+  const rows = keys.map(k => {
+    const ts = d.teams.filter(t => t.club === k), c = d.clubs.find(x => x.id === k), name = (c && c.name) || (ts[0] && ts[0].clubName) || (k || 'Zonder club');
+    const admins = c && c.uids ? Object.values(c.uids).map(x => x.name || x.email).join(', ') : '';
+    const trainers = new Set(ts.flatMap(t => Object.keys(t.members))).size;
+    return arow(name, esc(name), `${ts.length} team${ts.length === 1 ? '' : 's'} · ${trainers} trainer${trainers === 1 ? '' : 's'} · beheer: ${esc(admins || 'nog niemand')}`, achip('›'), 'admClub', k || '-');
+  });
+  return `<div class="card"><div class="ahead"><h2>Clubs</h2><button class="btn sm" data-act="admNewClub">＋ Club</button></div>${rows.join('') || '<div class="muted">Nog geen clubs.</div>'}</div>`;
+}
+function admTeamsCard(teams, club){
+  const pend = adm.data.pending.filter(p => !club || p.club === club);
+  return `<div class="card"><div class="ahead"><h2>Teams</h2><button class="btn sm" data-act="admInvite" data-id="${esc(club || adm.club || '')}">＋ Uitnodigen</button></div>
+    ${teams.map(t => { const names = Object.keys(t.members).map(u => (t.people[u] || {}).name || 'trainer').join(', '); return arow(t.label, esc(t.label), `${esc(names)} · ${t.players.length} spelers`, achip('›'), 'admTeam', t.id); }).join('')}
+    ${pend.map(p => arow(p.teamName, esc(p.teamName), `${esc(p.name)} (uitgenodigd) · nog niet begonnen`, `<span class="achip">Wacht</span><button class="x" data-act="admPendDel" data-id="${esc(p.club + '|' + p.id)}" aria-label="Uitnodiging intrekken">×</button>`)).join('')}
+    ${!teams.length && !pend.length ? '<div class="muted">Nog geen teams.</div>' : ''}
+    <button class="btn pri full" style="margin-top:12px" data-act="admInvite" data-id="${esc(club || adm.club || '')}">📤 Trainer uitnodigen (link via WhatsApp)</button></div>`;
+}
+function admTrainersList(){
+  const tr = adminTrainers(), q = (adm.q || '').toLowerCase();
+  const list = tr.filter(x => !q || [x.name, x.email, ...x.teams.map(t => t.label)].join(' ').toLowerCase().includes(q));
+  return `<label class="f">Zoeken<input data-admq="1" value="${esc(adm.q || '')}" placeholder="Naam, e-mail of team" autocomplete="off"></label>
+    <div class="card"><div class="ahead"><h2>${tr.length} trainers</h2><button class="btn sm" data-act="admInvite" data-id="${esc(adm.owner ? '' : adm.club)}">＋ Uitnodigen</button></div>
+    ${list.map(x => arow(x.name || x.email, esc(x.name || 'Naam onbekend'), `${esc(x.email || 'e-mail nog onbekend')}${x.provider ? ' · ' + (x.provider === 'google.com' ? 'Google' : 'e-mail') : ''} · ${esc(x.teams.map(t => t.label).join(', ') || 'geen team')}`,
+      achip(x.blocked ? 'Geblokkeerd' : x.isOwner ? 'Eigenaar' : x.clubAdmin.length ? 'Clubbeheer' : x.teams.some(t => t.role === 'owner') ? 'Teambeheer' : 'Trainer', x.isOwner), adm.owner ? 'admTrainer' : '', x.uid)).join('') || '<div class="muted">Geen trainers gevonden.</div>'}</div>`;
+}
+function admTeamView(id){
+  const t = adm.data.teams.find(x => x.id === id); if (!t) return `<div class="card empty">Team niet gevonden.</div>`;
+  const local = Object.entries(cloudMap()).find(([k, c]) => c.id === id);
+  return `<div class="card"><small class="achip">${esc(t.clubName || 'Zonder club')}</small><h2 style="margin:6px 0 10px;font-size:26px">${esc(t.label)}</h2>
+      <div class="atiles">${tile(t.players.length, 'spelers')}${tile(t.played, 'gespeeld')}${tile(t.won, 'gewonnen')}</div><div class="muted" style="margin-top:8px">Laatst gewijzigd: ${ago(t.updated)}</div></div>
+    <div class="card"><div class="ahead"><h2>Trainers</h2><button class="btn sm" data-act="admInviteTeam" data-id="${esc(id)}">＋ Uitnodigen</button></div>
+      ${Object.entries(t.members).map(([u, role]) => { const p = t.people[u] || {}; return arow(p.name, esc(p.name || 'Trainer'), `${esc(p.email || '')}${p.email ? ' · ' : ''}${role === 'owner' ? 'beheert het team' : 'trainer'}`, `<button class="x" data-act="admKick" data-id="${esc(id + '|' + u)}" aria-label="Verwijderen uit team">×</button>`); }).join('')}
+      ${t.invites.map(iv => arow(iv.name, esc(iv.name), 'uitgenodigd · nog niet meegedaan', achip('Wacht'))).join('')}</div>
+    <div class="card"><h2>Spelers</h2><div class="achips">${t.players.map(p => achip(p.name)).join('') || '<span class="muted">Nog geen spelers.</span>'}</div></div>
+    <div class="grid2"><button class="btn" data-act="admOpenTeam" data-id="${esc(id)}">${local ? 'Ga naar team' : 'Opstellingen bekijken'}</button><button class="btn red" data-act="admDelTeam" data-id="${esc(id)}">Team verwijderen</button></div>`;
+}
+function admTrainerView(u){
+  const x = adminTrainers().find(y => y.uid === u); if (!x) return `<div class="card empty">Trainer niet gevonden.</div>`;
+  const kv = (k, v) => `<div class="akv"><span>${k}</span><b>${v}</b></div>`;
+  const clubs = [...new Set(adm.data.teams.map(t => t.club).filter(Boolean))];
+  return `<div class="card">${arow(x.name, `<span style="font-size:20px">${esc(x.name || 'Naam onbekend')}</span>`, esc(x.clubAdmin.length ? 'Clubbeheer · ' + x.clubAdmin.join(', ') : x.isOwner ? 'Eigenaar' : 'Trainer'))}
+      ${kv('E-mail', esc(x.email || 'onbekend'))}${kv('Inloggen via', x.provider ? (x.provider === 'google.com' ? 'Google' : 'e-mail en wachtwoord') : 'onbekend')}${kv('Account sinds', fmtD(x.created))}${kv('Laatst actief', x.lastActive ? ago(x.lastActive) : 'onbekend')}${x.blocked ? kv('Status', '<span style="color:var(--red)">Geblokkeerd</span>') : ''}</div>
+    <div class="card"><h2>Teams</h2>${x.teams.map(t => arow(t.label, esc(t.label) + (t.clubName ? ' · ' + esc(t.clubName) : ''), t.role === 'owner' ? 'beheert het team' : 'trainer', achip('›'), 'admTeam', t.id)).join('') || '<div class="muted">Geen teams.</div>'}</div>
+    <div class="card"><h2>Clubbeheer</h2><div class="muted" style="margin-bottom:8px">Maak deze trainer beheerder van een club.</div>
+      <div class="achips">${clubs.map(c => { const cl = adm.data.clubs.find(y => y.id === c), on = cl && cl.uids && cl.uids[u], nm = (cl && cl.name) || (adm.data.teams.find(t => t.club === c) || {}).clubName || c; return `<button class="achip ${on ? 'on' : ''}" data-act="admToggleClubAdmin" data-id="${esc(c + '|' + u)}">${on ? '✅ ' : ''}${esc(nm)}</button>`; }).join('') || '<span class="muted">Nog geen clubs.</span>'}</div></div>
+    ${x.isOwner ? '' : `<div class="grid2"><button class="btn red" data-act="admKickAll" data-id="${esc(u)}">Uit alle teams</button><button class="btn red" data-act="admBlock" data-id="${esc(u)}">${x.blocked ? 'Blokkade opheffen' : 'Account blokkeren'}</button></div>
+    <div class="muted" style="margin-top:8px;font-size:12px">Het account zelf verwijder je in Firebase → Authentication → Users.</div>`}`;
+}
+function admClubView(k){
+  const d = adm.data, c = d.clubs.find(x => x.id === k), ts = d.teams.filter(t => (t.club || '-') === k);
+  const name = (c && c.name) || (ts[0] && ts[0].clubName) || (k === '-' ? 'Zonder club' : k);
+  const players = ts.reduce((n, t) => n + t.players.length, 0), trainers = new Set(ts.flatMap(t => Object.keys(t.members))).size;
+  const ck = clubKey(name);
+  return `<div class="card"><div style="display:flex;align-items:center;gap:12px">${ck ? `<span class="logo clublogo" style="box-shadow:none">${clubLogo(name)}</span>` : ''}<h2 style="margin:0;font-size:24px">${esc(name)}</h2></div>
+      <div class="atiles" style="margin-top:10px">${tile(ts.length, 'teams')}${tile(trainers, 'trainers')}${tile(players, 'spelers')}</div></div>
+    ${k !== '-' ? `<div class="card"><h2>Clubbeheerders</h2>${c && c.uids ? Object.entries(c.uids).map(([u, x]) => arow(x.name, esc(x.name || x.email), esc(x.email || ''), `<button class="x" data-act="admRemoveClubAdmin" data-id="${esc(k + '|' + u)}" aria-label="Verwijderen">×</button>`)).join('') : '<div class="muted">Nog geen beheerders.</div>'}
+      <div class="row" style="margin-top:10px"><input id="admAdminMail" type="email" placeholder="E-mailadres nieuwe beheerder" style="flex:3"><button class="btn pri sm" style="flex:none" data-act="admAddClubAdmin" data-id="${esc(k)}">Toevoegen</button></div>
+      <div class="muted" style="margin-top:6px;font-size:12px">De persoon moet al een keer in LineUp hebben ingelogd.</div></div>` : ''}
+    ${admTeamsCard(ts, k === '-' ? '' : k)}`;
+}
+// ---- acties
+async function admAction(act, id){
+  const api = cloud.api, d = adm.data;
+  const reload = async msg => { if (msg) toast(msg); adm.data = null; await loadAdmin(true); };
+  try {
+    if (act === 'admReload'){ await detectAdmin(); return reload(); }
+    if (act === 'admSub'){ adm.sub = id; adm.view = null; return render(); }
+    if (act === 'admBack'){ adm.view = adm.prev || null; adm.prev = null; return render(); }
+    if (act === 'admTeam' || act === 'admTrainer' || act === 'admClub'){ adm.prev = adm.view; adm.view = [act.slice(3).toLowerCase(), id]; render(); window.scrollTo(0, 0); return; }
+    if (act === 'reqOk'){ const r = d.requests.find(x => x.id === id); await api.clubAdminsSet(r.club, {name: r.clubName, uids: {[r.id]: {name: r.name || '', email: r.email || ''}}}); await api.reqDel(r.id); return reload(`${r.name} is nu clubbeheerder van ${r.clubName}`); }
+    if (act === 'reqNo'){ if (!await ask('Aanvraag afwijzen?', 'Afwijzen')) return; await api.reqDel(id); return reload('Aanvraag afgewezen'); }
+    if (act === 'admKick'){ const [rid, u] = id.split('|'), t = d.teams.find(x => x.id === rid), nm = (t.people[u] || {}).name || 'Deze trainer';
+      if (!await ask(`${nm} uit ${t.label} halen? Hij kan het team dan niet meer zien of wijzigen.`, 'Verwijderen')) return;
+      await api.teamRemoveMember(rid, u); return reload(`${nm} is uit ${t.label} gehaald`); }
+    if (act === 'admKickAll'){ const x = adminTrainers().find(y => y.uid === id);
+      if (!await ask(`${x.name || 'Deze trainer'} uit alle ${x.teams.length} teams halen?`, 'Uit alle teams')) return;
+      for (const t of x.teams) await api.teamRemoveMember(t.id, id).catch(e => console.error(e)); return reload('Uit alle teams gehaald'); }
+    if (act === 'admBlock'){ const bl = d.blocked.includes(id);
+      if (!bl && !await ask('Account blokkeren? Deze persoon kan dan bij geen enkel team meer, ook niet met een nieuwe uitnodiging.', 'Blokkeren')) return;
+      if (bl) await api.blockDel(id); else await api.blockSet(id, {at: Date.now(), by: myUid()}); return reload(bl ? 'Blokkade opgeheven' : 'Account geblokkeerd'); }
+    if (act === 'admToggleClubAdmin'){ const [c, u] = id.split('|'), cl = d.clubs.find(y => y.id === c), x = adminTrainers().find(y => y.uid === u);
+      if (cl && cl.uids && cl.uids[u]) await api.clubAdminRemove(c, u);
+      else await api.clubAdminsSet(c, {name: (cl && cl.name) || (d.teams.find(t => t.club === c) || {}).clubName || c, uids: {[u]: {name: x.name || '', email: x.email || ''}}});
+      return reload(); }
+    if (act === 'admRemoveClubAdmin'){ const [c, u] = id.split('|'); if (!await ask('Deze beheerder verwijderen?', 'Verwijderen')) return; await api.clubAdminRemove(c, u); return reload(); }
+    if (act === 'admAddClubAdmin'){ const mail = (document.getElementById('admAdminMail').value || '').trim().toLowerCase(); if (!mail) return;
+      const us = d.users.find(x => (x.email || '').toLowerCase() === mail);
+      if (!us){ await tell('Er is nog niemand met dit e-mailadres ingelogd in LineUp. Vraag diegene eerst één keer in te loggen.'); return; }
+      const cl = d.clubs.find(y => y.id === id);
+      await api.clubAdminsSet(id, {name: (cl && cl.name) || (d.teams.find(t => t.club === id) || {}).clubName || id, uids: {[us.id]: {name: us.name || '', email: us.email || ''}}}); return reload(`${us.name || mail} is nu clubbeheerder`); }
+    if (act === 'admNewClub'){ const n = await askText('Naam van de club (bijvoorbeeld Maliskamp):', ''); if (!n || !n.trim()) return; const k = clubSlug(n);
+      if (!k) return; await api.clubAdminsSet(k, {name: n.trim(), uids: {}}); return reload(`${n.trim()} toegevoegd`); }
+    if (act === 'admPendDel'){ const [c, iid] = id.split('|'); if (!await ask('Uitnodiging intrekken?', 'Intrekken')) return;
+      await api.inviteDelete(iid).catch(() => {}); await api.pendingDel(c, iid); return reload('Uitnodiging ingetrokken'); }
+    if (act === 'admDelTeam'){ const t = d.teams.find(x => x.id === id);
+      if (!await ask(`${t.label} definitief verwijderen? Alle spelers, wedstrijden en statistieken van dit team verdwijnen voor alle trainers.`, 'Verwijderen')) return;
+      await api.teamDelete(id); if (t.club) await api.idxDel(t.club, id).catch(() => {}); adm.view = null; return reload(`${t.label} verwijderd`); }
+    if (act === 'admOpenTeam'){ const have = Object.entries(cloudMap()).find(([k, c]) => c.id === id);
+      if (have){ S.active.team = have[0]; ui.tab = 'matches'; ui.matchId = null; commit(); return; }
+      const r = await api.teamGet(id), td = teamFromRemote(r, null); if (!td){ await tell('Dit team kon niet geladen worden.'); return; }
+      const tid = uid(); S.teams.push({...td, id: tid}); const map = cloudMap(); map[tid] = {id, v: 7, admin: true}; setCloudMap(map); normalize();
+      S.active.team = tid; ui.tab = 'matches'; ui.matchId = null; commit(); listenTeam(tid); toast(`${teamLabel(team())} geopend als beheerder`); return; }
+    if (act === 'admInvite' || act === 'admInviteTeam') return admInviteSheet(act === 'admInviteTeam' ? {team: id} : {club: id});
+  } catch(e){ console.error(e); tell('Dat lukt niet: ' + (e.message || e)); }
+}
+function admInviteSheet(pre){
+  const d = adm.data;
+  const clubs = adm.owner ? [...new Set([...d.clubs.map(c => c.id), ...d.teams.map(t => t.club).filter(Boolean)])] : [adm.club];
+  const clubName = k => ((d.clubs.find(c => c.id === k) || {}).name) || ((d.teams.find(t => t.club === k) || {}).clubName) || k;
+  return new Promise(res => {
+    const box = document.createElement('div'); box.className = 'modal';
+    let mode = pre.team ? 'bestaand' : 'nieuw';
+    const draw = () => {
+      const club = (box.querySelector('#ivClub') || {}).value || pre.club || clubs[0] || '';
+      const teams = d.teams.filter(t => !club || t.club === club || pre.team === t.id);
+      box.innerHTML = iconize(`<div class="box" style="max-height:90vh;overflow:auto"><p>📤 Trainer uitnodigen</p>
+        <div class="grid2 ivmode"><button class="${mode === 'nieuw' ? 'on' : ''}" data-r="m-nieuw"><b>Nieuw team</b><small>trainer maakt het aan</small></button><button class="${mode === 'bestaand' ? 'on' : ''}" data-r="m-bestaand"><b>Bestaand team</b><small>toevoegen als trainer</small></button></div>
+        ${clubs.length > 1 || adm.owner ? `<label class="f">Club<select id="ivClub">${clubs.map(k => `<option value="${esc(k)}" ${k === club ? 'selected' : ''}>${esc(clubName(k))}</option>`).join('')}</select></label>` : ''}
+        <label class="f">Naam trainer<input id="ivName" placeholder="bv. Rick Smit" maxlength="40" autocomplete="off"></label>
+        ${mode === 'nieuw' ? `<label class="f">Teamnaam<input id="ivTeam" placeholder="bv. JO13-1" maxlength="30" autocomplete="off"></label>
+          <div class="muted" style="font-size:13px;margin:-2px 0 10px">Het team komt bij ${esc(clubName(club))} met seizoen ${esc(seasonName())} en de KNVB-instellingen bij de teamnaam. De trainer logt in via de link en wordt beheerder van het team.</div>`
+          : `<label class="f">Team<select id="ivTeamSel">${teams.map(t => `<option value="${esc(t.id)}" ${t.id === pre.team ? 'selected' : ''}>${esc(t.label)}</option>`).join('')}</select></label>`}
+        <button class="btn pri full big" data-r="ok">Link maken en delen</button>
+        <button class="btn full" style="margin-top:8px" data-r="no">Annuleren</button></div>`);
+    };
+    box.addEventListener('change', e => { if (e.target.id === 'ivClub') draw(); });
+    box.addEventListener('click', async e => {
+      e.stopPropagation(); const b = e.target.closest('[data-r]'); if (!b){ if (e.target === box){ box.remove(); res(); } return; }
+      const r = b.dataset.r;
+      if (r.startsWith('m-')){ const nm = box.querySelector('#ivName').value; mode = r.slice(2); draw(); box.querySelector('#ivName').value = nm; return; }
+      if (r === 'no'){ box.remove(); res(); return; }
+      const name = box.querySelector('#ivName').value.trim(); if (!name){ box.querySelector('#ivName').focus(); return; }
+      const club = (box.querySelector('#ivClub') || {}).value || pre.club || clubs[0] || '';
+      const iid = randId(24), api = cloud.api;
+      try {
+        if (mode === 'nieuw'){
+          const tn = box.querySelector('#ivTeam').value.trim(); if (!tn){ box.querySelector('#ivTeam').focus(); return; }
+          if (!club){ await tell('Kies eerst een club.'); return; }
+          await api.inviteCreate(iid, {kind: 'newteam', club, clubName: clubName(club), teamName: tn, teamLabel: tn, name, byName: myName(), by: myUid(), created: Date.now(), usedBy: null});
+          await api.pendingSet(club, iid, {name, teamName: tn, created: Date.now(), by: myUid()});
+          box.remove(); res();
+          shareInviteText(`⚽ Hoi ${name}! Je bent uitgenodigd om trainer te worden van ${tn} bij ${clubName(club)} in LineUp. Open deze link, log in en je team staat klaar: ${inviteUrl(iid)}`);
+        } else {
+          const rid = box.querySelector('#ivTeamSel').value, t = d.teams.find(x => x.id === rid); if (!t) return;
+          await api.inviteCreate(iid, {team: rid, name, teamLabel: t.label, club: t.clubName || '', byName: myName(), by: myUid(), created: Date.now(), usedBy: null});
+          box.remove(); res();
+          shareInviteText(`⚽ Hoi ${name}! Ik deel ${t.label} met je in LineUp, dan kunnen we samen de opstellingen maken. Open deze link om mee te doen: ${inviteUrl(iid)}`);
+        }
+        adm.data = null; loadAdmin(true);
+      } catch(err){ console.error(err); tell('Uitnodiging maken lukt niet: ' + (err.message || err)); }
+    });
+    document.body.appendChild(box); draw();
+  });
+}
+function shareInviteText(txt){
+  if (navigator.share) navigator.share({title: 'LineUp', text: txt}).catch(() => {});
+  else navigator.clipboard?.writeText(txt).then(() => toast('Uitnodiging gekopieerd – plak hem in WhatsApp'), () => tell(txt));
+}
+// ---- nieuw team via uitnodiging
+async function joinNewTeam(iid, inv){
+  const api = cloud.api;
+  if (inv.usedBy && inv.usedBy !== myUid()){ await tell('Deze uitnodiging is al gebruikt. Vraag om een nieuwe link.'); return; }
+  if (!inv.usedBy) await api.inviteClaim(iid, myUid(), myName());
+  createTeam(inv.teamName, inv.clubName, seasonName());
+  const t = team();
+  await createRemoteTeam(t); await saveUserTeams(); save(); listenTeam(t.id);
+  api.pendingDel(inv.club, iid).catch(() => {});
+  toast(`${teamLabel(t)} staat klaar – voeg je spelers toe`);
+}
+// ---- clubbeheer aanvragen (in Instellingen → Account)
+function requestCard(){
+  if (!cloud.user || adm.owner) return '';
+  const r = adm.myReq;
+  if (adm.clubs.length) return `<div class="card"><h2>🛡️ Clubbeheer</h2><div class="muted">Je bent beheerder van ${esc(adm.clubs.map(c => c.name).join(', '))}. Je vindt alles onder het tabblad <b>Beheer</b>.</div></div>`;
+  if (r) return `<div class="card"><h2>🛡️ Clubbeheer aangevraagd</h2><div class="muted">Je aanvraag voor ${esc(r.clubName)} wacht op goedkeuring. Zodra die er is, verschijnt het tabblad Beheer.</div><button class="btn full" style="margin-top:10px" data-act="reqCancel">Aanvraag intrekken</button></div>`;
+  return `<div class="card"><details><summary>🛡️ Clubbeheer aanvragen</summary>
+    <div class="muted" style="margin:8px 0">Ben je jeugdcoördinator of bestuurslid? Als clubbeheerder zie je alle teams en trainers van je club en kun je trainers uitnodigen.</div>
+    <label class="f">Club<input id="reqClub" value="${esc(team().club || '')}" autocomplete="off"></label>
+    <label class="f">Je functie bij de club<input id="reqFunc" placeholder="bv. jeugdcoördinator" autocomplete="off"></label>
+    <button class="btn pri full" data-act="reqSend">Aanvraag versturen</button></details></div>`;
+}
+async function loadMyRequest(){ try { adm.myReq = myUid() && cloud.api.reqGet ? await cloud.api.reqGet(myUid()) : null; } catch(e){ adm.myReq = null; } }
+async function sendRequest(){
+  const club = document.getElementById('reqClub').value.trim(), func = document.getElementById('reqFunc').value.trim();
+  if (!club){ document.getElementById('reqClub').focus(); return; }
+  const k = clubSlug(club); if (!k) return;
+  const v = {club: k, clubName: club, func, name: myName(), email: (cloud.user && cloud.user.email) || '', created: Date.now()};
+  try { await cloud.api.reqSet(myUid(), v); adm.myReq = v; toast('Aanvraag verstuurd'); render(); } catch(e){ tell('Versturen lukt niet: ' + (e.message || e)); }
+}
+
 /* ===================== Wie zijn erbij? (aanwezigheid via de team-app) ===================== */
 const arriveCfg = se => ({mode: (se.arrive && se.arrive.mode) || 'std', min: se.arrive && se.arrive.min != null ? +se.arrive.min : 30});
 function arriveTime(m, se = season()){
@@ -2446,7 +2766,8 @@ function firebaseApi(){
     const data = s => s.exists() ? s.data() : null;
     return {
       // inloggen
-      onAuth: cb => au.onAuthStateChanged(auth, u => cb(u ? {uid: u.uid, email: u.email, displayName: u.displayName} : null)),
+      onAuth: cb => au.onAuthStateChanged(auth, u => cb(u ? {uid: u.uid, email: u.email, displayName: u.displayName, emailVerified: u.emailVerified, provider: (u.providerData[0] || {}).providerId || 'password'} : null)),
+      sendVerify: () => auth.currentUser && au.sendEmailVerification(auth.currentUser),
       signInGoogle: async () => { const r = await au.signInWithPopup(auth, new au.GoogleAuthProvider()); return r.user; },
       signInEmail: (e, p) => au.signInWithEmailAndPassword(auth, e, p),
       signUpEmail: async (e, p, name) => { const r = await au.createUserWithEmailAndPassword(auth, e, p); if (name) await au.updateProfile(r.user, {displayName: name}); return r.user; },
@@ -2472,6 +2793,26 @@ function firebaseApi(){
       userGet: async uid => data(await fs.getDoc(d('users', uid))),
       userSet: (uid, v) => fs.setDoc(d('users', uid), v, {merge: true}),
       userRemoveTeam: (uid, rid) => fs.updateDoc(d('users', uid), {['teams.' + rid]: fs.deleteField()}),
+      // beheer
+      teamList: async () => (await fs.getDocs(fs.collection(db, 'teams'))).docs.map(x => ({id: x.id, ...x.data()})),
+      teamDelete: id => fs.deleteDoc(d('teams', id)),
+      idxSet: (club, rid, v) => fs.setDoc(d('clubIndex', club, 'teams', rid), v),
+      idxDel: (club, rid) => fs.deleteDoc(d('clubIndex', club, 'teams', rid)),
+      idxList: async club => (await fs.getDocs(fs.collection(db, 'clubIndex', club, 'teams'))).docs.map(x => ({id: x.id, ...x.data()})),
+      pendingSet: (club, iid, v) => fs.setDoc(d('clubIndex', club, 'pending', iid), v),
+      pendingDel: (club, iid) => fs.deleteDoc(d('clubIndex', club, 'pending', iid)),
+      pendingList: async club => (await fs.getDocs(fs.collection(db, 'clubIndex', club, 'pending'))).docs.map(x => ({id: x.id, ...x.data()})),
+      usersList: async n => (await fs.getDocs(n ? fs.query(fs.collection(db, 'users'), fs.limit(n)) : fs.collection(db, 'users'))).docs.map(x => ({id: x.id, ...x.data()})),
+      clubAdminsList: async () => (await fs.getDocs(fs.collection(db, 'clubAdmins'))).docs.map(x => ({id: x.id, ...x.data()})),
+      clubAdminsSet: (club, v) => fs.setDoc(d('clubAdmins', club), v, {merge: true}),
+      clubAdminRemove: (club, u) => fs.updateDoc(d('clubAdmins', club), {['uids.' + u]: fs.deleteField()}),
+      reqSet: (u, v) => fs.setDoc(d('adminRequests', u), v),
+      reqGet: async u => data(await fs.getDoc(d('adminRequests', u))),
+      reqList: async () => (await fs.getDocs(fs.collection(db, 'adminRequests'))).docs.map(x => ({id: x.id, ...x.data()})),
+      reqDel: u => fs.deleteDoc(d('adminRequests', u)),
+      blockSet: (u, v) => fs.setDoc(d('blocked', u), v),
+      blockDel: u => fs.deleteDoc(d('blocked', u)),
+      blockList: async () => (await fs.getDocs(fs.collection(db, 'blocked'))).docs.map(x => ({id: x.id, ...x.data()})),
       // wie zijn erbij
       pollCreate: (id, v) => fs.setDoc(d('polls', id), v),
       pollUpdate: (id, v) => fs.setDoc(d('polls', id), v, {merge: true}),
@@ -2570,6 +2911,7 @@ async function syncAccount(){
   try {
     const uid = myUid(), api = cloud.api;
     const udoc = await api.userGet(uid).catch(() => null) || {};
+    if (!udoc.created) api.userSet(uid, {created: Date.now()}).catch(() => {});
     if (!myName()){
       const n = udoc.name || await askName();
       if (n){ try { localStorage.setItem(ME_KEY, n); } catch(e){} api.setName(n).catch(() => {}); cloud.user.displayName = n; }
@@ -2595,6 +2937,7 @@ async function syncAccount(){
     Object.keys(cloudMap()).forEach(listenTeam);
     setCloudStatus();
     pollSync();
+    detectAdmin(); loadMyRequest();
   } finally { cloud.syncing = false; }
 }
 function placeTeam(td, rid){
@@ -2608,14 +2951,17 @@ function placeTeam(td, rid){
   return tid;
 }
 async function saveUserTeams(){
-  const teams = {}; Object.values(cloudMap()).forEach(c => { if (!isLegacy(c)) teams[c.id] = true; });
-  await cloud.api.userSet(myUid(), {name: myName(), teams}).catch(e => console.error(e));
+  const teams = {}; Object.values(cloudMap()).forEach(c => { if (!isLegacy(c) && !c.admin) teams[c.id] = true; });
+  const u = cloud.user || {};
+  await cloud.api.userSet(myUid(), {name: myName(), email: u.email || '', provider: u.provider || '', lastActive: Date.now(), teams}).catch(e => console.error(e));
 }
 async function createRemoteTeam(t){
   const uid = myUid(), rid = randId(20);
-  t.people = {[uid]: {name: myName() || 'Trainer', joined: Date.now()}};
+  t.people = {[uid]: {name: myName() || 'Trainer', email: (cloud.user && cloud.user.email) || '', joined: Date.now()}};
   t.invites = []; delete t.members;
-  await cloud.api.teamCreate(rid, {members: {[uid]: 'owner'}, data: JSON.stringify(t), version: DATA_VERSION, updated: Date.now(), by: DEVICE});
+  const club = clubSlug(t.club);
+  await cloud.api.teamCreate(rid, {members: {[uid]: 'owner'}, data: JSON.stringify(t), version: DATA_VERSION, updated: Date.now(), by: DEVICE, club, label: teamLabel(t)});
+  if (club && cloud.api.idxSet) cloud.api.idxSet(club, rid, {label: teamLabel(t), updated: Date.now()}).catch(e => console.error(e));
   const map = cloudMap(); map[t.id] = {id: rid, v: 7}; setCloudMap(map);
   return rid;
 }
@@ -2644,7 +2990,7 @@ function applyRemote(tid, r){
   if ((r.version || 0) > DATA_VERSION){ cloud.outdated = true; setCloudStatus('old'); showOutdated(); return; }
   const mk = JSON.stringify(r.members || {}), memChanged = mk !== L.memKey;
   L.members = r.members || {}; L.memKey = mk;
-  if (!L.members[myUid()]){ lostAccess(tid); return; }
+  if (!L.members[myUid()] && !(cloudCfg(tid) || {}).admin){ lostAccess(tid); return; }
   const fresh = r.by !== DEVICE && !L.timer && (r.updated || 0) > L.lastRemote;
   if (!fresh){ if (!L.timer) linkStatus(tid, 'ok'); afterRemote(tid); if (memChanged && tid === S.active.team) render(); return; }
   const local = S.teams.find(t => t.id === tid); if (!local) return;
@@ -2667,7 +3013,9 @@ function afterRemote(tid){
   // zorg dat je eigen naam in de lijst staat
   const t = S.teams.find(x => x.id === tid), uid = myUid(); if (!t || !uid) return;
   t.people = t.people || {};
-  if (!t.people[uid] || (myName() && t.people[uid].name !== myName())){ t.people[uid] = {...(t.people[uid] || {joined: Date.now()}), name: myName() || 'Trainer'}; save(); }
+  const em = (cloud.user && cloud.user.email) || '';
+  if (cloud.links[tid] && !cloud.links[tid].members[uid]) return;
+  if (!t.people[uid] || (myName() && t.people[uid].name !== myName()) || (em && t.people[uid].email !== em)){ t.people[uid] = {...(t.people[uid] || {joined: Date.now()}), name: myName() || 'Trainer', email: em}; save(); }
 }
 function flushPending(){ if (cloud.pending && !drag.el && !document.querySelector('.modal')){ const f = cloud.pending; cloud.pending = null; f(); } }
 document.addEventListener('focusout', () => setTimeout(flushPending, 50));
@@ -2687,7 +3035,9 @@ function cloudPushTeam(tid, now){
     L.timer = null;
     const tt = S.teams.find(x => x.id === tid); if (!tt) return;
     const data = JSON.stringify(tt), u = Date.now();
-    try { await cloud.api.teamPush(L.id, {data, version: DATA_VERSION, updated: u, by: DEVICE}); L.last = data; L.lastRemote = Math.max(L.lastRemote, u); if (!L.timer) linkStatus(tid, 'ok'); }
+    const club = clubSlug(tt.club), label = teamLabel(tt);
+    try { await cloud.api.teamPush(L.id, {data, version: DATA_VERSION, updated: u, by: DEVICE, club, label}); L.last = data;
+      if (cloud.api.idxSet && L.idx !== club + '|' + label){ const old = (L.idx || '').split('|')[0]; if (old && old !== club) cloud.api.idxDel(old, L.id).catch(() => {}); if (club) cloud.api.idxSet(club, L.id, {label, updated: u}).catch(() => {}); L.idx = club + '|' + label; } L.lastRemote = Math.max(L.lastRemote, u); if (!L.timer) linkStatus(tid, 'ok'); }
     catch(e){ console.error(e); if (/permission/i.test(e.code || e.message || '')) lostAccess(tid); else linkStatus(tid, 'err'); }
   }, now ? 0 : 700);
 }
@@ -2782,7 +3132,7 @@ async function changeMyName(){
 }
 async function logout(){
   if (!await ask('Uitloggen op dit apparaat? Je teams blijven op dit apparaat staan, maar worden niet meer gedeeld tot je weer inlogt.', 'Uitloggen')) return;
-  stopAll(); await cloud.api.signOut(); render();
+  stopAll(); await cloud.api.signOut(); adm.owner = false; adm.clubs = []; adm.data = null; adm.myReq = null; updateAdminTab(); render();
 }
 
 // ---------- trainers uitnodigen ----------
@@ -2861,6 +3211,12 @@ async function openInvite(iid){
   const api = await firebaseApi();
   const inv = await api.inviteGet(iid).catch(() => null);
   if (!inv){ await tell('Deze uitnodiging werkt niet (meer). Vraag de trainer om een nieuwe link.'); return; }
+  if (inv.kind === 'newteam'){
+    if (!await inviteSheet({...inv, teamLabel: inv.teamName, club: inv.clubName, multi: false}, inviteUrl(iid))) return;
+    if (!await needLogin(`Log in of maak een account om trainer te worden van ${inv.teamName}.`)) return;
+    try { await joinNewTeam(iid, inv); } catch(e){ console.error(e); await tell('Dat lukt niet: ' + (e.message || e)); }
+    return;
+  }
   const have = Object.keys(cloudMap()).find(k => cloudMap()[k].id === inv.team && S.teams.some(t => t.id === k));
   if (have){ S.active.team = have; ui.tab = 'matches'; commit(); toast(`${teamLabel(team())} staat al in je app`); return; }
   if (!await inviteSheet(inv, inviteUrl(iid))) return;
@@ -2924,7 +3280,7 @@ function inviteSheet(inv, url){
     const lbl = inv.teamLabel || 'een team';
     d.innerHTML = iconize(`<div class="box" style="max-height:90vh;overflow:auto">
       <div class="svhead" style="margin:0 0 10px"><div class="logo ${clubKey(inv.club) ? 'clublogo' : ''}">${clubLogo(inv.club)}</div><div><div class="club">${esc(inv.club || 'LineUp')}</div><div class="svteam">${esc(lbl)}</div></div></div>
-      <p style="margin-top:0;font-size:15px;font-weight:500;line-height:1.45">Hoi ${esc(inv.multi ? 'trainer' : (inv.name || 'trainer'))}! <b>${esc(inv.byName || 'Een trainer')}</b> deelt <b>${esc(lbl)}</b> met je in LineUp. Samen maken jullie de opstellingen; wijzigingen zien jullie bij elkaar meteen.</p>
+      <p style="margin-top:0;font-size:15px;font-weight:500;line-height:1.45">Hoi ${esc(inv.multi ? 'trainer' : (inv.name || 'trainer'))}! ${inv.kind === 'newteam' ? `<b>${esc(inv.byName || 'De club')}</b> nodigt je uit om trainer te worden van <b>${esc(lbl)}</b>${inv.clubName ? ' bij ' + esc(inv.clubName) : ''}. Na het inloggen staat je team klaar en voeg je je spelers toe.` : `<b>${esc(inv.byName || 'Een trainer')}</b> deelt <b>${esc(lbl)}</b> met je in LineUp. Samen maken jullie de opstellingen; wijzigingen zien jullie bij elkaar meteen.`}</p>
       <div class="muted" style="margin:-4px 0 12px;font-size:13px">🔒 Je logt één keer in met Google of met je e-mailadres. Zo kan alleen jij bij jouw teams.</div>
       <button class="btn pri full big" data-r="ok">✅ Meedoen</button>
       ${standalone ? '' : `<div class="sgroup" style="margin-top:16px">📲 LineUp op je beginscherm zetten</div>
@@ -2956,8 +3312,9 @@ function accountCard(){
   <div class="card">
     <h2>👤 Account</h2>
     <div class="mrow"><span class="mav">${esc((myName() || '?').charAt(0).toUpperCase())}</span><span class="grow"><b>${esc(myName() || 'Naam onbekend')}</b><small>${esc(cloud.user.email || '')}</small></span><button class="btn sm" data-act="editMyName">✏️</button></div>
+    ${cloud.user.provider === 'password' && !cloud.user.emailVerified ? `<div class="muted" style="margin-top:10px;font-size:13px">Je e-mailadres is nog niet bevestigd. <a href="#" data-act="verifyMail">Bevestigingsmail sturen</a></div>` : ''}
     <button class="btn full" style="margin-top:10px" data-act="logout">Uitloggen</button>
-  </div>`;
+  </div>${requestCard()}`;
 }
 function cloudCard(t = team()){
   const c = cloudCfg(t.id), L = cloud.links[t.id];
