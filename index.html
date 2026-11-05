@@ -523,6 +523,8 @@
   input[type="date"]{display:block;width:100%;min-width:0;max-width:100%;box-sizing:border-box;-webkit-appearance:none;appearance:none;text-align:left}
   input[type="date"]::-webkit-date-and-time-value{text-align:left;margin:0}
   input[type="date"]::-webkit-calendar-picker-indicator{margin-left:auto}
+  body.viewonly #app input,body.viewonly #app select,body.viewonly #app textarea{pointer-events:none;opacity:.8}
+  .vobanner{display:flex;align-items:center;gap:10px;background:var(--ink);color:#fff;border-radius:16px;padding:10px 12px;margin:0 0 12px;font-size:14px}.vobanner span{flex:1}.vobanner .btn{background:var(--y);color:var(--on-y);border:0}
   .nm2{display:flex;gap:6px}.nm2 input{padding:6px 8px;min-width:0;flex:1}
   .svhead{display:flex;align-items:center;gap:12px;margin:2px 2px 14px}
   .svhead .logo{width:52px;height:52px}
@@ -638,6 +640,7 @@
 <script>
 /* ===================== Eigen iconen ===================== */
 const ICONS = {
+  eye:'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
   ball:'<circle cx="12" cy="12" r="9"/><path d="M12 7.6l3.3 2.4-1.3 3.9h-4L8.7 10z"/><path d="M12 3v4.6M15.3 10l4.3-1.4M14 13.9l2.6 3.7M10 13.9l-2.6 3.7M8.7 10L4.4 8.6"/>',
   plus:'<path d="M12 5v14M5 12h14"/>',
   cloud:'<path d="M7 18h10.5a4 4 0 0 0 .4-7.98A6 6 0 0 0 6.2 9.6 4.2 4.2 0 0 0 7 18z"/>',
@@ -678,7 +681,7 @@ const ICONS = {
   play:'<path d="M7 4.5l12.5 7.5L7 19.5z"/>'
 };
 const I = n => `<svg class="ic ic-${n}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]}</svg>`;
-const EMO = {'⚽':'ball','👋':'ball','＋':'plus','➕':'plus','☁':'cloud','🧤':'glove','📏':'ruler','👥':'users','📋':'clipboard','⚙':'settings','✅':'check','🛡':'shield','⬆':'up','⬇':'down','🔁':'swap','⇄':'swap','⏱':'clock','🏁':'flag','🔄':'refresh','🏟':'stadium','📝':'edit','✏':'edit','⚡':'bolt','🗑':'trash','↩':'undo','📤':'share','🖨':'print','🎯':'target','📊':'stats','📅':'calendar','⚠':'warn','📐':'pitch','🔀':'shuffle','🪑':'bench','🧹':'eraser','⏭':'next','❌':'x','🏠':'home','🚌':'bus','📥':'download','🔧':'wrench','🔍':'search','▶':'play','🎨':'settings'};
+const EMO = {'👁':'eye','⚽':'ball','👋':'ball','＋':'plus','➕':'plus','☁':'cloud','🧤':'glove','📏':'ruler','👥':'users','📋':'clipboard','⚙':'settings','✅':'check','🛡':'shield','⬆':'up','⬇':'down','🔁':'swap','⇄':'swap','⏱':'clock','🏁':'flag','🔄':'refresh','🏟':'stadium','📝':'edit','✏':'edit','⚡':'bolt','🗑':'trash','↩':'undo','📤':'share','🖨':'print','🎯':'target','📊':'stats','📅':'calendar','⚠':'warn','📐':'pitch','🔀':'shuffle','🪑':'bench','🧹':'eraser','⏭':'next','❌':'x','🏠':'home','🚌':'bus','📥':'download','🔧':'wrench','🔍':'search','▶':'play','🎨':'settings'};
 const EMO_RE = new RegExp('(' + Object.keys(EMO).join('|') + ')\\uFE0F?', 'gu');
 // vervangt emoji's in tekst (niet in attributen of keuzelijsten) door eigen iconen
 function iconize(html){
@@ -1003,7 +1006,7 @@ function renderHeader(){
   document.title = (t.club ? t.club + ' · ' : '') + 'LineUp';
   document.getElementById('teams').innerHTML = iconize(
     `<button class="pill addt" data-act="newTeamSheet" aria-label="Nieuw team">＋</button>` +
-    sortedTeams().map(x => `<button class="pill tpill ${x.id === t.id ? 'on' : ''}" data-act="team" data-id="${x.id}">${esc(teamLabel(x))}</button>`).join(''));
+    sortedTeams().map(x => `<button class="pill tpill ${x.id === t.id ? 'on' : ''}" data-act="team" data-id="${x.id}">${(cloudCfg(x.id) || {}).admin ? '👁️ ' : ''}${esc(teamLabel(x))}</button>`).join(''));
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === ui.tab));
 }
 function render(){
@@ -1011,9 +1014,10 @@ function render(){
   if (typeof SURVEY_ID !== 'undefined' && SURVEY_ID){ renderSurvey(); return; }
   if (gateActive()){ renderGate(); return; }
   document.body.classList.remove('gate');
+  document.body.classList.toggle('viewonly', isViewOnly());
   renderHeader();
   try { setCloudStatus(); } catch(e){}
-  let ban = ''; try { ban = loginBanner(); } catch(e){}
+  let ban = ''; try { ban = loginBanner() + watchBanner(); } catch(e){}
   app.innerHTML = iconize(ban + ({matches: ui.matchId ? viewMatch : viewMatches, stats: viewStats, settings: viewSettings, beheer: viewBeheer}[ui.tab] || viewMatches)());
 }
 
@@ -1588,6 +1592,8 @@ document.addEventListener('click', async e => {
   if (act === 'reqSend'){ await sendRequest(); return; }
   if (act === 'reqCancel'){ await cloud.api.reqDel(myUid()).catch(() => {}); adm.myReq = null; render(); return; }
   if (act === 'verifyMail'){ try { await cloud.api.sendVerify(); tell('We hebben je een e-mail gestuurd. Klik op de link erin en log daarna opnieuw in.'); } catch(e){ tell('Versturen lukt niet: ' + (e.message || e)); } return; }
+  if (act === 'voStop'){ stopWatching(S.active.team); return; }
+  if (isViewOnly() && !VO_OK.includes(act)){ toast('Je kijkt alleen mee – wijzigen kan hier niet'); return; }
   const tgt = el.dataset.scope === 'match' ? m && m.settings : se;
   switch (act){
     case 'team': S.active.team = id; ui.matchId = null; ui.sel = null; ui.tab = 'matches'; commit(); window.scrollTo(0, 0); break;
@@ -1833,6 +1839,7 @@ document.addEventListener('click', async e => {
 
 document.addEventListener('change', e => {
   const el = e.target, se = season(), m = match();
+  if (isViewOnly() && !el.dataset.admclub && !el.dataset.admq && !el.closest('.modal')){ toast('Je kijkt alleen mee – wijzigen kan hier niet'); render(); return; }
   if (el.dataset.admclub){ adm.club = el.value; adm.data = null; adm.view = null; render(); return; }
   if (el.dataset.admq){ adm.q = el.value; render(); return; }
     if (el.id === 'logoFile'){
@@ -2386,7 +2393,14 @@ function admTeamView(id){
       ${Object.entries(t.members).map(([u, role]) => { const p = t.people[u] || {}; return arow(p.name, esc(p.name || 'Trainer'), `${esc(p.email || '')}${p.email ? ' · ' : ''}${role === 'owner' ? 'beheert het team' : 'trainer'}`, `<button class="x" data-act="admKick" data-id="${esc(id + '|' + u)}" aria-label="Verwijderen uit team">×</button>`); }).join('')}
       ${t.invites.map(iv => arow(iv.name, esc(iv.name), 'uitgenodigd · nog niet meegedaan', achip('Wacht'))).join('')}</div>
     <div class="card"><h2>Spelers</h2><div class="achips">${t.players.map(p => achip(p.name)).join('') || '<span class="muted">Nog geen spelers.</span>'}</div></div>
-    <div class="grid2"><button class="btn" data-act="admOpenTeam" data-id="${esc(id)}">${local ? 'Ga naar team' : 'Opstellingen bekijken'}</button><button class="btn red" data-act="admDelTeam" data-id="${esc(id)}">Team verwijderen</button></div>`;
+    <div class="card"><div class="ahead"><h2>Wedstrijden</h2><button class="btn sm" data-act="admOpenTeam" data-id="${esc(id)}">👁️ Meekijken</button></div>
+      ${t.matches.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '')).map(m => {
+        const ph = {prep: 'Voorbereiding', live: 'Bezig', post: 'Na wedstrijd', done: 'Gespeeld'}[m.phase] || '';
+        const sc = m.phase === 'done' || m.phase === 'post' ? `${m.goalsFor || 0}–${m.goalsAgainst || 0}` : '';
+        const nm = m.home === false ? `${m.opponent || 'Tegenstander'} – ${t.clubName || 'wij'}` : `${t.clubName || 'Wij'} – ${m.opponent || 'tegenstander'}`;
+        return arow(sc || ph.charAt(0), esc(nm), `${m.date ? fmtD(Date.parse(m.date + 'T12:00')) + ' · ' : ''}${ph}${sc ? ' · ' + sc : ''}`, achip('👁️'), 'admWatch', id + '|' + m.id);
+      }).join('') || '<div class="muted">Nog geen wedstrijden.</div>'}</div>
+    <div class="grid2"><button class="btn" data-act="admOpenTeam" data-id="${esc(id)}">👁️ ${local ? 'Ga naar team' : 'Meekijken in de app'}</button><button class="btn red" data-act="admDelTeam" data-id="${esc(id)}">Team verwijderen</button></div>`;
 }
 function admTrainerView(u){
   const x = adminTrainers().find(y => y.uid === u); if (!x) return `<div class="card empty">Trainer niet gevonden.</div>`;
@@ -2394,7 +2408,8 @@ function admTrainerView(u){
   const clubs = [...new Set(adm.data.teams.map(t => t.club).filter(Boolean))];
   return `<div class="card">${arow(x.name, `<span style="font-size:20px">${esc(x.name || 'Naam onbekend')}</span>`, esc(x.clubAdmin.length ? 'Clubbeheer · ' + x.clubAdmin.join(', ') : x.isOwner ? 'Eigenaar' : 'Trainer'))}
       ${kv('E-mail', esc(x.email || 'onbekend'))}${kv('Inloggen via', x.provider ? (x.provider === 'google.com' ? 'Google' : 'e-mail en wachtwoord') : 'onbekend')}${kv('Account sinds', fmtD(x.created))}${kv('Laatst actief', x.lastActive ? ago(x.lastActive) : 'onbekend')}${x.blocked ? kv('Status', '<span style="color:var(--red)">Geblokkeerd</span>') : ''}</div>
-    <div class="card"><h2>Teams</h2>${x.teams.map(t => arow(t.label, esc(t.label) + (t.clubName ? ' · ' + esc(t.clubName) : ''), t.role === 'owner' ? 'beheert het team' : 'trainer', achip('›'), 'admTeam', t.id)).join('') || '<div class="muted">Geen teams.</div>'}</div>
+    <div class="card"><h2>Teams</h2>${x.teams.map(t => `${arow(t.label, esc(t.label) + (t.clubName ? ' · ' + esc(t.clubName) : ''), t.role === 'owner' ? 'beheert het team' : 'trainer', achip('›'), 'admTeam', t.id)}`).join('') || '<div class="muted">Geen teams.</div>'}
+      ${x.teams.length ? `<div class="achips" style="margin-top:8px">${x.teams.map(t => `<button class="achip" data-act="admOpenTeam" data-id="${esc(t.id)}">👁️ Meekijken: ${esc(t.label)}</button>`).join('')}</div>` : ''}</div>
     <div class="card"><h2>Clubbeheer</h2><div class="muted" style="margin-bottom:8px">Maak deze trainer beheerder van een club.</div>
       <div class="achips">${clubs.map(c => { const cl = adm.data.clubs.find(y => y.id === c), on = cl && cl.uids && cl.uids[u], nm = (cl && cl.name) || (adm.data.teams.find(t => t.club === c) || {}).clubName || c; return `<button class="achip ${on ? 'on' : ''}" data-act="admToggleClubAdmin" data-id="${esc(c + '|' + u)}">${on ? '✅ ' : ''}${esc(nm)}</button>`; }).join('') || '<span class="muted">Nog geen clubs.</span>'}</div></div>
     ${x.isOwner ? '' : `<div class="grid2"><button class="btn red" data-act="admKickAll" data-id="${esc(u)}">Uit alle teams</button><button class="btn red" data-act="admBlock" data-id="${esc(u)}">${x.blocked ? 'Blokkade opheffen' : 'Account blokkeren'}</button></div>
@@ -2412,6 +2427,35 @@ function admClubView(k){
       <div class="muted" style="margin-top:6px;font-size:12px">De persoon moet al een keer in LineUp hebben ingelogd.</div></div>` : ''}
     ${admTeamsCard(ts, k === '-' ? '' : k)}`;
 }
+// ---- meekijken (alleen lezen)
+const VO_OK = ['team', 'goSettings', 'goSettings2', 'goPlayers', 'stab', 'openMatch', 'back', 'seg', 'fontSize', 'login', 'logout', 'sHome', 'sOpen', 'print', 'share', 'export', 'pasteInvite', 'editMyName', 'verifyMail', 'voStop'];
+const isViewOnly = () => { try { return !!(cloudCfg(S.active.team) || {}).admin; } catch(e){ return false; } };
+function watchBanner(){
+  if (!isViewOnly()) return '';
+  const t = team(), names = Object.values(t.people || {}).map(p => p.name).filter(Boolean).join(', ');
+  return `<div class="vobanner">👁️ <span>Je kijkt mee met <b>${esc(teamLabel(t))}</b>${names ? ' van ' + esc(names) : ''} · alleen lezen</span><button class="btn sm" data-act="voStop">Stoppen</button></div>`;
+}
+function stopWatching(tid){
+  unlinkLive(tid);
+  const map = cloudMap(); delete map[tid]; setCloudMap(map);
+  S.teams = S.teams.filter(t => t.id !== tid);
+  if (!S.teams.length) S = defaultState();
+  if (!S.teams.some(t => t.id === S.active.team)) S.active.team = S.teams[0].id;
+  ui.matchId = null; ui.tab = 'beheer'; commit(); window.scrollTo(0, 0);
+}
+async function watchTeam(rid, mid){
+  const api = cloud.api;
+  let tid = Object.keys(cloudMap()).find(k => cloudMap()[k].id === rid && S.teams.some(t => t.id === k));
+  if (!tid){
+    const r = await api.teamGet(rid), td = teamFromRemote(r, null); if (!td){ await tell('Dit team kon niet geladen worden.'); return; }
+    tid = uid(); S.teams.push({...td, id: tid}); const map = cloudMap(); map[tid] = {id: rid, v: 7, admin: true}; setCloudMap(map); normalize();
+    listenTeam(tid);
+  }
+  S.active.team = tid; ui.tab = 'matches'; ui.matchId = mid || null; ui.sel = null;
+  if (mid) ui.seg = 0;
+  commit(); window.scrollTo(0, 0);
+}
+
 // ---- acties
 async function admAction(act, id){
   const api = cloud.api, d = adm.data;
@@ -2449,11 +2493,8 @@ async function admAction(act, id){
     if (act === 'admDelTeam'){ const t = d.teams.find(x => x.id === id);
       if (!await ask(`${t.label} definitief verwijderen? Alle spelers, wedstrijden en statistieken van dit team verdwijnen voor alle trainers.`, 'Verwijderen')) return;
       await api.teamDelete(id); if (t.club) await api.idxDel(t.club, id).catch(() => {}); adm.view = null; return reload(`${t.label} verwijderd`); }
-    if (act === 'admOpenTeam'){ const have = Object.entries(cloudMap()).find(([k, c]) => c.id === id);
-      if (have){ S.active.team = have[0]; ui.tab = 'matches'; ui.matchId = null; commit(); return; }
-      const r = await api.teamGet(id), td = teamFromRemote(r, null); if (!td){ await tell('Dit team kon niet geladen worden.'); return; }
-      const tid = uid(); S.teams.push({...td, id: tid}); const map = cloudMap(); map[tid] = {id, v: 7, admin: true}; setCloudMap(map); normalize();
-      S.active.team = tid; ui.tab = 'matches'; ui.matchId = null; commit(); listenTeam(tid); toast(`${teamLabel(team())} geopend als beheerder`); return; }
+    if (act === 'admOpenTeam') return watchTeam(id);
+    if (act === 'admWatch'){ const [rid, mid] = id.split('|'); return watchTeam(rid, mid); }
     if (act === 'admInvite' || act === 'admInviteTeam') return admInviteSheet(act === 'admInviteTeam' ? {team: id} : {club: id});
   } catch(e){ console.error(e); tell('Dat lukt niet: ' + (e.message || e)); }
 }
@@ -2649,7 +2690,7 @@ function pollSync(){
   if (!cloud.api || !cloud.api.pollUpdate || !myUid()) return;
   clearTimeout(pollSyncTimer);
   pollSyncTimer = setTimeout(() => {
-    S.teams.forEach(t => t.seasons.forEach(se => se.matches.forEach(m => {
+    S.teams.forEach(t => (cloudCfg(t.id) || {}).admin || t.seasons.forEach(se => se.matches.forEach(m => {
       if (!m.poll || m.phase === 'done') return;
       const pl = JSON.stringify(pollPayload(m, t, se));
       if (pl === m.poll.last) return;
@@ -3046,6 +3087,7 @@ function cloudPush(){
   if (!cloud.syncing) S.teams.forEach(t => { if (!cloudCfg(t.id) && hasContent(t) && !cloud.creating.has(t.id)){ cloud.creating.add(t.id); createRemoteTeam(t).then(() => { saveUserTeams(); save(); listenTeam(t.id); }).catch(e => console.error(e)).finally(() => cloud.creating.delete(t.id)); } });
 }
 function cloudPushTeam(tid, now){
+  if ((cloudCfg(tid) || {}).admin) return;
   const L = cloud.links[tid]; if (!L || !cloud.api || cloud.outdated) return;
   const t = S.teams.find(x => x.id === tid); if (!t) return;
   const json = JSON.stringify(t);
@@ -3439,6 +3481,7 @@ function dropTarget(x, y){
   return null;
 }
 document.addEventListener('pointerdown', e => {
+  if (isViewOnly()) return;
   const el = e.target.closest('[data-drag]');
   if (!el || e.button > 0) return;
   if (e.pointerType === 'mouse') e.preventDefault();
