@@ -464,7 +464,10 @@
   .attb.ja{border:0;background:var(--g);color:#fff}.attb.ja .ic{color:var(--y)}
   .attb.nee{border:2px dashed #9db8a6;background:#e3ece6;color:#5d7a66;font-weight:800}.attb.nee span{text-decoration:line-through}
   .attb.geen{border:2px solid var(--ybd);background:var(--ysoft);color:var(--ink)}.attb.geen .ic{color:var(--ytxt)}
-  .attb[data-me]{box-shadow:0 0 0 3px var(--ink),0 0 0 6px var(--y)}
+  .attb[data-me]{box-shadow:0 6px 0 var(--me-under,var(--y))}
+  .attgrid{row-gap:12px}
+  body[data-club="maliskamp"] .attb[data-me]{--me-under:#e3061a}
+  body[data-club="maliskamp"] .attb.ja[data-me]{background:#3c854e}
   .attleg{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;font-weight:700;color:var(--muted);margin:0 0 10px}.attleg span{display:flex;align-items:center;gap:6px}
   .attleg i{width:14px;height:14px;border-radius:4px;display:inline-block}.attleg i.ja{background:var(--g)}.attleg i.nee{background:#e3ece6;border:2px dashed #9db8a6}.attleg i.geen{background:var(--ysoft);border:2px solid var(--ybd)}
   .atthead{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:8px}.atthead h2{margin:0}
