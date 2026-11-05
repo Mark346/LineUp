@@ -2847,6 +2847,24 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
+const APP_VERSION = '2026-11-05.3';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+// nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
+async function checkNewVersion(){
+  if (!/^https?:/.test(location.protocol)) return;
+  try {
+    const txt = await (await fetch(location.pathname + '?v=' + Date.now(), {cache: 'no-store'})).text();
+    const v = (txt.match(/const APP_VERSION = '([^']+)'/) || [])[1];
+    if (!v || v === APP_VERSION) return;
+    const k = 'lineup.reloadedFor';
+    if (sessionStorage.getItem(k) === v) return;          // niet blijven herladen
+    sessionStorage.setItem(k, v);
+    if (document.querySelector('.modal') || (document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName))) return;
+    if (typeof cloudPush === 'function') cloudPush();
+    setTimeout(() => location.reload(), 900);
+  } catch(e){}
+}
+setTimeout(checkNewVersion, 1500);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkNewVersion(); });
 const DATA_VERSION = 7;               // ophogen als de opbouw van de gegevens verandert
 const FIREBASE_SDK = '10.12.2';
 const CLOUD_KEY = 'opstellingmaker.cloud';
@@ -3549,6 +3567,7 @@ function accountCard(){
     <div class="mrow"><span class="mav">${esc((myName() || '?').charAt(0).toUpperCase())}</span><span class="grow"><b>${esc(myName() || 'Naam onbekend')}</b><small>${esc(cloud.user.email || '')}</small></span><button class="btn sm" data-act="editMyName">✏️</button></div>
     ${cloud.user.provider === 'password' && !cloud.user.emailVerified ? `<div class="muted" style="margin-top:10px;font-size:13px">Je e-mailadres is nog niet bevestigd. <a href="#" data-act="verifyMail">Bevestigingsmail sturen</a></div>` : ''}
     <button class="btn full" style="margin-top:10px" data-act="logout">Uitloggen</button>
+    <div class="muted" style="text-align:center;margin-top:10px;font-size:12px">LineUp versie ${APP_VERSION}</div>
   </div>${requestCard()}`;
 }
 function cloudCard(t = team()){
