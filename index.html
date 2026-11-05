@@ -542,6 +542,7 @@
   .notif .btn:not(.pri){background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.3)}
   .card.pend{border:2px dashed var(--ybd);background:var(--ysoft)}
   .roval{min-height:48px;box-sizing:border-box;border-radius:12px;border:1px solid var(--line);background:var(--surf2);padding:8px 12px;display:flex;flex-direction:column;justify-content:center;font-weight:800}.roval small{font-size:12px;font-weight:600;color:var(--muted)}
+  .livectl{margin:2px 0 12px}.livectl .btn.sm{font-size:13px}
   .arvbox{min-height:48px;box-sizing:border-box;border-radius:12px;border:2px solid var(--ybd);background:var(--ysoft);padding:6px 10px;display:flex;flex-direction:column;justify-content:center;gap:1px}
   .arvbox b{font-size:15px;font-weight:900;color:var(--txt);line-height:1.15}.arvbox small{font-size:12px;font-weight:700;color:var(--muted)}.arvbox a,.arvnote a{font-weight:800}
   .arvnote{display:block;margin-top:4px;font-size:12px;font-weight:600;color:var(--muted)}
@@ -1163,6 +1164,7 @@ function viewMatch(){
   const lineupCard = `
     <div class="card">
       <h2>${ph === 'live' ? '▶️ Live opstelling' : ph === 'prep' ? '📋 Opstelling maken' : '📋 Opstelling'}</h2>
+      ${ph === 'live' ? liveControls(m, times, cur, last, '') : ''}
       ${ph === 'prep' ? (usePos()
         ? `<div class="muted" style="margin-bottom:10px">Laat de app alle blokken en wissels invullen op basis van de voorkeursposities en eerlijke speeltijd, of sleep zelf.</div>
            <div class="grid2" style="margin-bottom:12px"><button class="btn pri" data-act="autoAll">⚡ Alles automatisch</button><button class="btn" data-act="autoMix">🔀 Andere verdeling</button></div>`
@@ -1191,9 +1193,6 @@ function viewMatch(){
         ${m.posOverride && Object.keys(m.posOverride).length ? `<button class="btn sm" data-act="resetPos">↩️ Posities terug</button>` : ''}
       </div>
       ${ph === 'live' && ui.seg < last ? `<div class="muted" style="margin-top:6px;font-size:12px">🔄 laat alles t/m dit blok staan en verdeelt de blokken erna opnieuw eerlijk.</div>` : ''}` : ''}
-      ${ph === 'live' ? (cur < last
-        ? `<button class="btn pri full big" style="margin-top:12px" data-act="nextSeg">⏭️ Wissel doorvoeren (${times[cur + 1][0]}')</button>`
-        : `<button class="btn pri full big" style="margin-top:12px" data-act="phase" data-v="post">🏁 Wedstrijd afgelopen</button>`) : ''}
     </div>`;
 
   const minutesCard = `
@@ -1308,13 +1307,19 @@ function listCard(m, times, cur, last){
       <div class="hcblk"><b>${esc(blockLabel(m, s))}</b><span>${times[s][0]}'–${times[s][1]}'${s === cur ? ' · nu' : s > cur ? ' · straks' : ' · geweest'}</span></div>
       <button class="hcarrow" data-act="seg" data-i="${Math.min(last, s + 1)}" ${s === last ? 'disabled' : ''} aria-label="Volgend blok">›</button>
     </div>
+    ${liveControls(m, times, cur, last, 'hc')}
     ${wissel}
     <div class="hclist">${rows.map(r => `<div class="hcrow"><span class="hcpos">${r.p.line === 'K' ? 'K' : esc(r.p.code)}</span><span class="hcnm">${r.id ? esc(pname(r.id)) : '—'}</span></div>`).join('')}</div>
     <div class="hcbank"><span>BANK</span><b>${bench.map(id => esc(pname(id))).join(' · ') || '–'}</b></div>
-    ${cur < last
-      ? `<button class="btn hcbtn" data-act="nextSeg">Wissel doorvoeren (${times[cur + 1][0]}')</button>`
-      : `<button class="btn hcbtn" data-act="phase" data-v="post">Wedstrijd afgelopen</button>`}
   </div>`;
+}
+// knoppen tijdens de wedstrijd: bovenaan, zodat je niet hoeft te scrollen
+function liveControls(m, times, cur, last, kind){
+  const big = kind === 'hc' ? 'btn hcbtn' : 'btn pri full big';
+  const main = cur < last
+    ? `<button class="${big}" style="margin:0 0 8px" data-act="nextSeg">⏭️ Door naar het volgende blok (${times[cur + 1][0]}')</button>`
+    : `<button class="${big}" style="margin:0 0 8px" data-act="phase" data-v="post">🏁 Wedstrijd afgelopen</button>`;
+  return `<div class="livectl">${main}${cur > 0 ? `<div class="grid2"><button class="btn sm" data-act="prevSeg">↩️ Vorige wissel terugdraaien</button><button class="btn sm" data-act="restartMatch">Opnieuw beginnen</button></div>` : ''}</div>`;
 }
 function fontDialog(){
   return new Promise(res => {
@@ -1652,7 +1657,8 @@ document.addEventListener('click', async e => {
       const v = el.dataset.v;
       if (v === 'done'){ await saveDone(m); break; }
       if (v !== 'prep') m.cutsLocked = true;
-      if (v === 'live'){ m.cur = m.cur || 0; ui.seg = m.cur; if (m.phase === 'prep') toast('Wedstrijd gestart – succes! ⚽'); }
+      if (v === 'prep'){ m.cur = 0; ui.seg = 0; }
+      if (v === 'live'){ if (m.phase === 'prep') m.cur = 0; m.cur = m.cur || 0; ui.seg = m.cur; if (m.phase === 'prep') toast('Wedstrijd gestart – succes! ⚽'); }
       if (v === 'post' && (m.goalsFor === '' || m.goalsFor == null)){ m.goalsFor = 0; m.goalsAgainst = 0; }
       m.phase = v; ui.sel = null; commit(); window.scrollTo(0, 0); break;
     }
@@ -1662,6 +1668,15 @@ document.addEventListener('click', async e => {
       m.cur = (m.cur || 0) + 1; ui.seg = m.cur; ui.sel = null;
       if (isEmptySeg(m.segments[m.cur])) m.segments[m.cur] = m.segments[m.cur - 1].slice();
       commit(); toast(`Wissel doorgevoerd – blok ${m.cur + 1} loopt`); window.scrollTo(0, 0); break;
+    }
+    case 'prevSeg': {
+      if (!(m.cur > 0)) break;
+      m.cur--; ui.seg = m.cur; ui.sel = null;
+      commit(); toast(`Wissel teruggedraaid – blok ${m.cur + 1} loopt weer`); window.scrollTo(0, 0); break;
+    }
+    case 'restartMatch': {
+      if (!await ask('Wedstrijd opnieuw beginnen? Je gaat terug naar het eerste blok. De opstelling en de stand blijven staan.', 'Opnieuw beginnen')) break;
+      m.cur = 0; ui.seg = 0; ui.sel = null; commit(); window.scrollTo(0, 0); toast('Terug naar het eerste blok'); break;
     }
     case 'score': { const k = el.dataset.k; m[k] = Math.max(0, (+m[k] || 0) + (+el.dataset.d)); commit(); break; }
     case 'goal': {
@@ -2300,6 +2315,8 @@ async function detectAdmin(){
   try { await cloud.api.usersList(1); adm.owner = true; } catch(e){}
   try { const cs = await cloud.api.clubAdminsList(); adm.clubs = cs.filter(c => c.uids && c.uids[uid]).map(c => ({key: c.id, name: c.name || c.id})); adm.allClubs = cs; } catch(e){}
   if (!adm.club && adm.clubs.length) adm.club = adm.clubs[0].key;
+  // geen beheerder (meer)? dan ook geen meekijk-teams op deze telefoon
+  if (!adm.owner && !adm.clubs.length){ const w = Object.keys(cloudMap()).filter(k => cloudMap()[k].admin); if (w.length) w.forEach(k => dropTeam(k)); }
   updateAdminTab();
 }
 function updateAdminTab(){
@@ -2446,8 +2463,8 @@ function admTrainerView(u){
       ${kv('E-mail', esc(x.email || 'onbekend'))}${kv('Inloggen via', x.provider ? (x.provider === 'google.com' ? 'Google' : 'e-mail en wachtwoord') : 'onbekend')}${kv('Account sinds', fmtD(x.created))}${kv('Laatst actief', x.lastActive ? ago(x.lastActive) : 'onbekend')}${x.blocked ? kv('Status', '<span style="color:var(--red)">Geblokkeerd</span>') : ''}</div>
     <div class="card"><h2>Teams</h2>${x.teams.map(t => `${arow(t.label, esc(t.label) + (t.clubName ? ' · ' + esc(t.clubName) : ''), t.role === 'owner' ? 'beheert het team' : 'trainer', achip('›'), 'admTeam', t.id)}`).join('') || '<div class="muted">Geen teams.</div>'}
       ${x.teams.length ? `<div class="achips" style="margin-top:8px">${x.teams.map(t => `<button class="achip" data-act="admOpenTeam" data-id="${esc(t.id)}">👁️ Meekijken: ${esc(t.label)}</button>`).join('')}</div>` : ''}</div>
-    <div class="card"><h2>Clubbeheer</h2><div class="muted" style="margin-bottom:8px">Maak deze trainer beheerder van een club.</div>
-      <div class="achips">${clubs.map(c => { const cl = adm.data.clubs.find(y => y.id === c), on = cl && cl.uids && cl.uids[u], nm = (cl && cl.name) || (adm.data.teams.find(t => t.club === c) || {}).clubName || c; return `<button class="achip ${on ? 'on' : ''}" data-act="admToggleClubAdmin" data-id="${esc(c + '|' + u)}">${on ? '✅ ' : ''}${esc(nm)}</button>`; }).join('') || '<span class="muted">Nog geen clubs.</span>'}</div></div>
+    <div class="card"><details ${clubs.some(c => { const cl = adm.data.clubs.find(y => y.id === c); return cl && cl.uids && cl.uids[u]; }) ? 'open' : ''}><summary>🛡️ Clubbeheerrechten</summary><div class="muted" style="margin:8px 0">Een clubbeheerder ziet alle teams van de club. Een gewone trainer heeft dit niet nodig.</div>
+      ${clubs.map(c => { const cl = adm.data.clubs.find(y => y.id === c), on = cl && cl.uids && cl.uids[u], nm = (cl && cl.name) || (adm.data.teams.find(t => t.club === c) || {}).clubName || c; return `<div class="arow"><span class="grow"><b>${esc(nm)}</b><small>${on ? 'Is clubbeheerder' : 'Geen beheerrechten'}</small></span><button class="btn sm ${on ? 'red' : ''}" data-act="admToggleClubAdmin" data-id="${esc(c + '|' + u)}">${on ? 'Weghalen' : 'Beheerder maken'}</button></div>`; }).join('') || '<span class="muted">Nog geen clubs.</span>'}</details></div>
     ${x.isOwner ? '' : `<div class="grid2"><button class="btn red" data-act="admKickAll" data-id="${esc(u)}">Uit alle teams</button><button class="btn red" data-act="admBlock" data-id="${esc(u)}">${x.blocked ? 'Blokkade opheffen' : 'Account blokkeren'}</button></div>
     <div class="muted" style="margin-top:8px;font-size:12px">Het account zelf verwijder je in Firebase → Authentication → Users.</div>`}`;
 }
@@ -2513,7 +2530,9 @@ async function admAction(act, id){
       if (!bl && !await ask('Account blokkeren? Deze persoon kan dan bij geen enkel team meer, ook niet met een nieuwe uitnodiging.', 'Blokkeren')) return;
       if (bl) await api.blockDel(id); else await api.blockSet(id, {at: Date.now(), by: myUid()}); return reload(bl ? 'Blokkade opgeheven' : 'Account geblokkeerd'); }
     if (act === 'admToggleClubAdmin'){ const [c, u] = id.split('|'), cl = d.clubs.find(y => y.id === c), x = adminTrainers().find(y => y.uid === u);
-      if (cl && cl.uids && cl.uids[u]) await api.clubAdminRemove(c, u);
+      const nm = (cl && cl.name) || (d.teams.find(t => t.club === c) || {}).clubName || c, isOn = !!(cl && cl.uids && cl.uids[u]);
+      if (!await ask(isOn ? `${x.name || 'Deze trainer'} is geen clubbeheerder van ${nm} meer?` : `${x.name || 'Deze trainer'} clubbeheerder maken van ${nm}? Diegene ziet dan alle teams, trainers, spelers en opstellingen van ${nm} en kan trainers uitnodigen en verwijderen.`, isOn ? 'Beheerrechten weghalen' : 'Clubbeheerder maken')) return;
+      if (isOn) await api.clubAdminRemove(c, u);
       else await api.clubAdminsSet(c, {name: (cl && cl.name) || (d.teams.find(t => t.club === c) || {}).clubName || c, uids: {[u]: {name: x.name || '', email: x.email || ''}}});
       return reload(); }
     if (act === 'admRemoveClubAdmin'){ const [c, u] = id.split('|'); if (!await ask('Deze beheerder verwijderen?', 'Verwijderen')) return; await api.clubAdminRemove(c, u); return reload(); }
@@ -2876,6 +2895,7 @@ function firebaseApi(){
       teamGet: async id => data(await fs.getDoc(d('teams', id))),
       teamCreate: (id, v) => fs.setDoc(d('teams', id), v),
       teamPush: (id, v) => fs.setDoc(d('teams', id), v, {merge: true}),
+      teamPushTx: (id, build) => fs.runTransaction(db, async tx => { const ref = d('teams', id), s = await tx.get(ref); tx.set(ref, build(data(s)), {merge: true}); }),
       teamListen: (id, cb, err) => fs.onSnapshot(d('teams', id), s => cb(data(s)), err),
       teamJoin: (id, uid, via) => fs.updateDoc(d('teams', id), {['members.' + uid]: 'trainer', via, updated: Date.now()}),
       teamRemoveMember: (id, uid) => fs.updateDoc(d('teams', id), {['members.' + uid]: fs.deleteField(), updated: Date.now()}),
@@ -3002,11 +3022,9 @@ function listenTeam(tid){
 }
 async function lostAccess(tid){
   const t = S.teams.find(x => x.id === tid), c = cloudCfg(tid);
-  unlinkLive(tid);
-  const map = cloudMap(); delete map[tid]; setCloudMap(map);
   if (c && myUid()) cloud.api.userRemoveTeam(myUid(), c.id).catch(() => {});
-  setCloudStatus(); render();
-  if (t) await tell(`${teamLabel(t)} wordt niet meer met je gedeeld. Het team blijft op dit apparaat staan, maar wijzigingen van de andere trainers komen niet meer binnen.`);
+  dropTeam(tid);
+  if (t) await tell(`${teamLabel(t)} wordt niet meer met je gedeeld en is van deze telefoon gehaald.`);
 }
 
 // Na inloggen: oude koppelingen overzetten, teams online bewaren, teams van je account ophalen
@@ -3074,7 +3092,13 @@ function idxInfo(t){
   const tr = Object.values(t.people || {}).map(p => shortName(p.name || '')).filter(Boolean);
   return {label: teamLabel(t), trainers: tr.slice(0, 4), players: (se.players || []).length};
 }
-async function createRemoteTeam(t){
+const creatingRemote = {};
+function createRemoteTeam(t){
+  const c = cloudCfg(t.id); if (c && !isLegacy(c)) return Promise.resolve(c.id);
+  if (creatingRemote[t.id]) return creatingRemote[t.id];
+  return creatingRemote[t.id] = createRemoteTeamNow(t).finally(() => { delete creatingRemote[t.id]; });
+}
+async function createRemoteTeamNow(t){
   const uid = myUid(), rid = randId(20);
   t.people = {[uid]: {name: myName() || 'Trainer', email: (cloud.user && cloud.user.email) || '', joined: Date.now()}};
   t.invites = []; delete t.members;
@@ -3111,18 +3135,26 @@ function applyRemote(tid, r){
   L.members = r.members || {}; L.memKey = mk;
   if (!L.members[myUid()] && !(cloudCfg(tid) || {}).admin){ lostAccess(tid); return; }
   const fresh = r.by !== DEVICE && !L.timer && (r.updated || 0) > L.lastRemote;
-  if (!fresh){ if (!L.timer) linkStatus(tid, 'ok'); afterRemote(tid); if (memChanged && tid === S.active.team) render(); return; }
+  if (!fresh){
+    if (!L.timer) linkStatus(tid, 'ok');
+    if (L.last == null){ const rt = remoteAs(r, tid), cur = S.teams.find(t => t.id === tid); if (rt && cur){ L.last = JSON.stringify(rt); if (JSON.stringify(cur) !== L.last) cloudPushTeam(tid); } }
+    afterRemote(tid); if (memChanged && tid === S.active.team) render(); return; }
   const local = S.teams.find(t => t.id === tid); if (!local) return;
   const td = teamFromRemote(r, local); if (!td) return;
   L.lastRemote = r.updated || 0;
+  const ru = r.updated || 0;
   const apply = () => {
     const i = S.teams.findIndex(t => t.id === tid); if (i < 0) return;
+    if ((L.pushedAt || 0) > ru) return;            // intussen zelf al een nieuwere versie (samengevoegd) opgeslagen
     td.id = tid;
-    S.teams[i] = td; normalize();
-    L.last = JSON.stringify(S.teams[i]);
+    const cur = S.teams[i], remoteJson = JSON.stringify(td);
+    const changedHere = L.last && JSON.stringify(cur) !== L.last;
+    S.teams[i] = changedHere ? merge3(JSON.parse(L.last), cur, td) : td; S.teams[i].id = tid; normalize();
+    L.last = changedHere ? remoteJson : JSON.stringify(S.teams[i]);
     try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){}
     render(); linkStatus(tid, 'ok');
     afterRemote(tid);
+    if (JSON.stringify(S.teams[i]) !== L.last) cloudPushTeam(tid);
   };
   const a = document.activeElement;
   if ((a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) || drag.el || document.querySelector('.modal')) cloud.pending = apply;
@@ -3144,6 +3176,40 @@ function cloudPush(){
   // nieuwe teams met inhoud automatisch online bewaren
   if (!cloud.syncing) S.teams.forEach(t => { if (!cloudCfg(t.id) && hasContent(t) && !cloud.creating.has(t.id)){ cloud.creating.add(t.id); createRemoteTeam(t).then(() => { saveUserTeams(); save(); listenTeam(t.id); }).catch(e => console.error(e)).finally(() => cloud.creating.delete(t.id)); } });
 }
+/* ---- samenvoegen: twee trainers (of twee telefoons) wijzigen tegelijk ----
+   b = laatst gezamenlijke versie, l = deze telefoon, r = online. Wat hier gewijzigd is wint,
+   de rest komt van online. Lijsten met id's (seizoenen, spelers, wedstrijden) per item. */
+const jeq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const isObj = x => !!x && typeof x === 'object' && !Array.isArray(x);
+const idArr = (...xs) => xs.every(x => Array.isArray(x) && x.every(e => isObj(e) && e.id != null));
+function merge3(b, l, r){
+  if (jeq(l, b)) return r;
+  if (jeq(r, b) || jeq(l, r)) return l;
+  if (b === undefined || b === null){
+    if (isObj(l) && isObj(r)) return merge3({}, l, r);
+    if (idArr(l, r)) return merge3([], l, r);
+    return l;
+  }
+  if (idArr(b, l, r)){
+    const bm = new Map(b.map(x => [x.id, x])), lm = new Map(l.map(x => [x.id, x])), rm = new Map(r.map(x => [x.id, x]));
+    const out = [];
+    for (const id of [...r.map(x => x.id), ...l.map(x => x.id).filter(i => !rm.has(i))]){
+      const bx = bm.get(id), lx = lm.get(id), rx = rm.get(id);
+      if (bx && !lx){ if (rx && !jeq(rx, bx)) out.push(rx); continue; }   // hier verwijderd
+      if (bx && !rx){ if (lx && !jeq(lx, bx)) out.push(lx); continue; }   // online verwijderd
+      out.push(lx && rx ? merge3(bx, lx, rx) : (lx || rx));
+    }
+    return out;
+  }
+  if (isObj(b) && isObj(l) && isObj(r)){
+    const out = {};
+    for (const k of new Set([...Object.keys(r), ...Object.keys(l)])){ const v = merge3(b[k], l[k], r[k]); if (v !== undefined) out[k] = v; }
+    return out;
+  }
+  return l;
+}
+// online teamgegevens als object met het team-id van deze telefoon
+function remoteAs(r, tid){ const td = r ? teamFromRemote(r, null) : null; if (td) td.id = tid; return td; }
 function cloudPushTeam(tid, now){
   if ((cloudCfg(tid) || {}).admin) return;
   const L = cloud.links[tid]; if (!L || !cloud.api || cloud.outdated) return;
@@ -3154,12 +3220,35 @@ function cloudPushTeam(tid, now){
   L.timer = setTimeout(async () => {
     L.timer = null;
     const tt = S.teams.find(x => x.id === tid); if (!tt) return;
-    const data = JSON.stringify(tt), u = Date.now();
+    const mine = JSON.stringify(tt), base = L.last, u = Date.now();
     const club = clubSlug(tt.club), label = teamLabel(tt);
-    try { await cloud.api.teamPush(L.id, {data, version: DATA_VERSION, updated: u, by: DEVICE, club, label}); L.last = data;
+    let data = mine;
+    const build = r => {
+      // is er online iets veranderd sinds onze laatste versie? dan samenvoegen in plaats van overschrijven
+      data = mine;
+      const rt = remoteAs(r, tid);
+      if (rt && base && !jeq(rt, JSON.parse(base))) data = JSON.stringify(merge3(JSON.parse(base), JSON.parse(mine), rt));
+      return {data, version: DATA_VERSION, updated: u, by: DEVICE, club, label};
+    };
+    try {
+      if (cloud.api.teamPushTx) await cloud.api.teamPushTx(L.id, build); else await cloud.api.teamPush(L.id, build(null));
+      L.last = data; L.pushedAt = u;
+      if (data !== mine){
+        // samengevoegd: neem het resultaat over (plus wat er intussen hier nog is gewijzigd)
+        const i = S.teams.findIndex(x => x.id === tid);
+        if (i >= 0){ const now2 = S.teams[i], nt = JSON.stringify(now2) === mine ? JSON.parse(data) : merge3(JSON.parse(mine), now2, JSON.parse(data)); nt.id = tid; S.teams[i] = nt; normalize();
+          try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){}
+          const a = document.activeElement; if (!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) && !drag.el && !document.querySelector('.modal')) render();
+          if (JSON.stringify(S.teams[i]) !== L.last) cloudPushTeam(tid); }
+      }
       const info = idxInfo(tt), ik = club + '|' + JSON.stringify(info);
       if (cloud.api.idxSet && L.idx !== ik){ const old = (L.idx || '').split('|')[0]; if (old && old !== club) cloud.api.idxDel(old, L.id).catch(() => {}); if (club) cloud.api.idxSet(club, L.id, {...info, updated: u}).catch(() => {}); L.idx = ik; } L.lastRemote = Math.max(L.lastRemote, u); if (!L.timer) linkStatus(tid, 'ok'); }
-    catch(e){ console.error(e); if (/permission/i.test(e.code || e.message || '')) lostAccess(tid); else linkStatus(tid, 'err'); }
+    catch(e){ console.error(e);
+      if (/permission/i.test(e.code || e.message || '')){
+        // alleen loskoppelen als je echt geen toegang meer hebt
+        const still = await cloud.api.teamGet(L.id).then(r => !!(r && r.members && r.members[myUid()])).catch(() => false);
+        if (still) linkStatus(tid, 'err'); else lostAccess(tid);
+      } else linkStatus(tid, 'err'); }
   }, now ? 0 : 700);
 }
 function showOutdated(){
@@ -3306,12 +3395,18 @@ async function removeMember(t, uid){
   if (t.people) delete t.people[uid]; commit();
 }
 async function leaveTeam(t){
-  if (!await ask(`${teamLabel(t)} verlaten? Het team blijft op dit apparaat staan, maar je kunt niet meer samen met de andere trainers werken.`, 'Verlaten')) return;
+  if (!await ask(`${teamLabel(t)} verlaten? Het team verdwijnt van je telefoon. De andere trainers houden het team gewoon.`, 'Verlaten')) return;
   const c = cloudCfg(t.id);
   try { await cloud.api.teamRemoveMember(c.id, myUid()); } catch(e){ console.error(e); }
-  unlinkLive(t.id); const map = cloudMap(); delete map[t.id]; setCloudMap(map);
   cloud.api.userRemoveTeam(myUid(), c.id).catch(() => {});
-  if (t.people) delete t.people[myUid()];
+  dropTeam(t.id);
+}
+// team van dit apparaat halen (na verlaten of verwijderd worden) – niet opnieuw online zetten als eigen team
+function dropTeam(tid){
+  unlinkLive(tid); const map = cloudMap(); delete map[tid]; setCloudMap(map);
+  S.teams = S.teams.filter(x => x.id !== tid);
+  if (!S.teams.length){ const d = defaultState(); S.teams = [{...d.teams[0], name: PLACEHOLDER}]; }
+  if (!S.teams.some(x => x.id === S.active.team)){ S.active.team = S.teams[0].id; ui.matchId = null; }
   save(); setCloudStatus(); render();
 }
 async function joinRemote(rid, iid, replaceTid){
