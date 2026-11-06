@@ -1155,6 +1155,7 @@ function viewMatch(){
   }
   const st = m.settings, times = segTimes(st);
   if (ui.seg >= times.length) ui.seg = 0;
+  if ((m.phase || 'prep') === 'live') ui.seg = Math.min(m.cur || 0, times.length - 1);
   const roster = [...se.players, ...(m.guests || [])];
   const nIn = roster.filter(p => isIn(m, p.id)).length;
   const last = times.length - 1;
@@ -1183,7 +1184,7 @@ function viewMatch(){
         ? `<div class="muted" style="margin-bottom:10px">Laat de app alle blokken en wissels invullen op basis van de voorkeursposities en eerlijke speeltijd, of sleep zelf.</div>
            <div class="grid2" style="margin-bottom:12px"><button class="btn pri" data-act="autoAll">⚡ Alles automatisch</button><button class="btn" data-act="autoMix">🔀 Andere verdeling</button></div>`
         : `<div class="muted" style="margin-bottom:10px">Zet per blok je spelers neer: eerst de start, dan de volgende wissels. Bij een nieuw blok wordt het vorige overgenomen. Tip: zet bij Instellingen de voorkeursposities aan, dan kan de app alles automatisch opstellen.</div>`) : ''}
-      <div class="segs">${times.map((t, i) => `<button class="pill ${i === ui.seg ? 'on' : ''} ${ph === 'live' && i === cur ? 'now' : ''}" data-act="seg" data-i="${i}"><span>${ph === 'live' && i === cur ? '● ' : ''}${blockLabel(m, i)}</span><span>${t[0]}'–${t[1]}'</span></button>`).join('')}</div>
+      <div class="segs">${times.map((t, i) => `<button class="pill ${i === ui.seg ? 'on' : ''}" data-act="seg" data-i="${i}"><span>${blockLabel(m, i)}</span><span>${t[0]}'–${t[1]}'</span></button>`).join('')}</div>
       ${ui.seg > 0 ? (() => {
         const prevLu = m.segments[ui.seg - 1];
         const ins = lu.filter(id => id && !prevLu.includes(id)), outs = prevLu.filter(id => id && !lu.includes(id));
@@ -1317,7 +1318,7 @@ function listCard(m, times, cur, last){
   <div class="card hc">
     <div class="hcnav">
       <button class="hcarrow" data-act="seg" data-i="${Math.max(0, s - 1)}" ${s === 0 ? 'disabled' : ''} aria-label="Vorig blok">‹</button>
-      <div class="hcblk"><b>${esc(blockLabel(m, s))}</b><span>${times[s][0]}'–${times[s][1]}'${s === cur ? ' · nu' : s > cur ? ' · straks' : ' · geweest'}</span></div>
+      <div class="hcblk"><b>${esc(blockLabel(m, s))}</b><span>${times[s][0]}'–${times[s][1]}'${m.phase === 'live' ? '' : s === cur ? ' · nu' : s > cur ? ' · straks' : ' · geweest'}</span></div>
       <button class="hcarrow" data-act="seg" data-i="${Math.min(last, s + 1)}" ${s === last ? 'disabled' : ''} aria-label="Volgend blok">›</button>
     </div>
     ${wissel}
@@ -1328,15 +1329,22 @@ function listCard(m, times, cur, last){
 }
 // knoppen tijdens de wedstrijd: bovenaan, zodat je niet hoeft te scrollen
 function liveControls(m, times, cur, last, kind){
-  const big = kind === 'hc' ? 'btn hcbtn' : 'btn pri full big';
-  const main = cur < last
-    ? `<button class="${big}" style="margin:0 0 8px" data-act="nextSeg">⏭️ Door naar het volgende blok (${times[cur + 1][0]}')</button>`
-    : `<button class="${big}" style="margin:0 0 8px" data-act="phase" data-v="post">🏁 Wedstrijd afgelopen</button>`;
-  return `<div class="livectl">${main}<div class="grid2"><button class="btn sm" data-act="prevSeg" ${cur > 0 ? '' : 'disabled'}>↩️ Vorige wissel terugdraaien</button><button class="btn sm" data-act="addSub">＋ Wisselmoment</button></div></div>`;
+  return `<div class="livectl"><div class="${cur === last ? 'grid2' : ''}"><button class="btn ${kind === 'hc' ? 'sm' : ''} full" data-act="addSub">＋ Wisselmoment</button>${cur === last ? `<button class="btn full" data-act="phase" data-v="post">🏁 Wedstrijd afgelopen</button>` : ''}</div></div>`;
+}
+// tijdens de wedstrijd: tik op een blok = naar dat blok (vooruit eerst de wissels bevestigen)
+async function goLiveBlock(m, to){
+  const cur = m.cur || 0; if (to === cur || to < 0 || to >= m.segments.length) return;
+  if (to > cur){
+    for (let i = cur + 1; i <= to; i++) if (isEmptySeg(m.segments[i])) m.segments[i] = m.segments[i - 1].slice();
+    if (!await confirmWissel(m, to)) return;
+    m.cur = to; ui.seg = to; ui.sel = null; commit(); toast(`Wissel doorgevoerd – ${blockLabel(m, to)} loopt`);
+  } else {
+    m.cur = to; ui.seg = to; ui.sel = null; commit(); toast(`Terug naar ${blockLabel(m, to)}`);
+  }
 }
 // wat verandert er bij het volgende blok? wissels en positiewissels
-function wisselChanges(m, from){
-  const a = m.segments[from] || [], b0 = m.segments[from + 1] || [], b = isEmptySeg(b0) ? a : b0;
+function wisselChanges(m, from, to){
+  const a = m.segments[from] || [], b0 = m.segments[to] || [], b = isEmptySeg(b0) ? a : b0;
   const pos = matchPositions(m), code = i => pos[i] ? (pos[i].line === 'K' ? 'K' : pos[i].code) : '?';
   const subs = [], moves = [];
   b.forEach((id, i) => { if (id && !a.includes(id)) subs.push({inId: id, outId: a[i] && !b.includes(a[i]) ? a[i] : null, pos: code(i)}); });
@@ -1345,10 +1353,11 @@ function wisselChanges(m, from){
   b.forEach((id, i) => { const j = a.indexOf(id); if (id && j >= 0 && j !== i) moves.push({id, from: code(j), to: code(i)}); });
   return {subs, moves};
 }
-async function confirmWissel(m){
-  const cur = m.cur || 0, times = segTimes(m.settings), {subs, moves} = wisselChanges(m, cur);
+async function confirmWissel(m, to){
+  const cur = m.cur || 0; to = to ?? cur + 1;
+  const times = segTimes(m.settings), {subs, moves} = wisselChanges(m, cur, to);
   const nm = id => id ? esc(pname(id)) : '–';
-  const html = `<p style="margin-bottom:2px">Naar ${esc(blockLabel(m, cur + 1))} (${times[cur + 1][0]}')</p>
+  const html = `<p style="margin-bottom:2px">Naar ${esc(blockLabel(m, to))} (${times[to][0]}')</p>
     <div class="muted">Voer deze wijzigingen door op het veld:</div>
     ${subs.length ? `<div class="wsec"><h3>WISSELS</h3>${subs.map(x => `<div class="wrow"><span class="wpos">${esc(x.pos)}</span><span class="wout">↓</span><span>${nm(x.outId)}</span><span class="warr">→</span><span class="win">↑</span><b>${nm(x.inId)}</b></div>`).join('')}</div>` : ''}
     ${moves.length ? `<div class="wsec"><h3>POSITIEWISSELS</h3>${moves.map(x => `<div class="wrow"><b>${nm(x.id)}</b><span class="grow"></span><span class="wpos">${esc(x.from)}</span><span class="warr">→</span><span class="wpos">${esc(x.to)}</span></div>`).join('')}</div>` : ''}
@@ -1712,10 +1721,7 @@ document.addEventListener('click', async e => {
     case 'nextSeg': {
       const n = m.segments.length;
       if ((m.cur || 0) >= n - 1) break;
-      if (!await confirmWissel(m)) break;
-      m.cur = (m.cur || 0) + 1; ui.seg = m.cur; ui.sel = null;
-      if (isEmptySeg(m.segments[m.cur])) m.segments[m.cur] = m.segments[m.cur - 1].slice();
-      commit(); toast(`Wissel doorgevoerd – blok ${m.cur + 1} loopt`); window.scrollTo(0, 0); break;
+      await goLiveBlock(m, (m.cur || 0) + 1); break;
     }
     case 'prevSeg': {
       if (!(m.cur > 0)) break;
@@ -1773,6 +1779,7 @@ document.addEventListener('click', async e => {
       if (act === 'mix') toast('Nieuwe verdeling gemaakt');
       break;
     case 'seg': {
+      if ((m.phase || 'prep') === 'live'){ await goLiveBlock(m, +el.dataset.i); break; }
       ui.seg = +el.dataset.i; ui.sel = null;
       if (ui.seg > 0 && isEmptySeg(m.segments[ui.seg]) && !isEmptySeg(m.segments[ui.seg - 1])){ m.segments[ui.seg] = m.segments[ui.seg - 1].slice(); save(); toast('Vorig blok overgenomen – pas de wissels aan'); }
       render(); break;
@@ -2895,7 +2902,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-05.4';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-06.1';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
