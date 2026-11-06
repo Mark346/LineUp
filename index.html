@@ -2973,7 +2973,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-06.5';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-06.6';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
@@ -3024,7 +3024,14 @@ function firebaseApi(){
     const data = s => s.exists() ? s.data() : null;
     return {
       // inloggen
-      onAuth: cb => au.onAuthStateChanged(auth, u => cb(u ? {uid: u.uid, email: u.email, displayName: u.displayName, emailVerified: u.emailVerified, provider: (u.providerData[0] || {}).providerId || 'password'} : null)),
+      onAuth: cb => au.onAuthStateChanged(auth, async u => {
+        // account in Firebase verwijderd of geblokkeerd? dan hier ook uitloggen
+        if (u && navigator.onLine !== false){
+          try { await u.reload(); await u.getIdToken(true); }
+          catch(e){ if (/user-not-found|user-disabled|user-token-expired|invalid-user-token/.test(e.code || '')){ cloud.accountGone = true; await au.signOut(auth).catch(() => {}); return; } }
+        }
+        cb(u ? {uid: u.uid, email: u.email, displayName: u.displayName, emailVerified: u.emailVerified, provider: (u.providerData[0] || {}).providerId || 'password'} : null);
+      }),
       sendVerify: () => auth.currentUser && au.sendEmailVerification(auth.currentUser),
       signInGoogle: async () => { const r = await au.signInWithPopup(auth, new au.GoogleAuthProvider()); return r.user; },
       signInEmail: (e, p) => au.signInWithEmailAndPassword(auth, e, p),
@@ -3147,6 +3154,7 @@ async function cloudStart(){
       if (u) try { localStorage.setItem(LAST_UID, u.uid); } catch(e){}
       if (u && u.uid !== was) await syncAccount();
       if (!u) stopAll();
+      if (!u && cloud.accountGone){ cloud.accountGone = false; wipeDevice(); ui.tab = 'matches'; ui.matchId = null; setTimeout(() => tell('Je account bestaat niet meer of is geblokkeerd. Je bent uitgelogd.'), 300); }
       render();
       if (first){ first = false; res(); }
     });
@@ -3485,6 +3493,13 @@ async function changeMyName(){
   Object.keys(cloud.links).forEach(afterRemote);
   render();
 }
+// alles van het account van dit apparaat halen
+function wipeDevice(){
+  clearInterval(pendTimer);
+  [KEY, CLOUD_MAP_KEY, ME_KEY, LAST_UID, FS_KEY, PEND_KEY].forEach(k => { try { localStorage.removeItem(k); } catch(e){} });
+  S = defaultState(); normalize();
+  adm.owner = false; adm.clubs = []; adm.data = null; adm.myReq = null; updateAdminTab();
+}
 async function logout(){
   if (!await ask('Uitloggen? Alle teams worden van dit apparaat gewist. Ze staan veilig in je account en komen terug zodra je weer inlogt.', 'Uitloggen')) return;
   // eerst alles wat nog onderweg is opslaan
@@ -3496,10 +3511,7 @@ async function logout(){
   stopAll();
   Object.keys(polls).forEach(pid => { polls[pid].unsub && polls[pid].unsub(); delete polls[pid]; });
   await cloud.api.signOut();
-  clearInterval(pendTimer);
-  [KEY, CLOUD_MAP_KEY, ME_KEY, LAST_UID, FS_KEY, PEND_KEY].forEach(k => { try { localStorage.removeItem(k); } catch(e){} });
-  S = defaultState(); normalize();
-  adm.owner = false; adm.clubs = []; adm.data = null; adm.myReq = null; updateAdminTab();
+  wipeDevice();
   ui.tab = 'matches'; ui.matchId = null;
   render(); window.scrollTo(0, 0);
 }
