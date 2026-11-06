@@ -542,7 +542,22 @@
   .notif .btn:not(.pri){background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.3)}
   .card.pend{border:2px dashed var(--ybd);background:var(--ysoft)}
   .roval{min-height:48px;box-sizing:border-box;border-radius:12px;border:1px solid var(--line);background:var(--surf2);padding:8px 12px;display:flex;flex-direction:column;justify-content:center;font-weight:800}.roval small{font-size:12px;font-weight:600;color:var(--muted)}
-  .livectl{margin:2px 0 12px}.livectl .btn.sm{font-size:13px}
+  .livetag{display:inline-flex;align-items:center;gap:6px;font-weight:900;font-size:13px;letter-spacing:.04em;color:var(--red);margin-bottom:4px}
+  .livemore{margin-top:10px}.livemore summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;border-radius:14px;border:1px solid var(--line);background:var(--surf2);font-weight:800;font-size:14px}
+  .livemore summary::-webkit-details-marker{display:none}.livemore summary span{letter-spacing:2px;font-size:16px}
+  .morelist{margin-top:8px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--card)}
+  .moreitem{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:none;padding:12px 14px;font:inherit;color:var(--txt);cursor:pointer}.moreitem:last-child{border-bottom:0}
+  .moreitem b{display:block;font-size:15px}.moreitem small{display:block;color:var(--muted);font-size:12px;font-weight:600;margin-top:2px}
+  .livectl .btn:disabled{opacity:.45}
+  .hc .livemore summary{background:#fff;color:#000;border-color:#fff;font-size:18px;padding:14px}
+  .hc .morelist{background:#000;border-color:#fff}.hc .moreitem{color:#fff;border-color:#444}.hc .moreitem b{font-size:19px}.hc .moreitem small{color:#bbb;font-size:14px}
+  .hc .livectl .btn.sm{background:#fff;color:#000;border-color:#fff;font-size:15px;min-height:56px}
+  .wrow .grow{flex:1}
+  .wsec{margin:10px 0}.wsec h3{margin:0 0 6px;font-size:13px;letter-spacing:.05em;color:var(--muted)}
+  .wrow{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:12px;background:var(--surf2);margin-bottom:6px;font-size:16px}
+  .wrow .wpos{min-width:38px;text-align:center;font-weight:900;font-size:13px;border-radius:8px;padding:3px 5px;background:var(--card);border:1px solid var(--line)}
+  .wrow .win{color:var(--ok);font-weight:900}.wrow .wout{color:var(--red);font-weight:900}.wrow .warr{color:var(--muted);font-weight:900}
+  .livectl{margin:12px 0 0}.livectl .btn.sm{font-size:13px}
   .arvbox{min-height:48px;box-sizing:border-box;border-radius:12px;border:2px solid var(--ybd);background:var(--ysoft);padding:6px 10px;display:flex;flex-direction:column;justify-content:center;gap:1px}
   .arvbox b{font-size:15px;font-weight:900;color:var(--txt);line-height:1.15}.arvbox small{font-size:12px;font-weight:700;color:var(--muted)}.arvbox a,.arvnote a{font-weight:800}
   .arvnote{display:block;margin-top:4px;font-size:12px;font-weight:600;color:var(--muted)}
@@ -1151,7 +1166,7 @@ function viewMatch(){
   const header = `
   <div class="card mhead">
     ${ph === 'live' ? `<button class="aabtn" data-act="fontSize" aria-label="Lettergrootte tijdens de wedstrijd">A<small>a</small></button>` : ''}
-    ${ph !== 'prep' ? scoreBug(m) : ''}
+    ${ph === 'post' || ph === 'done' ? scoreBug(m) : ''}${ph === 'live' ? `<div class="livetag"><i class="sbdot"></i>LIVE · ${esc(blockLabel(m, cur))}</div>` : ''}
     <div class="mt">${esc(matchTitle(m))}</div>
     <div class="muted">${fmtDate(m.date, {weekday:'long', day:'numeric', month:'long'})} · ${settingsLine(st)}</div>
   </div>`;
@@ -1164,7 +1179,6 @@ function viewMatch(){
   const lineupCard = `
     <div class="card">
       <h2>${ph === 'live' ? '▶️ Live opstelling' : ph === 'prep' ? '📋 Opstelling maken' : '📋 Opstelling'}</h2>
-      ${ph === 'live' ? liveControls(m, times, cur, last, '') : ''}
       ${ph === 'prep' ? (usePos()
         ? `<div class="muted" style="margin-bottom:10px">Laat de app alle blokken en wissels invullen op basis van de voorkeursposities en eerlijke speeltijd, of sleep zelf.</div>
            <div class="grid2" style="margin-bottom:12px"><button class="btn pri" data-act="autoAll">⚡ Alles automatisch</button><button class="btn" data-act="autoMix">🔀 Andere verdeling</button></div>`
@@ -1183,7 +1197,7 @@ function viewMatch(){
         return `<div class="benchp ${ui.sel && ui.sel.type === 'b' && ui.sel.id === id ? 'sel' : ''} ${up[id] === minUp && bench.length > 1 ? 'low' : ''}" data-act="tapBench" data-drag="b" data-id="${id}"><span class="bd">${esc(p.number || p.name.charAt(0).toUpperCase())}</span><span class="bn">${esc(pshort(p))}${prefTag(p)}</span><i>${Math.round(up[id])}'</i></div>`;
       }).join('') : '<span class="muted" style="padding:8px">Geen reserves · sleep een speler hierheen om hem eruit te halen</span>'}</div>
       <div class="hint">Sleep een reserve op een plek of speler, of tik op twee spelers om te wisselen.</div>
-      <div class="tools">
+      ${ph === 'live' ? liveControls(m, times, cur, last, '') + liveMore(m, last) : `<div class="tools">
         ${ui.seg > 0 ? `<button class="btn sm" data-act="copyPrev">📋 Neem vorige over</button>` : ''}
         ${ph === 'live' && ui.seg < last ? `<button class="btn sm" data-act="regenRest">🔄 Rest eerlijk verdelen</button>` : ''}
         <button class="btn sm" data-act="addSub">＋ Wisselmoment</button>
@@ -1191,8 +1205,7 @@ function viewMatch(){
         ${ph === 'prep' && m.cutsLocked ? `<button class="btn sm" data-act="resetSubs">↩️ Standaard wisselmomenten</button>` : ''}
         <button class="btn sm" data-act="clearSeg">🧹 Leeg</button>
         ${m.posOverride && Object.keys(m.posOverride).length ? `<button class="btn sm" data-act="resetPos">↩️ Posities terug</button>` : ''}
-      </div>
-      ${ph === 'live' && ui.seg < last ? `<div class="muted" style="margin-top:6px;font-size:12px">🔄 laat alles t/m dit blok staan en verdeelt de blokken erna opnieuw eerlijk.</div>` : ''}` : ''}
+      </div>`}` : ''}
     </div>`;
 
   const minutesCard = `
@@ -1307,10 +1320,10 @@ function listCard(m, times, cur, last){
       <div class="hcblk"><b>${esc(blockLabel(m, s))}</b><span>${times[s][0]}'–${times[s][1]}'${s === cur ? ' · nu' : s > cur ? ' · straks' : ' · geweest'}</span></div>
       <button class="hcarrow" data-act="seg" data-i="${Math.min(last, s + 1)}" ${s === last ? 'disabled' : ''} aria-label="Volgend blok">›</button>
     </div>
-    ${liveControls(m, times, cur, last, 'hc')}
     ${wissel}
     <div class="hclist">${rows.map(r => `<div class="hcrow"><span class="hcpos">${r.p.line === 'K' ? 'K' : esc(r.p.code)}</span><span class="hcnm">${r.id ? esc(pname(r.id)) : '—'}</span></div>`).join('')}</div>
     <div class="hcbank"><span>BANK</span><b>${bench.map(id => esc(pname(id))).join(' · ') || '–'}</b></div>
+    <div style="margin-top:14px">${liveControls(m, times, cur, last, 'hc')}${liveMore(m, last)}</div>
   </div>`;
 }
 // knoppen tijdens de wedstrijd: bovenaan, zodat je niet hoeft te scrollen
@@ -1319,7 +1332,41 @@ function liveControls(m, times, cur, last, kind){
   const main = cur < last
     ? `<button class="${big}" style="margin:0 0 8px" data-act="nextSeg">⏭️ Door naar het volgende blok (${times[cur + 1][0]}')</button>`
     : `<button class="${big}" style="margin:0 0 8px" data-act="phase" data-v="post">🏁 Wedstrijd afgelopen</button>`;
-  return `<div class="livectl">${main}${cur > 0 ? `<div class="grid2"><button class="btn sm" data-act="prevSeg">↩️ Vorige wissel terugdraaien</button><button class="btn sm" data-act="restartMatch">Opnieuw beginnen</button></div>` : ''}</div>`;
+  return `<div class="livectl">${main}<div class="grid2"><button class="btn sm" data-act="prevSeg" ${cur > 0 ? '' : 'disabled'}>↩️ Vorige wissel terugdraaien</button><button class="btn sm" data-act="addSub">＋ Wisselmoment</button></div></div>`;
+}
+// wat verandert er bij het volgende blok? wissels en positiewissels
+function wisselChanges(m, from){
+  const a = m.segments[from] || [], b0 = m.segments[from + 1] || [], b = isEmptySeg(b0) ? a : b0;
+  const pos = matchPositions(m), code = i => pos[i] ? (pos[i].line === 'K' ? 'K' : pos[i].code) : '?';
+  const subs = [], moves = [];
+  b.forEach((id, i) => { if (id && !a.includes(id)) subs.push({inId: id, outId: a[i] && !b.includes(a[i]) ? a[i] : null, pos: code(i)}); });
+  const outsLeft = a.filter(id => id && !b.includes(id) && !subs.some(x => x.outId === id));
+  outsLeft.forEach(id => { const free = subs.find(x => !x.outId); if (free) free.outId = id; else subs.push({inId: null, outId: id, pos: code(a.indexOf(id))}); });
+  b.forEach((id, i) => { const j = a.indexOf(id); if (id && j >= 0 && j !== i) moves.push({id, from: code(j), to: code(i)}); });
+  return {subs, moves};
+}
+async function confirmWissel(m){
+  const cur = m.cur || 0, times = segTimes(m.settings), {subs, moves} = wisselChanges(m, cur);
+  const nm = id => id ? esc(pname(id)) : '–';
+  const html = `<p style="margin-bottom:2px">Naar ${esc(blockLabel(m, cur + 1))} (${times[cur + 1][0]}')</p>
+    <div class="muted">Voer deze wijzigingen door op het veld:</div>
+    ${subs.length ? `<div class="wsec"><h3>WISSELS</h3>${subs.map(x => `<div class="wrow"><span class="wpos">${esc(x.pos)}</span><span class="wout">↓</span><span>${nm(x.outId)}</span><span class="warr">→</span><span class="win">↑</span><b>${nm(x.inId)}</b></div>`).join('')}</div>` : ''}
+    ${moves.length ? `<div class="wsec"><h3>POSITIEWISSELS</h3>${moves.map(x => `<div class="wrow"><b>${nm(x.id)}</b><span class="grow"></span><span class="wpos">${esc(x.from)}</span><span class="warr">→</span><span class="wpos">${esc(x.to)}</span></div>`).join('')}</div>` : ''}
+    ${!subs.length && !moves.length ? '<div class="wsec"><div class="wrow">Geen wissels: iedereen blijft staan.</div></div>' : ''}
+    <div class="grid2" style="margin-top:12px"><button class="btn" data-r="no">Annuleren</button><button class="btn pri" data-r="ok">Bevestig</button></div>`;
+  return sheet(html);
+}
+// overige opties tijdens de wedstrijd onder ⋯
+function liveMore(m, last){
+  const cur = m.cur || 0, b = (act, txt, note) => `<button class="moreitem" data-act="${act}"><b>${txt}</b>${note ? `<small>${note}</small>` : ''}</button>`;
+  return `<details class="livemore" data-key="liveMore" ${ui.open.liveMore ? 'open' : ''}><summary aria-label="Meer opties"><span>•••</span> Meer opties</summary><div class="morelist">
+    ${ui.seg < last ? b('regenRest', '🔄 Rest eerlijk verdelen', 'Laat alles t/m dit blok staan en verdeelt de blokken erna opnieuw.') : ''}
+    ${m.posOverride && Object.keys(m.posOverride).length ? b('resetPos', '↩️ Posities terug', 'Zet verschoven posities terug naar de formatie.') : ''}
+    ${ui.seg > 0 ? b('copyPrev', '📋 Neem vorige over', 'Dit blok gelijk maken aan het vorige.') : ''}
+    ${ui.seg > 0 ? b('delSub', '🗑️ Wisselmoment weg') : ''}
+    ${b('clearSeg', '🧹 Blok leegmaken')}
+    ${cur > 0 ? b('restartMatch', '⏮ Opnieuw beginnen', 'Terug naar het eerste blok.') : ''}
+  </div></details>`;
 }
 function fontDialog(){
   return new Promise(res => {
@@ -1665,6 +1712,7 @@ document.addEventListener('click', async e => {
     case 'nextSeg': {
       const n = m.segments.length;
       if ((m.cur || 0) >= n - 1) break;
+      if (!await confirmWissel(m)) break;
       m.cur = (m.cur || 0) + 1; ui.seg = m.cur; ui.sel = null;
       if (isEmptySeg(m.segments[m.cur])) m.segments[m.cur] = m.segments[m.cur - 1].slice();
       commit(); toast(`Wissel doorgevoerd – blok ${m.cur + 1} loopt`); window.scrollTo(0, 0); break;
@@ -2847,7 +2895,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-05.3';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-05.4';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
