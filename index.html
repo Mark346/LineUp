@@ -542,6 +542,7 @@
   .notif .btn:not(.pri){background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.3)}
   .card.pend{border:2px dashed var(--ybd);background:var(--ysoft)}
   .roval{min-height:48px;box-sizing:border-box;border-radius:12px;border:1px solid var(--line);background:var(--surf2);padding:8px 12px;display:flex;flex-direction:column;justify-content:center;font-weight:800}.roval small{font-size:12px;font-weight:600;color:var(--muted)}
+  .ainact{margin-top:8px}.ainact summary{cursor:pointer;font-weight:800;color:var(--muted);padding:8px 0}.ainact .arow{opacity:.7}
   .livetag{display:inline-flex;align-items:center;gap:6px;font-weight:900;font-size:13px;letter-spacing:.04em;color:var(--red);margin-bottom:4px}
   .livemore{margin-top:10px}.livemore summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;border-radius:14px;border:1px solid var(--line);background:var(--surf2);font-weight:800;font-size:14px}
   .livemore summary::-webkit-details-marker{display:none}.livemore summary span{letter-spacing:2px;font-size:16px}
@@ -565,7 +566,14 @@
   input[type="date"]{display:block;width:100%;min-width:0;max-width:100%;box-sizing:border-box;-webkit-appearance:none;appearance:none;text-align:left}
   input[type="date"]::-webkit-date-and-time-value{text-align:left;margin:0}
   input[type="date"]::-webkit-calendar-picker-indicator{margin-left:auto}
-  body.viewonly #app input,body.viewonly #app select,body.viewonly #app textarea{pointer-events:none;opacity:.8}
+  #wbar{display:none}
+  body.watching #wbar{display:block;position:sticky;top:0;z-index:60;background:#111;color:#fff;padding:calc(env(safe-area-inset-top) + 8px) 14px 10px;box-shadow:0 2px 10px rgba(0,0,0,.25)}
+  .wbarin{max-width:720px;margin:0 auto;display:flex;align-items:center;gap:10px}
+  .wbarin .weye{width:38px;height:38px;flex:none;border-radius:12px;background:var(--y);color:var(--on-y);display:flex;align-items:center;justify-content:center}
+  .wbarin .grow{flex:1;min-width:0;display:flex;flex-direction:column}.wbarin small{font-size:11px;font-weight:900;letter-spacing:.06em;opacity:.7}.wbarin b{font-size:17px;line-height:1.2}.wbarin .wnames{letter-spacing:0;font-weight:600;font-size:12px}
+  .wbarin .btn{background:#fff;color:#111;border:0;white-space:nowrap}
+  body.watching #teams,body.watching nav [data-tab="beheer"],body.watching #cloudDot{display:none!important}
+  body.watching header{padding-top:8px}
   .vobanner{display:flex;align-items:center;gap:10px;background:var(--ink);color:#fff;border-radius:16px;padding:10px 12px;margin:0 0 12px;font-size:14px}.vobanner span{flex:1}.vobanner .btn{background:var(--y);color:var(--on-y);border:0}
   .nm2{display:flex;gap:6px}.nm2 input{padding:6px 8px;min-width:0;flex:1}
   .svhead{display:flex;align-items:center;gap:12px;margin:2px 2px 14px}
@@ -663,6 +671,7 @@
 </head>
 <body>
 <script>document.body.dataset.theme = "graslicht";</script>
+<div id="wbar"></div>
 <header>
   <div class="brand"><div class="logo" id="logoBox"></div><div><div class="club" id="clubName"></div><div class="app wordmark"><i class="speed"></i>Line<span>Up</span></div></div><span id="cloudDot" class="cloud" data-act="goCloud"></span></div>
   <div class="teams" id="teams"></div>
@@ -1048,7 +1057,8 @@ function renderHeader(){
   document.title = (t.club ? t.club + ' · ' : '') + 'LineUp';
   document.getElementById('teams').innerHTML = iconize(
     `<button class="pill addt" data-act="newTeamSheet" aria-label="Nieuw team">＋</button>` +
-    sortedTeams().map(x => `<button class="pill tpill ${x.id === t.id ? 'on' : ''}" data-act="team" data-id="${x.id}">${(cloudCfg(x.id) || {}).admin ? '👁️ ' : ''}${esc(teamLabel(x))}</button>`).join(''));
+    sortedTeams().filter(x => !(cloudCfg(x.id) || {}).admin && (!x.inactive || x.id === t.id)).map(x => `<button class="pill tpill ${x.id === t.id ? 'on' : ''}" data-act="team" data-id="${x.id}">${x.inactive ? '💤 ' : ''}${esc(teamLabel(x))}</button>`).join('') +
+    (S.teams.some(x => x.inactive && x.id !== t.id && !(cloudCfg(x.id) || {}).admin) ? `<button class="pill" data-act="inactiveTeams">💤 Niet actief (${S.teams.filter(x => x.inactive && x.id !== t.id && !(cloudCfg(x.id) || {}).admin).length})</button>` : ''));
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === ui.tab));
 }
 function render(){
@@ -1056,10 +1066,13 @@ function render(){
   if (typeof SURVEY_ID !== 'undefined' && SURVEY_ID){ renderSurvey(); return; }
   if (gateActive()){ renderGate(); return; }
   document.body.classList.remove('gate');
-  document.body.classList.toggle('viewonly', isViewOnly());
+  const watching = isViewOnly();
+  document.body.classList.toggle('watching', watching);
+  const wb = document.getElementById('wbar'); if (wb) wb.innerHTML = iconize(watchBanner());
   renderHeader();
   try { setCloudStatus(); } catch(e){}
-  let ban = ''; try { ban = loginBanner() + watchBanner() + (ui.matchId ? '' : joinReqCard()); } catch(e){}
+  let ban = ''; try { ban = loginBanner() + (watching ? '' : (ui.matchId ? '' : joinReqCard())); } catch(e){}
+  if (watching && ui.tab === 'beheer') ui.tab = 'matches';
   app.innerHTML = iconize(ban + ({matches: ui.matchId ? viewMatch : viewMatches, stats: viewStats, settings: viewSettings, beheer: viewBeheer}[ui.tab] || viewMatches)());
 }
 
@@ -1082,6 +1095,7 @@ function viewMatches(){
   const done = se.matches.filter(m => m.phase === 'done').sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   return `
   ${pendCard()}
+  ${t.inactive ? `<div class="card pend"><div class="arow" style="border:0;padding:0"><span class="mav">💤</span><span class="grow"><b>Dit team staat op niet actief</b><small>Het staat niet tussen je teams bovenin.</small></span><button class="btn sm" data-act="toggleInactive" data-id="${t.id}">Weer actief</button></div></div>` : ''}
   ${onbCard() || (!se.players.length ? `<div class="card empty"><b>👋</b>Begin met spelers toevoegen voor ${esc(t.name)}.<br><br><button class="btn pri" ${myUid() ? 'data-act="onbStep" data-id="players"' : 'data-act="goPlayers"'}>👥 Spelers toevoegen</button></div>` : '')}
   <div class="summary" data-act="goSettings2">
     <div><b>${esc(teamLabel(t))}</b> · ${settingsLine(se)} · ${se.players.length} spelers</div><span>⚙️ wijzigen</span>
@@ -1514,6 +1528,8 @@ function teamInfoCard(x){
     <div class="muted" style="margin:-2px 0 12px">Neemt spelers en instellingen mee, zonder wedstrijden. Bijv. JO8 26/27 → JO9 27/28.</div>
     <button class="btn full" style="margin-bottom:8px" data-act="resetSeason" data-id="${x.id}">🔄 Seizoen resetten</button>
     <div class="muted" style="margin:-2px 0 12px">Wist alle wedstrijden en statistieken. De spelers blijven.</div>
+    ${x.inactive ? `<div class="muted" style="margin:10px 0 6px">💤 Dit team staat op <b>niet actief</b>. Het staat niet meer tussen je teams bovenin en is niet zichtbaar voor nieuwe trainers van de club.</div>` : ''}
+    <button class="btn full" style="margin-bottom:8px" data-act="toggleInactive" data-id="${x.id}">${x.inactive ? '✅ Weer actief maken' : '💤 Team op niet actief zetten'}</button>
     <button class="btn red full" data-act="delTeam" data-id="${x.id}">🗑️ Team verwijderen</button>
   </div>`;
 }
@@ -1682,7 +1698,6 @@ document.addEventListener('click', async e => {
   if (act === 'reqCancel'){ await cloud.api.reqDel(myUid()).catch(() => {}); adm.myReq = null; render(); return; }
   if (act === 'verifyMail'){ try { await cloud.api.sendVerify(); tell('We hebben je een e-mail gestuurd. Klik op de link erin en log daarna opnieuw in.'); } catch(e){ tell('Versturen lukt niet: ' + (e.message || e)); } return; }
   if (act === 'voStop'){ stopWatching(S.active.team); return; }
-  if (isViewOnly() && !VO_OK.includes(act)){ toast('Je kijkt alleen mee – wijzigen kan hier niet'); return; }
   const tgt = el.dataset.scope === 'match' ? m && m.settings : se;
   switch (act){
     case 'team': S.active.team = id; ui.matchId = null; ui.sel = null; ui.tab = 'matches'; commit(); window.scrollTo(0, 0); break;
@@ -1874,6 +1889,19 @@ document.addEventListener('click', async e => {
     }
     case 'newTeamSheet': {
       const r = await newTeamDialog(); if (r && r.join) await pasteInvite(); else if (r) createTeam(r.name, r.club, r.season); break;
+    }
+    case 'toggleInactive': {
+      const x = S.teams.find(y => y.id === id); if (!x) break;
+      if (!x.inactive && !await ask(`${teamLabel(x)} op niet actief zetten? Bijvoorbeeld als het seizoen voorbij is. Alles blijft bewaard en je kunt het later weer actief maken.`, 'Niet actief')) break;
+      x.inactive = !x.inactive; if (!x.inactive) delete x.inactive;
+      if (x.inactive && !isViewOnly()){ const nxt = sortedTeams().find(y => !y.inactive && !(cloudCfg(y.id) || {}).admin); if (nxt){ S.active.team = nxt.id; ui.matchId = null; ui.tab = 'matches'; } }
+      commit(); toast(x.inactive ? `${teamLabel(x)} staat op niet actief` : `${teamLabel(x)} is weer actief`); break;
+    }
+    case 'inactiveTeams': {
+      const l = sortedTeams().filter(y => y.inactive && !(cloudCfg(y.id) || {}).admin);
+      const v = await chooseDialog('Niet actieve teams', l.map(y => ({v: y.id, n: '💤 ' + teamLabel(y)})));
+      if (v){ S.active.team = v; ui.matchId = null; ui.tab = 'settings'; ui.sOpen = true; ui.stab = 'team'; commit(); }
+      break;
     }
     case 'delTeam': {
       const t = S.teams.find(x => x.id === id);
@@ -2392,7 +2420,7 @@ function parseTeamDoc(d){
     players: se ? se.players : [], matches: se ? se.matches : [], played: se ? se.matches.filter(m => m.phase === 'done').length : 0,
     won: se ? se.matches.filter(m => m.phase === 'done' && (m.goalsFor || 0) > (m.goalsAgainst || 0)).length : 0,
     thisWeek: se ? se.matches.filter(m => { const x = m.date ? Date.parse(m.date + 'T12:00') : 0; return x > week && x < next; }).length : 0,
-    updated: d.updated || 0, invites: (t && t.invites) || []};
+    updated: d.updated || 0, invites: (t && t.invites) || [], inactive: !!(t && t.inactive)};
 }
 async function loadAdmin(force){
   if (adm.loading || (adm.data && !force)) return;
@@ -2456,15 +2484,25 @@ function admOverview(){
   const active = adm.owner ? tr.filter(x => x.lastActive && Date.now() - x.lastActive < 7 * 864e5).length : d.teams.filter(t => Date.now() - t.updated < 7 * 864e5).length;
   const clubsCount = new Set(d.teams.map(t => t.club).filter(Boolean)).size;
   const tiles = adm.owner
-    ? [tile(clubsCount, 'clubs'), tile(d.teams.length, 'teams'), tile(tr.length, 'trainers'), tile(players, 'spelers'), tile(week, 'wedstrijden deze week'), tile(active, 'actief 7 dagen')]
-    : [tile(d.teams.length, 'teams'), tile(tr.length, 'trainers'), tile(players, 'spelers'), tile(week, 'wedstrijden deze week'), tile(d.teams.reduce((n, t) => n + t.won, 0), 'gewonnen'), tile(d.pending.length, 'uitnodigingen open')];
+    ? [tile(clubsCount, 'clubs'), tile(d.teams.filter(t => !t.inactive).length, 'actieve teams'), tile(tr.length, 'trainers'), tile(players, 'spelers'), tile(week, 'wedstrijden deze week'), tile(active, 'actief 7 dagen')]
+    : [tile(d.teams.filter(t => !t.inactive).length, 'actieve teams'), tile(tr.length, 'trainers'), tile(players, 'spelers'), tile(week, 'wedstrijden deze week'), tile(d.teams.reduce((n, t) => n + t.won, 0), 'gewonnen'), tile(d.pending.length, 'uitnodigingen open')];
   let req = '';
   if (adm.owner && d.requests.length) req = `<div class="card"><div class="ahead"><h2>Aanvragen clubbeheer</h2>${achip(d.requests.length + ' nieuw', 1)}</div>
     ${d.requests.map(r => `${arow(r.name, esc(r.name || r.email), `wil beheerder worden van ${esc(r.clubName)}${r.func ? ' · ' + esc(r.func) : ''} · ${esc(r.email || '')}`)}<div class="grid2" style="margin:4px 0 10px"><button class="btn pri" data-act="reqOk" data-id="${esc(r.id)}">Goedkeuren</button><button class="btn" data-act="reqNo" data-id="${esc(r.id)}">Afwijzen</button></div>`).join('')}</div>`;
   const recent = d.teams.slice().sort((a, b) => b.updated - a.updated).slice(0, 5);
   return `<div class="atiles">${tiles.join('')}</div>${req}
     ${adm.owner ? admClubsList(true) : admTeamsCard(d.teams)}
+    ${adm.owner ? '' : admMyClubCard()}
     <div class="card"><h2>Laatst actief</h2>${recent.map(t => arow(t.label, esc(t.label) + (t.clubName && adm.owner ? ' · ' + esc(t.clubName) : ''), ago(t.updated), '', 'admTeam', t.id)).join('') || '<div class="muted">Nog geen teams.</div>'}</div>`;
+}
+// clubbeheerder: wie beheren de club + beheer overdragen
+function admMyClubCard(){
+  const c = (adm.data.clubs || [])[0] || (adm.clubs || []).find(x => x.key === adm.club) || {};
+  const admins = Object.entries(c.uids || {});
+  return `<div class="card"><h2>🛡️ Clubbeheer</h2>
+    ${admins.map(([u, x]) => arow(x.name || x.email, esc(x.name || x.email || 'Beheerder') + (u === myUid() ? ' (jij)' : ''), esc(x.email || ''))).join('') || '<div class="muted">–</div>'}
+    <button class="btn full" style="margin-top:10px" data-act="admTransfer">🔁 Beheer overdragen aan een andere trainer</button>
+    <div class="muted" style="margin-top:6px;font-size:12px">Na het overdragen ben jij geen clubbeheerder meer. Je teams als trainer houd je gewoon.</div></div>`;
 }
 function admClubsList(compact){
   const d = adm.data, keys = [...new Set([...d.clubs.map(c => c.id), ...d.teams.map(t => t.club)])];
@@ -2479,7 +2517,8 @@ function admClubsList(compact){
 function admTeamsCard(teams, club){
   const pend = adm.data.pending.filter(p => !club || p.club === club);
   return `<div class="card"><div class="ahead"><h2>Teams</h2><button class="btn sm" data-act="admInvite" data-id="${esc(club || adm.club || '')}">＋ Uitnodigen</button></div>
-    ${teams.map(t => { const names = Object.keys(t.members).map(u => (t.people[u] || {}).name || 'trainer').join(', '); return arow(t.label, esc(t.label), `${esc(names)} · ${t.players.length} spelers`, achip('›'), 'admTeam', t.id); }).join('')}
+    ${teams.filter(t => !t.inactive).map(t => { const names = Object.keys(t.members).map(u => (t.people[u] || {}).name || 'trainer').join(', '); return arow(t.label, esc(t.label), `${esc(names)} · ${t.players.length} spelers`, achip('›'), 'admTeam', t.id); }).join('')}
+    ${teams.some(t => t.inactive) ? `<details class="ainact"><summary>💤 Niet actief (${teams.filter(t => t.inactive).length})</summary>${teams.filter(t => t.inactive).map(t => arow(t.label, esc(t.label), `niet actief · ${t.players.length} spelers`, achip('›'), 'admTeam', t.id)).join('')}</details>` : ''}
     ${pend.map(p => arow(p.teamName, esc(p.teamName), `${esc(p.name)} (uitgenodigd) · nog niet begonnen`, `<span class="achip">Wacht</span><button class="x" data-act="admPendDel" data-id="${esc(p.club + '|' + p.id)}" aria-label="Uitnodiging intrekken">×</button>`)).join('')}
     ${!teams.length && !pend.length ? '<div class="muted">Nog geen teams.</div>' : ''}
     <button class="btn pri full" style="margin-top:12px" data-act="admInvite" data-id="${esc(club || adm.club || '')}">📤 Trainer uitnodigen (link via WhatsApp)</button></div>`;
@@ -2495,7 +2534,7 @@ function admTrainersList(){
 function admTeamView(id){
   const t = adm.data.teams.find(x => x.id === id); if (!t) return `<div class="card empty">Team niet gevonden.</div>`;
   const local = Object.entries(cloudMap()).find(([k, c]) => c.id === id);
-  return `<div class="card"><small class="achip">${esc(t.clubName || 'Zonder club')}</small><h2 style="margin:6px 0 10px;font-size:26px">${esc(t.label)}</h2>
+  return `<div class="card"><small class="achip">${esc(t.clubName || 'Zonder club')}</small><h2 style="margin:6px 0 10px;font-size:26px">${esc(t.label)}${t.inactive ? ' <span class="achip">💤 niet actief</span>' : ''}</h2>
       <div class="atiles">${tile(t.players.length, 'spelers')}${tile(t.played, 'gespeeld')}${tile(t.won, 'gewonnen')}</div><div class="muted" style="margin-top:8px">Laatst gewijzigd: ${ago(t.updated)}</div></div>
     <div class="card"><div class="ahead"><h2>Trainers</h2><button class="btn sm" data-act="admInviteTeam" data-id="${esc(id)}">＋ Uitnodigen</button></div>
       ${Object.entries(t.members).map(([u, role]) => { const p = t.people[u] || {}; return arow(p.name, esc(p.name || 'Trainer'), `${esc(p.email || '')}${p.email ? ' · ' : ''}${role === 'owner' ? 'beheert het team' : 'trainer'}`, `<button class="x" data-act="admKick" data-id="${esc(id + '|' + u)}" aria-label="Verwijderen uit team">×</button>`); }).join('')}
@@ -2508,7 +2547,8 @@ function admTeamView(id){
         const nm = m.home === false ? `${m.opponent || 'Tegenstander'} – ${t.clubName || 'wij'}` : `${t.clubName || 'Wij'} – ${m.opponent || 'tegenstander'}`;
         return arow(sc || ph.charAt(0), esc(nm), `${m.date ? fmtD(Date.parse(m.date + 'T12:00')) + ' · ' : ''}${ph}${sc ? ' · ' + sc : ''}`, achip('👁️'), 'admWatch', id + '|' + m.id);
       }).join('') || '<div class="muted">Nog geen wedstrijden.</div>'}</div>
-    <div class="grid2"><button class="btn" data-act="admOpenTeam" data-id="${esc(id)}">👁️ ${local ? 'Ga naar team' : 'Meekijken in de app'}</button><button class="btn red" data-act="admDelTeam" data-id="${esc(id)}">Team verwijderen</button></div>`;
+    <button class="btn pri full" style="margin-bottom:8px" data-act="admOpenTeam" data-id="${esc(id)}">👁️ ${local ? 'Ga naar team' : 'Meekijken en aanpassen'}</button>
+    <div class="grid2"><button class="btn" data-act="admInactive" data-id="${esc(id)}">${t.inactive ? '✅ Weer actief maken' : '💤 Niet actief zetten'}</button><button class="btn red" data-act="admDelTeam" data-id="${esc(id)}">Team verwijderen</button></div>`;
 }
 function admTrainerView(u){
   const x = adminTrainers().find(y => y.uid === u); if (!x) return `<div class="card empty">Trainer niet gevonden.</div>`;
@@ -2540,8 +2580,8 @@ const VO_OK = ['team', 'goSettings', 'goSettings2', 'goPlayers', 'stab', 'openMa
 const isViewOnly = () => { try { return !!(cloudCfg(S.active.team) || {}).admin; } catch(e){ return false; } };
 function watchBanner(){
   if (!isViewOnly()) return '';
-  const t = team(), names = Object.values(t.people || {}).map(p => p.name).filter(Boolean).join(', ');
-  return `<div class="vobanner">👁️ <span>Je kijkt mee met <b>${esc(teamLabel(t))}</b>${names ? ' van ' + esc(names) : ''} · alleen lezen</span><button class="btn sm" data-act="voStop">Stoppen</button></div>`;
+  const t = team(), names = Object.values(t.people || {}).map(p => shortName(p.name || '')).filter(Boolean).join(', ');
+  return `<div class="wbarin"><span class="weye">👁️</span><span class="grow"><small>JE KIJKT MEE${t.club ? ' · ' + esc(String(t.club).toUpperCase()) : ''}</small><b>${esc(teamLabel(t))}</b>${names ? `<small class="wnames">${esc(names)}</small>` : ''}</span><button class="btn sm" data-act="voStop">‹ Terug naar beheer</button></div>`;
 }
 function stopWatching(tid){
   unlinkLive(tid);
@@ -2575,6 +2615,21 @@ async function admAction(act, id){
     if (act === 'admTeam' || act === 'admTrainer' || act === 'admClub'){ adm.prev = adm.view; adm.view = [act.slice(3).toLowerCase(), id]; render(); window.scrollTo(0, 0); return; }
     if (act === 'reqOk'){ const r = d.requests.find(x => x.id === id); await api.clubAdminsSet(r.club, {name: r.clubName, uids: {[r.id]: {name: r.name || '', email: r.email || ''}}}); await api.reqDel(r.id); return reload(`${r.name} is nu clubbeheerder van ${r.clubName}`); }
     if (act === 'reqNo'){ if (!await ask('Aanvraag afwijzen?', 'Afwijzen')) return; await api.reqDel(id); return reload('Aanvraag afgewezen'); }
+    if (act === 'admInactive'){ const t = d.teams.find(x => x.id === id); if (!t) return;
+      if (!t.inactive && !await ask(`${t.label} op niet actief zetten? Alles blijft bewaard. De trainers zien het team niet meer tussen hun teams bovenin.`, 'Niet actief')) return;
+      const val = !t.inactive;
+      await api.teamPushTx(id, r => { const td = JSON.parse(r.data); if (val) td.inactive = true; else delete td.inactive; return {data: JSON.stringify(td), updated: Date.now(), by: 'beheer'}; });
+      const r = await api.teamGet(id).catch(() => null);
+      if (r && r.club){ try { const td = JSON.parse(r.data); await api.idxSet(r.club, id, {...idxInfo(td), updated: Date.now()}); } catch(e){} }
+      return reload(val ? `${t.label} staat op niet actief` : `${t.label} is weer actief`); }
+    if (act === 'admTransfer'){
+      const club = adm.club, c = (d.clubs || [])[0] || {}, cand = adminTrainers().filter(x => x.uid !== myUid() && !(c.uids || {})[x.uid]);
+      if (!cand.length){ await tell('Er zijn nog geen andere trainers bij de club. Nodig eerst een trainer uit.'); return; }
+      const u = await chooseDialog('Aan wie draag je het clubbeheer over?', cand.map(x => ({v: x.uid, n: `${x.name || x.email || 'Trainer'}${x.teams.length ? ' · ' + x.teams.map(t => t.label).join(', ') : ''}`})));
+      if (!u) return; const x = cand.find(y => y.uid === u);
+      if (!await ask(`Clubbeheer overdragen aan ${x.name || x.email}? Jij bent daarna geen clubbeheerder meer.`, 'Overdragen')) return;
+      await api.clubAdminTransfer(club, myUid(), u, {name: x.name || '', email: x.email || ''});
+      toast(`${x.name || 'De trainer'} is nu clubbeheerder`); adm.data = null; ui.tab = 'matches'; await detectAdmin(); render(); return; }
     if (act === 'admKick'){ const [rid, u] = id.split('|'), t = d.teams.find(x => x.id === rid), nm = (t.people[u] || {}).name || 'Deze trainer';
       if (!await ask(`${nm} uit ${t.label} halen? Hij kan het team dan niet meer zien of wijzigen.`, 'Verwijderen')) return;
       await api.teamRemoveMember(rid, u); return reload(`${nm} is uit ${t.label} gehaald`); }
@@ -2902,7 +2957,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-06.1';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-06.2';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
@@ -3000,6 +3055,7 @@ function firebaseApi(){
       clubAdminsList: async () => (await fs.getDocs(fs.collection(db, 'clubAdmins'))).docs.map(x => ({id: x.id, ...x.data()})),
       clubAdminsSet: (club, v) => fs.setDoc(d('clubAdmins', club), v, {merge: true}),
       clubAdminRemove: (club, u) => fs.updateDoc(d('clubAdmins', club), {['uids.' + u]: fs.deleteField()}),
+      clubAdminTransfer: (club, me, u, info) => fs.updateDoc(d('clubAdmins', club), {['uids.' + u]: info, ['uids.' + me]: fs.deleteField()}),
       reqSet: (u, v) => fs.setDoc(d('adminRequests', u), v),
       reqGet: async u => data(await fs.getDoc(d('adminRequests', u))),
       reqList: async () => (await fs.getDocs(fs.collection(db, 'adminRequests'))).docs.map(x => ({id: x.id, ...x.data()})),
@@ -3163,7 +3219,7 @@ async function saveUserTeams(){
 function idxInfo(t){
   const se = (t.seasons || [])[t.seasons.length - 1] || {players: []};
   const tr = Object.values(t.people || {}).map(p => shortName(p.name || '')).filter(Boolean);
-  return {label: teamLabel(t), trainers: tr.slice(0, 4), players: (se.players || []).length};
+  return {label: teamLabel(t), trainers: tr.slice(0, 4), players: (se.players || []).length, inactive: !!t.inactive};
 }
 const creatingRemote = {};
 function createRemoteTeam(t){
@@ -3284,7 +3340,6 @@ function merge3(b, l, r){
 // online teamgegevens als object met het team-id van deze telefoon
 function remoteAs(r, tid){ const td = r ? teamFromRemote(r, null) : null; if (td) td.id = tid; return td; }
 function cloudPushTeam(tid, now){
-  if ((cloudCfg(tid) || {}).admin) return;
   const L = cloud.links[tid]; if (!L || !cloud.api || cloud.outdated) return;
   const t = S.teams.find(x => x.id === tid); if (!t) return;
   const json = JSON.stringify(t);
@@ -3319,7 +3374,8 @@ function cloudPushTeam(tid, now){
     catch(e){ console.error(e);
       if (/permission/i.test(e.code || e.message || '')){
         // alleen loskoppelen als je echt geen toegang meer hebt
-        const still = await cloud.api.teamGet(L.id).then(r => !!(r && r.members && r.members[myUid()])).catch(() => false);
+        const isAdm = !!(cloudCfg(tid) || {}).admin;
+        const still = await cloud.api.teamGet(L.id).then(r => !!(r && (isAdm || (r.members && r.members[myUid()])))).catch(() => false);
         if (still) linkStatus(tid, 'err'); else lostAccess(tid);
       } else linkStatus(tid, 'err'); }
   }, now ? 0 : 700);
@@ -3609,6 +3665,7 @@ function inviteSheet(inv, url){
 
 // ---------- kaarten in Instellingen → Team ----------
 function accountCard(){
+  if (isViewOnly()) return '';
   if (!cloudAvailable()) return '';
   if (!cloud.user) return `
   <div class="card">
@@ -3683,7 +3740,7 @@ function onbSteps(t = team(), se = season()){
     {k:'coach', t:'Mede-trainer uitnodigen', s:'Optioneel', done:!!((L && Object.keys(L.members || {}).length > 1) || (t.invites || []).length)}];
 }
 function onbCard(){
-  const t = team(); if (!myUid() || isViewOnly() || !t.onb) return '';
+  const t = team(); if (!myUid() || isViewOnly() || !t.onb || t.inactive) return '';
   if (t.name === PLACEHOLDER && pendList().length) return '';
   try { if (localStorage.getItem(ONB_KEY(t.id))) return ''; } catch(e){}
   const st = onbSteps(), n = st.filter(x => x.done).length, next = st.find(x => !x.done);
@@ -3786,7 +3843,7 @@ function tourDialog(){
 // ---- uitnodiging van de club: aanhaken bij bestaand team of zelf aanmaken
 async function clubTeamsSheet(inv, mine){
   let teams = [];
-  try { teams = (await cloud.api.idxList(inv.club)).filter(x => x.label && !(mine && mine.has(x.id))).sort((a, b) => a.label.localeCompare(b.label, 'nl', {numeric: true})); } catch(e){ console.error(e); }
+  try { teams = (await cloud.api.idxList(inv.club)).filter(x => x.label && !x.inactive && !(mine && mine.has(x.id))).sort((a, b) => a.label.localeCompare(b.label, 'nl', {numeric: true})); } catch(e){ console.error(e); }
   if (!teams.length) return {mode: 'new'};
   return new Promise(res => {
     const d = document.createElement('div'); d.className = 'modal';
