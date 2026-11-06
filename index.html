@@ -119,7 +119,7 @@
   .segc button{flex:1;border:0;background:none;color:var(--muted);font:inherit;font-size:13px;font-weight:800;padding:10px 4px;border-radius:10px;cursor:pointer}
   .segc button.on{background:var(--acc);color:var(--on-acc)}
   .stabs{display:flex;gap:4px;background:color-mix(in srgb,var(--solid) 92%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:16px;padding:4px;margin-bottom:12px;position:sticky;top:8px;z-index:15;box-shadow:var(--shadow)}
-  .stabs button{flex:1;border:0;background:none;font:inherit;font-size:12px;font-weight:800;color:var(--muted);padding:10px 2px;border-radius:12px;cursor:pointer}
+  .stabs button{flex:1;border:0;background:none;font:inherit;font-size:12px;font-weight:800;color:var(--muted);padding:10px 4px;line-height:1.2;border-radius:12px;cursor:pointer}
   .stabs button.on{background:var(--acc);color:var(--on-acc)}
   .summary{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surf);border:1px solid var(--line);border-radius:16px;padding:11px 14px;margin-bottom:12px;font-size:13px;color:var(--muted);cursor:pointer}
   .summary b{color:var(--txt)} .summary span{color:var(--acc);font-weight:800;white-space:nowrap}
@@ -1552,7 +1552,7 @@ function settingsHome(){
   <div class="card">
     <h2>＋ Nieuw team</h2>
     <datalist id="clubNames">${clubList().map(c => `<option value="${esc(c)}">`).join('')}</datalist>
-    <label class="f">🏟️ Club<input id="newTeamClub" value="${esc(t.club || '')}" list="clubNames" placeholder="bv. Maliskamp" autocomplete="off"></label>
+    ${canEditClub() ? `<label class="f">🏟️ Club<input id="newTeamClub" value="${esc(t.club || '')}" list="clubNames" placeholder="bv. Maliskamp" autocomplete="off"></label>` : `<div class="f"><span>🏟️ Club</span><div class="roval">${esc(t.club || '–')}</div></div>`}
     <div class="row"><input id="newTeam" placeholder="Teamnaam, bv. JO10-2" style="flex:3"><input id="newTeamSeason" value="${esc(seasonName())}" style="flex:2" aria-label="Seizoen"></div>
     <div class="knvbhint" id="ntHint">📏 KNVB: typ een teamnaam zoals JO8, MO13 of Heren 1</div>
     <button class="btn pri full" data-act="addTeam">＋ Team toevoegen</button>
@@ -1564,7 +1564,7 @@ function settingsHome(){
 
 function viewSettings(){
   const se = season(), t = team();
-  const tabs = [['team', '⚙️ Opstelling'], ['spelers', '👥 Spelers'], ['stats', '📊 Statistiek'], ['info', '🛡️ Team']];
+  const tabs = [['team', '⚙️ Opstelling & wedstrijd'], ['spelers', '👥 Spelers'], ['info', '🛡️ Team & account']];
   const st = tabs.some(x => x[0] === ui.stab) ? ui.stab : 'team';
   let body = '';
   if (st === 'team') body = `
@@ -1579,10 +1579,9 @@ function viewSettings(){
     <div class="set" style="border:0;padding:0"><div class="lbl">🎯 Voorkeursposities per speler<small>Per speler een 1e, 2e en 3e positie. Daarmee kan de app de hele wedstrijd automatisch opstellen.</small></div>
       <button class="switch ${se.usePositions ? 'on' : ''}" data-act="togglePos" aria-label="Voorkeursposities aan/uit"><i></i></button></div>
     ${se.usePositions ? `<button class="btn sm full" style="margin-top:12px" data-act="stab" data-v="spelers">👥 Posities per speler invullen</button>` : ''}
-  </div>`;
+  </div>${arriveCard(se)}`;
   else if (st === 'spelers'){ body = viewPlayers(); if (se.survey && !ui.surveyBusy && Date.now() - (ui.surveyFetched || 0) > 20000){ ui.surveyFetched = Date.now(); setTimeout(() => fetchSurvey(se, true), 50); } }
-  else if (st === 'stats') body = viewStats();
-  else body = teamInfoCard(t) + arriveCard(se) + `<div class="sgroup">Samenwerken</div>${accountCard()}${cloudCard()}${installCard()}`;
+  else body = teamInfoCard(t) + `<div class="sgroup">Samenwerken</div>${cloudCard()}<div class="sgroup">Account</div>${accountCard()}${installCard()}`;
   return `
   <div class="stabs">${tabs.map(([k, l]) => `<button class="${k === st ? 'on' : ''}" data-act="stab" data-v="${k}">${l}</button>`).join('')}</div>${body}`;
 }
@@ -1885,7 +1884,7 @@ document.addEventListener('click', async e => {
     case 'ntStep': ui.ntFp = Math.max(4, Math.min(11, (ui.ntFp || 8) + (+el.dataset.d))); document.getElementById('ntFp').textContent = ui.ntFp; break;
     case 'addTeam': {
       const n = document.getElementById('newTeam').value.trim(); if (!n){ document.getElementById('newTeam').focus(); return; }
-      createTeam(n, document.getElementById('newTeamClub').value, document.getElementById('newTeamSeason').value); break;
+      createTeam(n, (document.getElementById('newTeamClub') || {}).value ?? (team().club || ''), document.getElementById('newTeamSeason').value); break;
     }
     case 'newTeamSheet': {
       const r = await newTeamDialog(); if (r && r.join) await pasteInvite(); else if (r) createTeam(r.name, r.club, r.season); break;
@@ -2957,7 +2956,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-06.2';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-06.3';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
