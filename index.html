@@ -536,6 +536,7 @@
   .onbstep em{font-style:normal;font-weight:900;font-size:13px;color:var(--g);white-space:nowrap}
   .onbnum{width:30px;height:30px;flex:none;border-radius:50%;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:var(--muted)}
   .onbnum.done{background:var(--g);border-color:var(--g);color:#fff}.onbnum.next{border-color:var(--y);background:var(--ysoft);color:var(--txt)}
+  .onbpop{max-height:92vh;overflow:auto}
   .wzsteps{display:flex;gap:5px;margin-bottom:4px}.wzsteps i{flex:1;height:5px;border-radius:9px;background:var(--line)}.wzsteps i.on{background:var(--g)}
   .tourbox{text-align:center}.tourart{width:96px;height:96px;margin:6px auto 12px;border-radius:28px;background:var(--gsoft);display:flex;align-items:center;justify-content:center;font-size:44px}.tourart svg{width:48px;height:48px}
   .notif{background:var(--g);color:#fff;border-radius:18px;padding:14px;margin-bottom:12px}
@@ -1075,6 +1076,7 @@ function render(){
   let ban = ''; try { ban = loginBanner() + (watching ? '' : (ui.matchId ? '' : joinReqCard())); } catch(e){}
   if (watching && ui.tab === 'beheer') ui.tab = 'matches';
   app.innerHTML = iconize(ban + ({matches: ui.matchId ? viewMatch : viewMatches, stats: viewStats, settings: viewSettings, beheer: viewBeheer}[ui.tab] || viewMatches)());
+  try { maybeOnbPopup(); } catch(e){}
 }
 
 /* ===================== Schermen ===================== */
@@ -1594,7 +1596,7 @@ function viewSettings(){
     ${se.usePositions ? `<button class="btn sm full" style="margin-top:12px" data-act="stab" data-v="spelers">👥 Posities per speler invullen</button>` : ''}
   </div>${arriveCard(se)}`;
   else if (st === 'spelers'){ body = viewPlayers(); if (se.survey && !ui.surveyBusy && Date.now() - (ui.surveyFetched || 0) > 20000){ ui.surveyFetched = Date.now(); setTimeout(() => fetchSurvey(se, true), 50); } }
-  else body = teamInfoCard(t) + `<div class="sgroup">Samenwerken</div>${cloudCard()}<div class="sgroup">Account</div>${accountCard()}${installCard()}`;
+  else body = teamInfoCard(t) + (t.onb && myUid() && !isViewOnly() && onbSteps().some(x => !x.done) ? `<button class="btn full" style="margin-bottom:12px" data-act="onbShow">👋 Welkomstappen voor nieuwe trainers tonen</button>` : '') + `<div class="sgroup">Samenwerken</div>${cloudCard()}<div class="sgroup">Account</div>${accountCard()}${installCard()}`;
   return `
   <div class="stabs">${tabs.map(([k, l]) => `<button class="${k === st ? 'on' : ''}" data-act="stab" data-v="${k}">${l}</button>`).join('')}</div>${body}`;
 }
@@ -1973,6 +1975,7 @@ document.addEventListener('click', async e => {
     case 'leaveTeam': await leaveTeam(team()); break;
     case 'pasteInvite': await pasteInvite(); break;
     case 'onbStep': await onbStep(id); break;
+    case 'onbShow': try { localStorage.removeItem(ONB_KEY(team().id)); } catch(e){} onbPopup(); break;
     case 'onbHide': try { localStorage.setItem(ONB_KEY(team().id), '1'); } catch(e){} render(); break;
     case 'tour': await tourDialog(); break;
     case 'firstMatch': await firstMatchWizard(); break;
@@ -2740,6 +2743,7 @@ async function joinNewTeam(iid, inv){
   toast(`${teamLabel(t)} staat klaar`);
   let seen = false; try { seen = !!localStorage.getItem(TOUR_KEY); } catch(e){}
   if (!seen) await tourDialog();
+  render();
 }
 // ---- clubbeheer aanvragen (in Instellingen → Account)
 function requestCard(){
@@ -2969,7 +2973,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-06.4';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-06.5';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
@@ -3577,7 +3581,12 @@ async function joinRemote(rid, iid, replaceTid){
   cloudPushTeam(tid, true);
   return tid;
 }
+let inviteBusy = false;
 async function openInvite(iid){
+  inviteBusy = true;
+  try { return await openInviteNow(iid); } finally { inviteBusy = false; setTimeout(() => { try { maybeOnbPopup(); } catch(e){} }, 300); }
+}
+async function openInviteNow(iid){
   if (!cloudAvailable()){ await tell('Deze app is nog niet gekoppeld aan de online opslag.'); return; }
   const api = await firebaseApi();
   const inv = await api.inviteGet(iid).catch(() => null);
@@ -3751,19 +3760,41 @@ function onbSteps(t = team(), se = season()){
     {k:'poll', t:'Vraag wie er zijn', s:se.matches.some(m => m.poll) ? 'Link gedeeld' : 'Deel de link in de team-app', done:se.matches.some(m => m.poll)},
     {k:'coach', t:'Mede-trainer uitnodigen', s:'Optioneel', done:!!((L && Object.keys(L.members || {}).length > 1) || (t.invites || []).length)}];
 }
-function onbCard(){
-  const t = team(); if (!myUid() || isViewOnly() || !t.onb || t.inactive) return '';
-  if (t.name === PLACEHOLDER && pendList().length) return '';
-  try { if (localStorage.getItem(ONB_KEY(t.id))) return ''; } catch(e){}
-  const st = onbSteps(), n = st.filter(x => x.done).length, next = st.find(x => !x.done);
-  if (!next) return '';
-  return `
-  <div class="card onb">
-    <div class="onbhead"><div><b>Welkom${myName() ? ', ' + esc(myName().split(' ')[0]) : ''}!</b><small>${5 - n === 1 ? 'Nog 1 stap' : `Nog ${5 - n} stappen`} tot je eerste wedstrijd</small></div><button class="x" data-act="onbHide" aria-label="Verbergen">×</button></div>
+// welkom-stappen voor nieuwe trainers: als grote pop-up (niet meer als blok onder Wedstrijden)
+function onbActive(){
+  const t = team(); if (!myUid() || isViewOnly() || !t.onb || t.inactive) return false;
+  if (t.name === PLACEHOLDER && pendList().length) return false;
+  try { if (localStorage.getItem(ONB_KEY(t.id))) return false; } catch(e){}
+  return onbSteps().some(x => !x.done);
+}
+function onbCard(){ return ''; }
+const onbSeen = new Set();   // per team één keer per keer dat de app opent
+function maybeOnbPopup(){
+  if (inviteBusy || ui.tab !== 'matches' || ui.matchId || document.querySelector('.modal') || !onbActive()) return;
+  const id = team().id; if (onbSeen.has(id)) return;
+  onbSeen.add(id); setTimeout(() => { if (!document.querySelector('.modal') && ui.tab === 'matches' && !ui.matchId && team().id === id && onbActive()) onbPopup(); else onbSeen.delete(id); }, 400);
+}
+function onbPopup(){
+  const st = onbSteps(), n = st.filter(x => x.done).length, next = st.find(x => !x.done); if (!next) return;
+  const d = document.createElement('div'); d.className = 'modal';
+  d.innerHTML = iconize(`<div class="box onbpop">
+    <div class="onbhead"><div><b>Welkom${myName() ? ', ' + esc(myName().split(' ')[0]) : ''}!</b><small>${5 - n === 1 ? 'Nog 1 stap' : `Nog ${5 - n} stappen`} tot je eerste wedstrijd</small></div><button class="x" data-r="later" aria-label="Sluiten">×</button></div>
     <div class="onbbar"><i style="width:${n * 20}%"></i></div>
-    ${st.map((x, i) => `<button class="onbstep" data-act="onbStep" data-id="${x.k}" ${x.done ? 'disabled' : ''}><span class="onbnum ${x.done ? 'done' : x === next ? 'next' : ''}">${x.done ? '✓' : i + 1}</span><span class="grow"><b class="${x.done ? 'done' : ''}">${esc(x.t)}</b><small>${esc(x.s)}</small></span>${x === next ? '<em>Nu doen ›</em>' : ''}</button>`).join('')}
-    <button class="btn full" style="margin-top:8px" data-act="tour">Korte rondleiding bekijken</button>
-  </div>`;
+    ${st.map((x, i) => `<button class="onbstep" data-r="${x.done ? '' : 'step:' + x.k}" ${x.done ? 'disabled' : ''}><span class="onbnum ${x.done ? 'done' : x === next ? 'next' : ''}">${x.done ? '✓' : i + 1}</span><span class="grow"><b class="${x.done ? 'done' : ''}">${esc(x.t)}</b><small>${esc(x.s)}</small></span>${x === next ? '<em>Nu doen ›</em>' : ''}</button>`).join('')}
+    <button class="btn pri full big" style="margin-top:10px" data-r="step:${next.k}">${esc(next.t)}</button>
+    <div class="grid2" style="margin-top:8px"><button class="btn" data-r="tour">Rondleiding</button><button class="btn" data-r="later">Later</button></div>
+    <button class="btn full" style="margin-top:8px;border:0;background:none;color:var(--muted);font-size:14px" data-r="never">Laat niet meer zien</button>
+  </div>`);
+  d.addEventListener('click', async e => {
+    e.stopPropagation();
+    const b = e.target.closest('[data-r]'); if (!b && e.target !== d) return;
+    const r = b ? b.dataset.r : 'later'; if (!r) return;
+    d.remove();
+    if (r === 'never'){ try { localStorage.setItem(ONB_KEY(team().id), '1'); } catch(e){} toast('Je kunt de stappen altijd terugvinden bij Team & account'); render(); return; }
+    if (r === 'tour'){ await tourDialog(); onbPopup(); return; }
+    if (r.startsWith('step:')) await onbStep(r.slice(5));
+  });
+  document.body.appendChild(d);
 }
 async function onbStep(k){
   const se = season();
