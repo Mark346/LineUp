@@ -1118,6 +1118,8 @@ function matchRow(m){
 }
 function viewMatches(){
   const se = season(), t = team();
+  if (t.name === PLACEHOLDER && !hasContent(t) && pendList().length && S.teams.length === 1)
+    return `${pendCard()}<div class="card empty"><b>⏳</b>Zodra een trainer je toelaat, verschijnt het team hier vanzelf. Je hoeft niets te doen.</div>`;
   const order = {live:0, post:1, prep:2};
   const open = se.matches.filter(m => m.phase !== 'done').sort((a, b) => (order[a.phase] - order[b.phase]) || (a.date || '').localeCompare(b.date || ''));
   const done = se.matches.filter(m => m.phase === 'done').sort((a, b) => (b.date || '').localeCompare(a.date || ''));
@@ -1710,7 +1712,7 @@ function viewSettings(){
       <button class="switch ${se.askAssist ? 'on' : ''}" data-act="toggleAssist" aria-label="Assist vragen aan/uit"><i></i></button></div>
   </div>`;
   else if (st === 'spelers'){ body = viewPlayers(); if (se.survey && !ui.surveyBusy && Date.now() - (ui.surveyFetched || 0) > 20000){ ui.surveyFetched = Date.now(); setTimeout(() => fetchSurvey(se, true), 50); } }
-  else body = teamInfoCard(t) + (t.onb && myUid() && !isViewOnly() && onbSteps().some(x => !x.done) ? `<button class="btn full" style="margin-bottom:12px" data-act="onbShow">👋 Welkomstappen voor nieuwe trainers tonen</button>` : '') + `<div class="sgroup">Samenwerken</div>${cloudCard()}<div class="sgroup">Account</div>${accountCard()}${installCard()}`;
+  else body = teamInfoCard(t) + (t.onb && t.onbBy === myUid() && myUid() && !isViewOnly() && onbSteps().some(x => !x.done) ? `<button class="btn full" style="margin-bottom:12px" data-act="onbShow">👋 Welkomstappen voor nieuwe trainers tonen</button>` : '') + `<div class="sgroup">Samenwerken</div>${cloudCard()}<div class="sgroup">Account</div>${accountCard()}${installCard()}`;
   return `
   <div class="stabs">${tabs.map(([k, l]) => `<button class="${k === st ? 'on' : ''}" data-act="stab" data-v="${k}">${l}</button>`).join('')}</div>${body}`;
 }
@@ -1735,7 +1737,8 @@ const askText = (msg, val) => sheet(`<p>${esc(msg)}</p><input value="${esc(val)}
 const askNum = (msg, val) => sheet(`<p>${esc(msg)}</p><input type="number" inputmode="numeric" value="${esc(val)}" style="font-size:22px;text-align:center"><div class="grid2" style="margin-top:12px"><button class="btn" data-r="no">Annuleren</button><button class="btn pri" data-r="ok">OK</button></div>`);
 
 function createTeam(n, club, sn){
-  const t = {id:uid(), name:n.trim(), club:(club || '').trim(), color:nextTeamColor(), onb:Date.now(), seasons:[defaultSeason((sn || '').trim() || seasonName(), 8, FORMATIONS[8][0].n, 3, 60)]};
+  const first = !S.teams.some(x => hasContent(x) && x.name !== PLACEHOLDER);
+  const t = {id:uid(), name:n.trim(), club:(club || '').trim(), color:nextTeamColor(), ...(first ? {onb: Date.now(), onbBy: myUid() || ''} : {}), seasons:[defaultSeason((sn || '').trim() || seasonName(), 8, FORMATIONS[8][0].n, 3, 60)]};
   const k = applyKnvb(t.seasons[0], t.name);
   S.teams.push(t); S.active.team = t.id; ui.matchId = null; ui.tab = 'matches'; commit(); window.scrollTo(0, 0);
   toast(`${teamLabel(t)} toegevoegd · KNVB ${k.label}: ${k.t}`);
@@ -2357,7 +2360,7 @@ async function startSurvey(se, t){
   const api = await firebaseApi();
   if (!api || !api.createSurvey){ await tell('Hiervoor moet de online opslag (Firebase) ingesteld zijn. Zie Instellingen → Team → Samenwerken.'); return; }
   if (!await needLogin('Log in om een link voor de spelers te maken.')) return;
-  if (!await ask(`${se.survey && se.survey.key ? 'Een nieuwe ronde starten? De oude link stopt dan. ' : ''}Een link maken waarmee de spelers van ${teamLabel(t)} zelf hun naam en favoriete posities kiezen? De huidige voorkeursposities van alle spelers worden leeggemaakt.`, 'Link maken')) return;
+  if (se.players.length && !await ask(`${se.survey && se.survey.key ? 'Een nieuwe ronde starten? De oude link stopt dan. ' : ''}Een link maken waarmee de spelers van ${teamLabel(t)} zelf hun naam en favoriete posities kiezen? De huidige voorkeursposities van alle spelers worden leeggemaakt.`, 'Link maken')) return;
   const sid = randId(24);
   const codes = posCodes(se);
   let pk, key;
@@ -2855,7 +2858,7 @@ async function joinNewTeam(iid, inv){
   if (inv.usedBy && inv.usedBy !== myUid()){ await tell('Deze uitnodiging is al gebruikt. Vraag om een nieuwe link.'); return; }
   if (!inv.usedBy) await api.inviteClaim(iid, myUid(), myName());
   createTeam(inv.teamName, inv.clubName, seasonName());
-  const t = team();
+  const t = team(); t.fromInvite = iid; save();
   await createRemoteTeam(t); pruneEmpty(); await saveUserTeams(); save(); listenTeam(t.id);
   api.pendingDel(inv.club, iid).catch(() => {});
   toast(`${teamLabel(t)} staat klaar`);
@@ -3091,7 +3094,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-09.2';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-09.5';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
@@ -3327,7 +3330,7 @@ async function syncAccount(){
     if (Object.keys(cloudMap()).length){ const keep = S.teams.filter(t => cloudCfg(t.id) || hasContent(t)); if (keep.length && keep.length < S.teams.length){ S.teams = keep; if (!S.teams.some(t => t.id === S.active.team)) S.active.team = S.teams[0].id; } }
     // nieuw account zonder teams: één leeg team in plaats van de voorbeelden
     if (!Object.keys(cloudMap()).length && !Object.keys(udoc.teams || {}).length && S.teams.length > 1 && S.teams.every(t => !hasContent(t)) && S.teams.map(t => t.name).join() === 'JO8,JO15'){
-      S.teams = [{...S.teams[0], name: PLACEHOLDER, onb: Date.now()}]; S.active.team = S.teams[0].id;
+      S.teams = [{...S.teams[0], name: PLACEHOLDER, onb: Date.now(), onbBy: myUid()}]; S.active.team = S.teams[0].id;
     }
     // 3. eigen teams met spelers of wedstrijden online bewaren
     for (const t of S.teams.slice()) if (!cloudCfg(t.id) && hasContent(t)) await createRemoteTeam(t).catch(e => console.error(e));
@@ -3341,6 +3344,7 @@ async function syncAccount(){
     if (pd.length){ const have = pendList(); pd.forEach(([rid, v]) => { if (!have.some(p => p.rid === rid)) have.push({rid, label: v.label, at: v.at}); }); setPend(have); }
     if (pendList().length) checkPending();
   } finally { cloud.syncing = false; }
+  setTimeout(resumeInvite, 300);
 }
 function placeTeam(td, rid){
   // vervangt een leeg team met dezelfde naam, anders als nieuw team erbij
@@ -3614,7 +3618,7 @@ async function changeMyName(){
 // alles van het account van dit apparaat halen
 function wipeDevice(){
   clearInterval(pendTimer);
-  [KEY, CLOUD_MAP_KEY, ME_KEY, LAST_UID, FS_KEY, PEND_KEY].forEach(k => { try { localStorage.removeItem(k); } catch(e){} });
+  [KEY, CLOUD_MAP_KEY, ME_KEY, LAST_UID, FS_KEY, PEND_KEY, RESUME_KEY].forEach(k => { try { localStorage.removeItem(k); } catch(e){} });
   S = defaultState(); normalize();
   adm.owner = false; adm.clubs = []; adm.data = null; adm.myReq = null; updateAdminTab();
 }
@@ -3705,6 +3709,7 @@ async function joinRemote(rid, iid, replaceTid){
     tid = replaceTid; S.teams[S.teams.findIndex(t => t.id === tid)] = {...td, id: tid};
     const map = cloudMap(); map[tid] = {id: rid, v: 7}; setCloudMap(map); normalize();
   } else tid = placeTeam(td, rid);
+  pruneEmpty();
   await saveUserTeams();
   save();
   listenTeam(tid);
@@ -3712,24 +3717,36 @@ async function joinRemote(rid, iid, replaceTid){
   return tid;
 }
 let inviteBusy = false;
-async function openInvite(iid){
+async function openInvite(iid, resume){
   inviteBusy = true;
-  try { return await openInviteNow(iid); } finally { inviteBusy = false; setTimeout(() => { try { maybeOnbPopup(); } catch(e){} }, 300); }
+  try { return await openInviteNow(iid, resume); } finally { inviteBusy = false; setTimeout(() => { try { maybeOnbPopup(); } catch(e){} }, 300); }
 }
-async function openInviteNow(iid){
+const RESUME_KEY = 'lineup.resumeInvite';
+const setResume = iid => { try { iid ? localStorage.setItem(RESUME_KEY, iid) : localStorage.removeItem(RESUME_KEY); } catch(e){} };
+function resumeInvite(){
+  let iid = null; try { iid = localStorage.getItem(RESUME_KEY); } catch(e){}
+  if (iid && myUid() && !inviteBusy) openInvite(iid, true);
+}
+async function openInviteNow(iid, resume){
   if (!cloudAvailable()){ await tell('Deze app is nog niet gekoppeld aan de online opslag.'); return; }
   const api = await firebaseApi();
   const inv = await api.inviteGet(iid).catch(() => null);
-  if (!inv){ await tell('Deze uitnodiging werkt niet (meer). Vraag de trainer om een nieuwe link.'); return; }
+  if (!inv){ setResume(null); if (!resume) await tell('Deze uitnodiging werkt niet (meer). Vraag de trainer om een nieuwe link.'); return; }
   if (inv.kind === 'newteam'){
-    if (!await inviteSheet({...inv, teamLabel: inv.teamName, club: inv.clubName, multi: false}, inviteUrl(iid))) return;
+    // al eerder met deze uitnodiging een team gemaakt? dan niet nog eens
+    const made = S.teams.find(t => t.fromInvite === iid);
+    if (made){ setResume(null); S.active.team = made.id; ui.tab = 'matches'; ui.matchId = null; commit(); toast(`${teamLabel(made)} staat al in je app`); return; }
+    if (inv.usedBy && inv.usedBy !== myUid()){ setResume(null); await tell('Deze uitnodiging is al gebruikt. Vraag om een nieuwe link.'); return; }
+    if (!resume && !await inviteSheet({...inv, teamLabel: inv.teamName, club: inv.clubName, multi: false}, inviteUrl(iid))) return;
+    setResume(iid);   // onthouden: stopt hij halverwege, dan gaat hij bij de volgende keer openen hier verder
     if (!await needLogin(`Log in of maak een account om trainer te worden van ${inv.teamName}.`)) return;
-    if (inv.usedBy && inv.usedBy !== myUid()){ await tell('Deze uitnodiging is al gebruikt. Vraag om een nieuwe link.'); return; }
+    if (inv.usedBy && inv.usedBy !== myUid()){ setResume(null); await tell('Deze uitnodiging is al gebruikt. Vraag om een nieuwe link.'); return; }
+    if (S.teams.some(t => t.fromInvite === iid)){ setResume(null); return; }
     const mine = new Set(Object.values(cloudMap()).map(c => c.id));
     const ch = inv.usedBy ? {mode: 'new'} : await clubTeamsSheet(inv, mine);
-    if (!ch) return;
-    if (ch.mode === 'join') return sendJoinRequest(ch.team);
-    try { await joinNewTeam(iid, inv); } catch(e){ console.error(e); await tell('Dat lukt niet: ' + (e.message || e)); }
+    if (!ch || ch.mode === 'cancel'){ setResume(null); return; }
+    if (ch.mode === 'join'){ if (await sendJoinRequest(ch.team)) setResume(null); return; }
+    try { await joinNewTeam(iid, inv); setResume(null); } catch(e){ console.error(e); await tell('Dat lukt niet: ' + (e.message || e)); }
     return;
   }
   const have = Object.keys(cloudMap()).find(k => cloudMap()[k].id === inv.team && S.teams.some(t => t.id === k));
@@ -3892,7 +3909,7 @@ function onbSteps(t = team(), se = season()){
 }
 // welkom-stappen voor nieuwe trainers: als grote pop-up (niet meer als blok onder Wedstrijden)
 function onbActive(){
-  const t = team(); if (!myUid() || isViewOnly() || !t.onb || t.inactive) return false;
+  const t = team(); if (!myUid() || isViewOnly() || !t.onb || t.onbBy !== myUid() || t.inactive) return false;
   if (t.name === PLACEHOLDER && pendList().length) return false;
   try { if (localStorage.getItem(ONB_KEY(t.id))) return false; } catch(e){}
   return onbSteps().some(x => !x.done);
@@ -3934,7 +3951,7 @@ async function onbStep(k){
     if (r === 'paste'){ ui.sOpen = true; ui.stab = 'spelers'; go('settings'); }
     return;
   }
-  if (k === 'team'){ ui.sOpen = true; ui.stab = 'team'; go('settings'); return; }
+  if (k === 'team'){ ui.sOpen = true; ui.stab = 'info'; go('settings'); return; }
   if (k === 'match') return firstMatchWizard();
   if (k === 'poll'){ const m = se.matches.find(x => x.phase === 'prep') || se.matches[0]; if (!m) return firstMatchWizard(); ui.matchId = m.id; render(); return startPoll(m); }
   if (k === 'coach') return inviteTrainer(team());
@@ -4023,8 +4040,9 @@ async function clubTeamsSheet(inv, mine){
     d.innerHTML = iconize(`<div class="box" style="max-height:90vh;overflow:auto"><p>Is jouw team er al?</p>
       <div class="muted" style="margin-bottom:10px">Deze teams van ${esc(inv.clubName)} gebruiken LineUp al. Train je samen met een van deze trainers? Vraag dan om aan te haken.</div>
       ${teams.map(t => `<div class="arow"><span class="mav">${esc(((t.trainers || [])[0] || t.label || '?').charAt(0).toUpperCase())}</span><span class="grow"><b>${esc(t.label)}</b><small>${esc((t.trainers || []).join(', ') || 'trainer')}${t.players != null ? ' · ' + t.players + ' spelers' : ''}</small></span><button class="btn sm pri" data-r="j:${esc(t.id)}">Aanhaken</button></div>`).join('')}
-      <button class="btn pri full" style="margin-top:12px" data-r="new">＋ Mijn team ${esc(inv.teamName)} aanmaken</button></div>`);
-    d.addEventListener('click', e => { e.stopPropagation(); const b = e.target.closest('[data-r]'); if (!b) return; d.remove(); const r = b.dataset.r; res(r === 'new' ? {mode: 'new'} : {mode: 'join', team: teams.find(t => t.id === r.slice(2))}); });
+      <button class="btn pri full" style="margin-top:12px" data-r="new">＋ Mijn team ${esc(inv.teamName)} aanmaken</button>
+      <button class="btn full" style="margin-top:8px;border:0;background:none" data-r="cancel">Annuleren</button></div>`);
+    d.addEventListener('click', e => { e.stopPropagation(); const b = e.target.closest('[data-r]'); if (!b) return; d.remove(); const r = b.dataset.r; res(r === 'new' ? {mode: 'new'} : r === 'cancel' ? {mode: 'cancel'} : {mode: 'join', team: teams.find(t => t.id === r.slice(2))}); });
     document.body.appendChild(d);
   });
 }
