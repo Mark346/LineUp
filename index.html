@@ -2163,10 +2163,10 @@ const canKeep = id => prefsOf(player(id)).includes('K');
 const prefTag = p => usePos() && prefsOf(p).length ? `<small class="pp">${prefsOf(p).map(c => c === 'K' ? '🧤' : prefName(c)).join(' · ')}</small>` : '';
 
 /* ===================== Wisselmomenten per wedstrijd ===================== */
-function periodName(k, base){ if (base === 2) return `${k + 1}e helft`; if (base === 4) return `${k + 1}e kwart`; return k === 0 ? 'Start' : `${k}e wissel`; }
+function periodName(k, base){ if (base === 2) return `${k + 1}e helft`; if (base === 4) return `${k + 1}e kwart`; return `${k + 1}e blok`; }
 function blockLabel(m, s){
   const st = m.settings, times = segTimes(st), base = st.base || times.length;
-  if (base !== 2 && base !== 4) return s === 0 ? 'Start' : `${s}e wissel`;
+  if (base !== 2 && base !== 4) return `${s + 1}e blok`;
   const plen = st.matchMinutes / base, start = times[s][0];
   const k = Math.min(base - 1, Math.floor((start + 0.001) / plen));
   return start === Math.round(k * plen) ? periodName(k, base) : `${periodName(k, base)} · wissel ${start}'`;
@@ -2982,7 +2982,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-07.1';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-09.1';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
