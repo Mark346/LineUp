@@ -545,6 +545,29 @@
   .roval{min-height:48px;box-sizing:border-box;border-radius:12px;border:1px solid var(--line);background:var(--surf2);padding:8px 12px;display:flex;flex-direction:column;justify-content:center;font-weight:800}.roval small{font-size:12px;font-weight:600;color:var(--muted)}
   .ainact{margin-top:8px}.ainact summary{cursor:pointer;font-weight:800;color:var(--muted);padding:8px 0}.ainact .arow{opacity:.7}
   .peekbar{display:flex;align-items:center;gap:10px;background:#111;color:#fff;border-radius:14px;padding:10px 12px;margin:8px 0;font-size:14px}.peekbar span{flex:1}.peekbar .btn{background:#fff;color:#111;border:0;white-space:nowrap}
+  .sbar{position:sticky;top:calc(var(--phh, 0px) + 6px);z-index:20;background:#151515;color:#fff;border-radius:20px;padding:10px 12px 12px;margin-bottom:12px;box-shadow:0 6px 16px rgba(0,0,0,.18)}
+  .sblive{font-size:12px;font-weight:900;letter-spacing:.06em;color:#ff8a8a;display:flex;align-items:center;gap:6px;margin-bottom:4px}
+  .sblive i{width:8px;height:8px;border-radius:50%;background:#ff4b4b;animation:sblink 1.4s infinite}@keyframes sblink{50%{opacity:.25}}
+  .sline{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .steam{flex:1;min-width:0;font-weight:800;font-size:14px;line-height:1.15;overflow:hidden;text-overflow:ellipsis}.steam.r{text-align:right}.steam small{display:block;font-size:10px;opacity:.6;letter-spacing:.06em}
+  .sscore{font-family:var(--fd, inherit);font-weight:900;font-size:40px;line-height:1;min-width:100px;text-align:center;letter-spacing:1px}
+  .sscore.bump{animation:sbump .6s}@keyframes sbump{30%{transform:scale(1.25);color:#ffd84a}}
+  .sbtns{display:grid;grid-template-columns:1.4fr 1fr;gap:8px;margin-top:10px}
+  .sb{border:0;border-radius:14px;font:inherit;font-weight:900;font-size:17px;padding:13px 8px;cursor:pointer}
+  .sb.us{background:var(--g);color:#fff}.sb.them{background:#fff;color:#151515}
+  .goalr{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line)}.goalr:last-child{border-bottom:0}
+  .goalr .gic{width:34px;height:34px;flex:none;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--gsoft)}.goalr.them .gic{background:var(--surf2)}
+  .goalr .grow{flex:1;min-width:0;display:flex;flex-direction:column}.goalr b{font-size:15px}.goalr small{color:var(--muted);font-weight:600;font-size:12px}
+  .goalr .gst{font-weight:900;font-size:18px;min-width:38px;text-align:right}
+  .ballb{position:absolute;top:-7px;left:-12px;background:#fff;color:#111;font-style:normal;font-size:10px;font-weight:900;padding:0 4px;border-radius:999px;line-height:1.5;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+  .ngrp{font-size:12px;font-weight:900;letter-spacing:.06em;color:var(--muted);margin:10px 2px 6px}
+  .ngrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .nbtn{border:2px solid var(--line);background:var(--card);color:var(--txt);border-radius:14px;padding:12px 10px;font:inherit;font-weight:800;font-size:16px;text-align:left;cursor:pointer;display:flex;align-items:center;gap:8px}
+  .nbtn .npos{font-size:11px;font-weight:900;background:var(--surf2);border-radius:6px;padding:2px 5px;color:var(--muted)}.nbtn.bench{opacity:.8}
+  .nother{display:grid;gap:8px;margin-top:10px}.nob{border:1px dashed var(--line);background:var(--surf2);color:var(--txt);border-radius:14px;padding:12px;font:inherit;font-weight:700;text-align:left;cursor:pointer}
+  .gsheet{align-items:flex-end}.gsheet .box{max-height:88vh;overflow:auto}
+  .utoast{position:fixed;left:12px;right:12px;bottom:calc(16px + env(safe-area-inset-bottom));max-width:520px;margin:0 auto;background:#151515;color:#fff;border-radius:16px;padding:12px 14px;display:flex;align-items:center;gap:10px;font-weight:700;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+  .utoast span{flex:1}.utoast button{background:#fff;color:#151515;border:0;border-radius:10px;padding:8px 10px;font:inherit;font-weight:900;cursor:pointer}
   .upnext{margin:-2px 0 8px;padding:10px;border-radius:14px;background:var(--surf2);border:1px solid var(--line)}.upnext .uphead{font-weight:900;font-size:13px;letter-spacing:.03em;color:var(--muted);margin:0 0 6px 2px}.upnext .wrow{background:var(--card)}
   .livetag{display:inline-flex;align-items:center;gap:6px;font-weight:900;font-size:13px;letter-spacing:.04em;color:var(--red);margin-bottom:4px}
   .livemore{margin-top:10px}.livemore summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;border-radius:14px;border:1px solid var(--line);background:var(--surf2);font-weight:800;font-size:14px}
@@ -1078,6 +1101,7 @@ function render(){
   if (watching && ui.tab === 'beheer') ui.tab = 'matches';
   app.innerHTML = iconize(ban + ({matches: ui.matchId ? viewMatch : viewMatches, stats: viewStats, settings: viewSettings, beheer: viewBeheer}[ui.tab] || viewMatches)());
   try { maybeOnbPopup(); } catch(e){}
+  const phb = document.querySelector('.phases'); if (phb) document.documentElement.style.setProperty('--phh', phb.offsetHeight + 'px');
 }
 
 /* ===================== Schermen ===================== */
@@ -1130,7 +1154,7 @@ function pitchHTML(m, s, interactive, badges){
     ${pos.map((p, i) => {
       const id = lu[i], sel = interactive && ui.sel && ui.sel.type === 'f' && ui.sel.i === i;
       return `<div class="pl ${p.line === 'K' ? 'k' : ''} ${id ? '' : 'emptyp'} ${sel ? 'sel' : ''}" style="left:${p.x}%;top:${p.y}%" ${interactive ? `data-act="tapField" data-drag="f" data-i="${i}"` : ''}>
-        <div class="dot">${p.line === 'K' ? '🧤' : p.code}${up && id ? `<i class="mb">${Math.round(up[id])}'</i>` : ''}</div><div class="nm">${id ? esc(pname(id)) : (interactive ? 'sleep hier' : '—')}</div></div>`;
+        <div class="dot">${p.line === 'K' ? '🧤' : p.code}${up && id ? `<i class="mb">${Math.round(up[id])}'</i>` : ''}</div>${id && m.goals && m.goals[id] && m.phase && m.phase !== 'prep' ? `<i class="ballb">⚽${m.goals[id] > 1 ? m.goals[id] : ''}</i>` : ''}<div class="nm">${id ? esc(pname(id)) : (interactive ? 'sleep hier' : '—')}</div></div>`;
     }).join('')}
   </div>`;
 }
@@ -1185,7 +1209,7 @@ function viewMatch(){
   const header = `
   <div class="card mhead">
     ${ph === 'live' ? `<button class="aabtn" data-act="fontSize" aria-label="Lettergrootte tijdens de wedstrijd">A<small>a</small></button>` : ''}
-    ${ph === 'post' || ph === 'done' ? scoreBug(m) : ''}${ph === 'live' ? `<div class="livetag"><i class="sbdot"></i>LIVE · ${esc(blockLabel(m, cur))}</div>` : ''}
+    ${ph === 'post' || ph === 'done' ? scoreBug(m) : ''}
     <div class="mt">${esc(matchTitle(m))}</div>
     <div class="muted">${fmtDate(m.date, {weekday:'long', day:'numeric', month:'long'})} · ${settingsLine(st)}</div>
   </div>`;
@@ -1309,9 +1333,9 @@ function viewMatch(){
   if (ph === 'prep') body = `${infoCard}${attCard(m)}${guestCard}${lineupCard}${minutesCard}
     <button class="btn pri full big" data-act="phase" data-v="live">▶️ Start wedstrijd</button>
     <div class="grid2" style="margin-bottom:12px"><button class="btn" data-act="share">📤 Delen</button><button class="btn" data-act="print">🖨️ Printen</button></div>`;
-  else if (ph === 'live') body = fontLevel() === 3 ? `${listCard(m, times, cur, last)}${presenceCard}${minutesCard}` : `${lineupCard}${minutesCard}${presenceCard}`;
-  else if (ph === 'post') body = `${postCard}<div style="height:12px"></div>${lineupCard}${minutesCard}`;
-  else body = `${doneCard}${minutesCard}${lineupCard}
+  else if (ph === 'live') body = scoreBar(m, cur) + (fontLevel() === 3 ? `${listCard(m, times, cur, last)}${goalsCard(m, true)}${presenceCard}${minutesCard}` : `${lineupCard}${goalsCard(m, true)}${minutesCard}${presenceCard}`);
+  else if (ph === 'post') body = `${postCard}${(m.events || []).length ? goalsCard(m, false, 'Verloop') : ''}<div style="height:12px"></div>${lineupCard}${minutesCard}`;
+  else body = `${doneCard}${(m.events || []).length ? goalsCard(m, false, 'Verloop') : ''}${minutesCard}${lineupCard}
     <div class="grid2" style="margin-bottom:12px"><button class="btn" data-act="share">📤 Delen</button><button class="btn" data-act="print">🖨️ Printen</button></div>
     <button class="btn full" style="margin-bottom:12px" data-act="phase" data-v="post">✏️ Uitslag of doelpunten aanpassen</button>`;
 
@@ -1371,6 +1395,83 @@ async function goLiveBlock(m, to){
   } else {
     m.cur = to; ui.seg = to; ui.sel = null; commit(); toast(`Terug naar ${blockLabel(m, to)}`);
   }
+}
+/* ---- stand en doelpunten tijdens de wedstrijd ---- */
+function scoreBar(m, cur){
+  const t = team(), me = t.name, op = m.opponent || 'Tegenstander';
+  const gf = +m.goalsFor || 0, ga = +m.goalsAgainst || 0;
+  const L = m.home === false ? [op, 'THUIS'] : [me, 'THUIS'], R = m.home === false ? [me, 'UIT'] : [op, 'UIT'];
+  const sc = m.home === false ? `${ga} – ${gf}` : `${gf} – ${ga}`;
+  return `<div class="sbar"><div class="sblive"><i></i>LIVE · ${esc(blockLabel(m, cur))}</div>
+    <div class="sline"><div class="steam"><small>${L[1]}</small>${esc(L[0])}</div><div class="sscore ${ui.bump === m.id ? 'bump' : ''}">${sc}</div><div class="steam r"><small>${R[1]}</small>${esc(R[0])}</div></div>
+    <div class="sbtns"><button class="sb us" data-act="goalUs">⚽ Wij scoren</button><button class="sb them" data-act="goalThem">Tegen</button></div></div>`;
+}
+function goalsCard(m, edit, title){
+  const ev = m.events || []; let u = 0, a = 0;
+  const rows = ev.map(g => { g.us ? u++ : a++; const stand = m.home === false ? `${a}–${u}` : `${u}–${a}`;
+    return `<div class="goalr ${g.us ? 'us' : 'them'}"><span class="gic">${g.us ? '⚽' : '🥅'}</span><span class="grow"><b>${g.us ? (g.by ? esc(pname(g.by)) : g.og ? 'Eigen doelpunt tegenstander' : 'Doelpunt (maker onbekend)') : 'Tegendoelpunt'}</b><small>${esc(g.blkName || '')}${g.as ? ' · assist ' + esc(pname(g.as)) : ''}</small></span><span class="gst">${stand}</span>${edit ? `<button class="x" data-act="goalDel" data-id="${esc(g.id)}" aria-label="Weghalen">×</button>` : ''}</div>`; }).join('');
+  return `<div class="card"><h2>⚽ ${title || 'Doelpunten'}</h2>${rows || '<div class="muted">Nog geen doelpunten. Tik op ⚽ Wij scoren of Tegen.</div>'}</div>`;
+}
+function addGoal(m, g){
+  m.events = m.events || []; m.goals = m.goals || {};
+  const cur = m.cur || 0;
+  g = {id: uid(), blk: cur, blkName: blockLabel(m, cur), ...g};
+  m.events.push(g);
+  if (m.goalsFor === '' || m.goalsFor == null) m.goalsFor = 0;
+  if (m.goalsAgainst === '' || m.goalsAgainst == null) m.goalsAgainst = 0;
+  if (g.us){ m.goalsFor = (+m.goalsFor || 0) + 1; if (g.by) m.goals[g.by] = (m.goals[g.by] || 0) + 1; if (g.as){ m.assists = m.assists || {}; m.assists[g.as] = (m.assists[g.as] || 0) + 1; } }
+  else m.goalsAgainst = (+m.goalsAgainst || 0) + 1;
+  ui.bump = m.id; commit(); ui.bump = null;
+  const gf = +m.goalsFor, ga = +m.goalsAgainst, st = m.home === false ? `${ga}–${gf}` : `${gf}–${ga}`;
+  undoToast(g.us ? `⚽ ${g.by ? pname(g.by) : g.og ? 'Eigen doelpunt' : 'Doelpunt'} · ${st}` : `Tegendoelpunt · ${st}`, () => delGoal(m, g.id));
+}
+function delGoal(m, gid){
+  const i = (m.events || []).findIndex(x => x.id === gid); if (i < 0) return;
+  const g = m.events.splice(i, 1)[0];
+  if (g.us){ m.goalsFor = Math.max(0, (+m.goalsFor || 0) - 1); if (g.by && m.goals && m.goals[g.by]) m.goals[g.by]--; if (g.as && m.assists && m.assists[g.as]) m.assists[g.as]--; }
+  else m.goalsAgainst = Math.max(0, (+m.goalsAgainst || 0) - 1);
+  commit();
+}
+function undoToast(msg, undo){
+  document.querySelectorAll('.utoast,.toast').forEach(x => x.remove());
+  const d = document.createElement('div'); d.className = 'utoast';
+  d.innerHTML = `<span>${esc(msg)}</span><button>Ongedaan maken</button>`;
+  d.querySelector('button').onclick = () => { d.remove(); undo(); toast('Ongedaan gemaakt'); };
+  document.body.appendChild(d); setTimeout(() => d.remove(), 5000);
+}
+function goalUs(m){
+  const se = season(), cur = m.cur || 0, lu = m.segments[cur] || [], pos = matchPositions(m);
+  const field = lu.map((id, i) => ({id, code: pos[i] ? (pos[i].line === 'K' ? 'K' : pos[i].code) : ''})).filter(x => x.id);
+  const bench = benchIds(m, cur).filter(id => id && !lu.includes(id));
+  const nb = (x, cls) => `<button class="nbtn ${cls || ''}" data-r="p:${esc(x.id)}">${x.code ? `<span class="npos">${esc(x.code)}</span>` : ''}${esc(pname(x.id))}</button>`;
+  return new Promise(res => {
+    const d = document.createElement('div'); d.className = 'modal gsheet';
+    const close = () => { d.remove(); res(); };
+    const step1 = () => { d.innerHTML = iconize(`<div class="box"><p style="margin:0">⚽ Wie scoorde?</p><div class="muted" style="margin-bottom:8px">${esc(blockLabel(m, cur))}</div>
+      <div class="ngrp">IN HET VELD</div><div class="ngrid">${field.map(x => nb(x)).join('')}</div>
+      ${bench.length ? `<div class="ngrp">RESERVES</div><div class="ngrid">${bench.map(id => nb({id}, 'bench')).join('')}</div>` : ''}
+      <div class="nother"><button class="nob" data-r="og">🙈 Eigen doelpunt van de tegenstander</button><button class="nob" data-r="unk">❔ Weet ik niet / later invullen</button></div>
+      <button class="btn full" style="margin-top:12px" data-r="no">Annuleren</button></div>`); d.dataset.step = '1'; };
+    const step2 = by => { d.innerHTML = iconize(`<div class="box"><p style="margin:0">Assist bij het doelpunt van ${esc(pname(by))}?</p><div class="muted" style="margin-bottom:8px">Niet verplicht</div>
+      <div class="ngrid">${field.filter(x => x.id !== by).map(x => nb(x)).join('')}</div>
+      <div class="grid2" style="margin-top:12px"><button class="btn" data-r="no">Annuleren</button><button class="btn pri" data-r="noas">Geen assist</button></div></div>`); d.dataset.step = '2'; d.dataset.by = by; };
+    d.addEventListener('click', e => {
+      e.stopPropagation(); const b = e.target.closest('[data-r]');
+      if (!b){ if (e.target === d) close(); return; }
+      const r = b.dataset.r;
+      if (r === 'no') return close();
+      if (d.dataset.step === '1'){
+        if (r === 'og'){ close(); return addGoal(m, {us: true, og: true}); }
+        if (r === 'unk'){ close(); return addGoal(m, {us: true}); }
+        const by = r.slice(2);
+        if (se.askAssist) return step2(by);
+        close(); return addGoal(m, {us: true, by});
+      }
+      const by = d.dataset.by; close();
+      addGoal(m, {us: true, by, as: r === 'noas' ? '' : r.slice(2)});
+    });
+    document.body.appendChild(d); step1();
+  });
 }
 // onder het lopende blok: wat er bij het volgende wisselmoment verandert
 function upcomingBox(m, cur, times){
@@ -1603,7 +1704,11 @@ function viewSettings(){
     <div class="set" style="border:0;padding:0"><div class="lbl">🎯 Voorkeursposities per speler<small>Per speler een 1e, 2e en 3e positie. Daarmee kan de app de hele wedstrijd automatisch opstellen.</small></div>
       <button class="switch ${se.usePositions ? 'on' : ''}" data-act="togglePos" aria-label="Voorkeursposities aan/uit"><i></i></button></div>
     ${se.usePositions ? `<button class="btn sm full" style="margin-top:12px" data-act="stab" data-v="spelers">👥 Posities per speler invullen</button>` : ''}
-  </div>${arriveCard(se)}`;
+  </div>${arriveCard(se)}
+  <div class="card">
+    <div class="set" style="border:0;padding:0"><div class="lbl">⚽ Ook de assist vragen<small>Tijdens de wedstrijd vraagt de app na "Wij scoren" wie de assist gaf. Overslaan kan altijd.</small></div>
+      <button class="switch ${se.askAssist ? 'on' : ''}" data-act="toggleAssist" aria-label="Assist vragen aan/uit"><i></i></button></div>
+  </div>`;
   else if (st === 'spelers'){ body = viewPlayers(); if (se.survey && !ui.surveyBusy && Date.now() - (ui.surveyFetched || 0) > 20000){ ui.surveyFetched = Date.now(); setTimeout(() => fetchSurvey(se, true), 50); } }
   else body = teamInfoCard(t) + (t.onb && myUid() && !isViewOnly() && onbSteps().some(x => !x.done) ? `<button class="btn full" style="margin-bottom:12px" data-act="onbShow">👋 Welkomstappen voor nieuwe trainers tonen</button>` : '') + `<div class="sgroup">Samenwerken</div>${cloudCard()}<div class="sgroup">Account</div>${accountCard()}${installCard()}`;
   return `
@@ -1959,6 +2064,10 @@ document.addEventListener('click', async e => {
     case 'import': document.getElementById('importFile').click(); break;
     case 'logoPick': document.getElementById('logoFile').click(); break;
     case 'logoDel': localStorage.removeItem(LOGO_KEY); loadLogo(); break;
+    case 'toggleAssist': se.askAssist = !se.askAssist; commit(); toast(se.askAssist ? 'Assist vragen aan' : 'Assist vragen uit'); break;
+    case 'goalUs': await goalUs(m); break;
+    case 'goalThem': addGoal(m, {us: false}); break;
+    case 'goalDel': delGoal(m, id); break;
     case 'togglePos': se.usePositions = !se.usePositions; commit(); toast(se.usePositions ? 'Voorkeursposities aan' : 'Voorkeursposities uit'); break;
     case 'autoAll': case 'autoMix': {
       const filled = m.segments.some(lu => !isEmptySeg(lu));
@@ -2982,7 +3091,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-09.1';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-09.2';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
