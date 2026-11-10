@@ -2674,7 +2674,7 @@ adm.fe = null;
 const canEditFaq = f => adm.owner || !!(f.club && adm.clubs.some(c => c.key === f.club));
 function admFaqManager(){
   const seeded = helpSeeded(), list = k => help.faq.filter(f => f.id !== '_init' && (f.kind || 'faq') === k).sort((a, b) => (a.order || a.created || 0) - (b.order || b.created || 0));
-  const row = (f, k) => `<div class="hq" style="display:flex;gap:8px;align-items:flex-start"><div style="flex:1;min-width:0"><b>${esc(f.q)}</b><p>${esc(f.a)}</p>${f.club ? `<small class="muted">Alleen voor club ${esc((adm.clubs.find(c => c.key === f.club) || {}).name || f.club)}</small>` : ''}</div>${canEditFaq(f) ? `<button class="btn sm" data-act="admFaqEdit" data-id="${esc(f.id)}">Wijzig</button><button class="x" data-act="admFaqDel" data-id="${esc(f.id)}" aria-label="Verwijderen">×</button>` : ''}</div>`;
+  const row = (f, k) => `<div class="hq" style="display:flex;gap:8px;align-items:flex-start"><div style="flex:1;min-width:0"><b>${esc(f.q)}</b><p>${esc(f.a)}</p>${f.club ? `<small class="muted">Alleen voor club ${esc((adm.clubs.find(c => c.key === f.club) || {}).name || f.club)}</small>` : ''}</div>${seeded && canEditFaq(f) ? `<span style="display:flex;flex-direction:column;gap:2px"><button class="btn sm" data-act="admFaqMove" data-id="${esc(f.id)}|up" aria-label="Omhoog">▲</button><button class="btn sm" data-act="admFaqMove" data-id="${esc(f.id)}|down" aria-label="Omlaag">▼</button></span>` : ''}${canEditFaq(f) ? `<button class="btn sm" data-act="admFaqEdit" data-id="${esc(f.id)}">Wijzig</button><button class="x" data-act="admFaqDel" data-id="${esc(f.id)}" aria-label="Verwijderen">×</button>` : ''}</div>`;
   const dflt = k => (k === 'tip' ? HELP_TIPS : HELP_FAQ).map(x => `<div class="hq"><b>${esc(x[0])}</b><p>${esc(x[1])}</p></div>`).join('');
   const form = adm.fe ? `<div class="card" style="background:var(--ysoft)"><h2 style="font-size:17px">${adm.fe.id ? 'Wijzigen' : adm.fe.kind === 'tip' ? 'Nieuwe tip' : 'Nieuwe FAQ-vraag'}</h2>
       <label class="f">${adm.fe.kind === 'tip' ? 'Titel' : 'Vraag'}<input id="feT" value="${esc(adm.fe.q || '')}"></label>
@@ -2952,6 +2952,15 @@ async function admAction(act, id){
       adm.ne = null; await helpLoad(true); toast('Bericht geplaatst'); return render();
     }
     if (act === 'admNewsDel'){ if (!await ask('Dit bericht verwijderen?', 'Verwijderen')) return; await api.newsDel(id); await helpLoad(true); return render(); }
+    if (act === 'admFaqMove'){
+      const [fid, dir] = id.split('|'), f = help.faq.find(x => x.id === fid); if (!f) return;
+      const L = help.faq.filter(x => x.id !== '_init' && (x.kind || 'faq') === (f.kind || 'faq')).sort((a, b) => (a.order || a.created || 0) - (b.order || b.created || 0));
+      const i = L.indexOf(f), j = dir === 'up' ? i - 1 : i + 1; if (j < 0 || j >= L.length) return;
+      const g = L[j]; if (!canEditFaq(g)){ toast('Dit item staat vast, het is van de eigenaar'); return; }
+      let oa = f.order || f.created || 0, ob = g.order || g.created || 0; if (oa === ob) ob = oa + (dir === 'up' ? -1 : 1);
+      await api.faqSet({...f, order: ob}); await api.faqSet({...g, order: oa});
+      await helpLoad(true); return render();
+    }
     if (act === 'admFaqNew'){ adm.fe = {id: null, kind: id, q: '', a: ''}; return render(); }
     if (act === 'admFaqEdit'){ const f = help.faq.find(x => x.id === id); if (!f) return; adm.fe = {id, kind: f.kind || 'faq', q: f.q, a: f.a}; return render(); }
     if (act === 'admFaqCancel'){ adm.fe = null; return render(); }
@@ -3327,7 +3336,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-10.7';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-10.8';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
