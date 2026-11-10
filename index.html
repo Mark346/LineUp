@@ -604,6 +604,20 @@
   .admbtn[hidden]{display:none}
   .admbtn.on{background:#1a1200;color:#ffc400;box-shadow:0 0 0 2px #ffc400}
   .admbtn .ic{width:18px;height:18px}
+  .admbtn{position:relative}.admbtn .bdg{position:absolute;top:-7px;right:-5px;min-width:21px;height:21px;border-radius:999px;background:#d9363e;color:#fff;font-size:13px;font-weight:900;display:flex;align-items:center;justify-content:center;padding:0 5px;box-shadow:0 0 0 2px #fff}
+  .hfab{position:fixed;right:14px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:40;display:flex;align-items:center;gap:8px;border:0;border-radius:999px;padding:13px 20px 13px 15px;font:inherit;font-weight:900;font-size:17px;background:var(--y);color:var(--ink);box-shadow:0 0 0 3px var(--g),0 8px 22px rgba(0,0,0,.35);cursor:pointer}
+  .hfab .ic{width:26px;height:26px}.hfab[hidden]{display:none}
+  .hfab .hbdg{position:absolute;top:-9px;right:-3px;min-width:25px;height:25px;border-radius:999px;background:#d9363e;color:#fff;font-size:14px;font-weight:900;font-style:normal;display:flex;align-items:center;justify-content:center;padding:0 6px;box-shadow:0 0 0 2px #fff}
+  .hfab.ping{animation:hping 1.4s ease-in-out infinite}@keyframes hping{50%{transform:scale(1.08)}}
+  body.hashelp{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
+  body.watching .hfab,body.gate .hfab{display:none}
+  .helpbox{max-width:520px!important;padding:16px!important}
+  .helph{display:flex;align-items:center;gap:8px;margin-bottom:10px}.helph b{flex:1;font-size:20px}.helph .x{font-size:26px}
+  .helpt{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}.helpt button{border:0;border-radius:999px;padding:8px 13px;font:inherit;font-weight:800;font-size:14px;background:var(--gsoft);color:var(--ink);position:relative}.helpt button.on{background:var(--g);color:#fff}
+  .helpt .hbdg{position:static;display:inline-flex;margin-left:6px;min-width:20px;height:20px;font-size:12px;box-shadow:none;border-radius:999px;background:#d9363e;color:#fff;font-style:normal;align-items:center;justify-content:center;padding:0 5px}
+  .hq{border-bottom:1px solid var(--line);padding:9px 0}.hq summary{font-weight:800;cursor:pointer;font-size:15px}.hq p{margin:6px 0 0!important;font-size:14px!important;font-weight:500!important;color:var(--muted)}
+  .hans{background:var(--gsoft);border-radius:12px;padding:9px 11px;margin-top:6px;font-size:14px}.hans small{display:block;font-weight:800;opacity:.7;margin-bottom:2px}
+  .qfaq{display:flex;gap:10px;align-items:flex-start;background:var(--ysoft);border-radius:12px;padding:10px 12px;margin-top:10px;font-size:14px}.qfaq input{width:auto;margin-top:3px}
   .wtabs{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.wtabs button{border:0;border-radius:999px;padding:6px 12px;font:inherit;font-weight:800;font-size:13px;background:rgba(255,255,255,.14);color:#fff}.wtabs button.on{background:var(--y);color:var(--on-y)}
   body.watching header{padding-top:8px}
   .vobanner{display:flex;align-items:center;gap:10px;background:var(--ink);color:#fff;border-radius:16px;padding:10px 12px;margin:0 0 12px;font-size:14px}.vobanner span{flex:1}.vobanner .btn{background:var(--y);color:var(--on-y);border:0}
@@ -704,6 +718,7 @@
 <body>
 <script>document.body.dataset.theme = "graslicht";</script>
 <div id="wbar"></div>
+<button id="hfab" class="hfab" data-act="helpOpen" aria-label="Hulp, tips en vragen" hidden></button>
 <header>
   <div class="brand"><div class="logo" id="logoBox"></div><div><div class="club" id="clubName"></div><div class="app wordmark"><i class="speed"></i>Line<span>MeUp</span></div></div><span id="cloudDot" class="cloud" data-act="goCloud"></span><button id="admBtn" class="admbtn" data-tab="beheer" hidden></button></div>
   <div class="teams" id="teams"></div>
@@ -761,10 +776,11 @@ const ICONS = {
   download:'<path d="M12 4v10M7.5 9.5L12 14l4.5-4.5M4 16.5v2A2.5 2.5 0 0 0 6.5 21h11a2.5 2.5 0 0 0 2.5-2.5v-2"/>',
   wrench:'<path d="M14.7 6.3a4.2 4.2 0 0 0 5.2 5.2L12 19.4a2.2 2.2 0 0 1-3.1-3.1l7.9-7.9a4.2 4.2 0 0 1-2.1-2.1z"/>',
   search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
-  play:'<path d="M7 4.5l12.5 7.5L7 19.5z"/>'
+  play:'<path d="M7 4.5l12.5 7.5L7 19.5z"/>',
+  help:'<path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-6l-5 4v-4H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M9.8 9.4a2.3 2.3 0 1 1 3.4 2c-.8.5-1.2.9-1.2 1.8M12 15h.01"/>'
 };
 const I = n => `<svg class="ic ic-${n}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]}</svg>`;
-const EMO = {'👁':'eye','⚽':'ball','👋':'ball','＋':'plus','➕':'plus','☁':'cloud','🧤':'glove','📏':'ruler','👥':'users','📋':'clipboard','⚙':'settings','✅':'check','🛡':'shield','⬆':'up','⬇':'down','🔁':'swap','⇄':'swap','⏱':'clock','🏁':'flag','🔄':'refresh','🏟':'stadium','📝':'edit','✏':'edit','⚡':'bolt','🗑':'trash','↩':'undo','📤':'share','🖨':'print','🎯':'target','📊':'stats','📅':'calendar','⚠':'warn','📐':'pitch','🔀':'shuffle','🪑':'bench','🧹':'eraser','⏭':'next','❌':'x','🏠':'home','🚌':'bus','📥':'download','🔧':'wrench','🔍':'search','▶':'play','🎨':'settings'};
+const EMO = {'💬':'help','👁':'eye','⚽':'ball','👋':'ball','＋':'plus','➕':'plus','☁':'cloud','🧤':'glove','📏':'ruler','👥':'users','📋':'clipboard','⚙':'settings','✅':'check','🛡':'shield','⬆':'up','⬇':'down','🔁':'swap','⇄':'swap','⏱':'clock','🏁':'flag','🔄':'refresh','🏟':'stadium','📝':'edit','✏':'edit','⚡':'bolt','🗑':'trash','↩':'undo','📤':'share','🖨':'print','🎯':'target','📊':'stats','📅':'calendar','⚠':'warn','📐':'pitch','🔀':'shuffle','🪑':'bench','🧹':'eraser','⏭':'next','❌':'x','🏠':'home','🚌':'bus','📥':'download','🔧':'wrench','🔍':'search','▶':'play','🎨':'settings'};
 const EMO_RE = new RegExp('(' + Object.keys(EMO).join('|') + ')\\uFE0F?', 'gu');
 // vervangt emoji's in tekst (niet in attributen of keuzelijsten) door eigen iconen
 function iconize(html){
@@ -1109,6 +1125,7 @@ function render(){
   if (watching && ui.tab === 'beheer') ui.tab = 'matches';
   app.innerHTML = iconize(ban + ({matches: ui.matchId ? viewMatch : viewMatches, stats: viewStats, settings: viewSettings, beheer: viewBeheer}[ui.tab] || viewMatches)());
   try { maybeOnbPopup(); } catch(e){}
+  try { renderHelpFab(); helpLoad(); } catch(e){}
   const phb = document.querySelector('.phases'); if (phb) document.documentElement.style.setProperty('--phh', phb.offsetHeight + 'px');
 }
 
@@ -1833,6 +1850,7 @@ document.addEventListener('click', async e => {
   if (el.dataset.tab){ if (el.dataset.tab === 'settings') ui.sOpen = true; go(el.dataset.tab); return; }
   const act = el.dataset.act, id = el.dataset.id, se = season(), m = match();
   if (/^adm|^req(Ok|No)$/.test(act)){ await admAction(act, id); return; }
+  if (/^help/.test(act)){ await helpAction(act, id, el); return; }
   if (act === 'reqSend'){ await sendRequest(); return; }
   if (act === 'reqCancel'){ await cloud.api.reqDel(myUid()).catch(() => {}); adm.myReq = null; render(); return; }
   if (act === 'verifyMail'){ try { await cloud.api.sendVerify(); tell('We hebben je een e-mail gestuurd. Klik op de link erin en log daarna opnieuw in.'); } catch(e){ tell('Versturen lukt niet: ' + (e.message || e)); } return; }
@@ -2532,9 +2550,105 @@ document.addEventListener('click', async e => {
   }
 });
 
+
+/* ===================== Hulp (ballon): tips, FAQ en vragen ===================== */
+const HELP_TIPS = [
+  ['Naar een blok springen', 'Tik tijdens de wedstrijd bovenin op een blok om er meteen naartoe te gaan. De app laat zien welke wissels je overslaat.'],
+  ['Een invaller toevoegen', 'Een invaller komt eerst bij de reserves. Zet hem daarna zelf in de opstelling of in een wissel.'],
+  ['Spelers zelf laten invullen', 'Kies bij Instellingen → Spelers "Vraag het de spelers / ouders" en deel de link in de team-app.'],
+  ['Doelpunten bijhouden', 'Tik tijdens de wedstrijd op "Wij scoren" of "Tegen". Bij je eigen doelpunt kies je de maker.'],
+  ['Alles weer terugzetten', 'Staat er iets raar in de opstelling? Onder de drie puntjes in de live wedstrijd staan opties om posities terug te zetten of de rest eerlijk te verdelen.']
+];
+const HELP_FAQ = [
+  ['Hoe nodig ik een mede-trainer uit?', 'Ga naar Instellingen → Team en account en kies "Trainer uitnodigen". Je stuurt de link via WhatsApp.'],
+  ['Hoe zie ik wie er komt?', 'Bij een wedstrijd staat "Wie zijn erbij?". Deel daar de link in de team-app; spelers geven zelf door of ze komen.'],
+  ['Kan ik een team op niet actief zetten?', 'Ja. Instellingen → Team en account → Team beheren → "Team op niet actief zetten". Alles blijft bewaard.'],
+  ['Hoe begin ik een nieuw seizoen?', 'Gebruik "Kopie maken voor nieuw seizoen" bij Team beheren. Spelers en instellingen gaan mee, wedstrijden niet.']
+];
+const help = {open: false, tab: 'faq', faq: [], mine: [], at: 0, sent: false, err: ''};
+async function helpLoad(force){
+  if (!myUid() || !cloud.api || !cloud.api.faqList) return;
+  if (!force && Date.now() - help.at < 60000) return;
+  help.at = Date.now();
+  try { help.faq = await cloud.api.faqList(); } catch(e){ console.warn('faq', e); }
+  try { help.mine = await cloud.api.questionsMine(); } catch(e){ console.warn('questions', e); }
+  renderHelpFab();
+}
+const helpUnseen = () => help.mine.filter(q => q.answer && !q.seen).length;
+function renderHelpFab(){
+  const b = document.getElementById('hfab'); if (!b) return;
+  const show = !!myUid() && !gateActive() && !isViewOnly() && !(typeof WIE_ID !== 'undefined' && WIE_ID) && !(typeof SURVEY_ID !== 'undefined' && SURVEY_ID);
+  b.hidden = !show; document.body.classList.toggle('hashelp', show);
+  if (!show) return;
+  const n = helpUnseen();
+  b.classList.toggle('ping', n > 0);
+  b.innerHTML = `${I('help')}<span>Hulp</span>${n ? `<i class="hbdg">${n}</i>` : ''}`;
+}
+function helpOpen(){ help.open = true; help.sent = false; help.err = ''; help.tab = helpUnseen() ? 'ask' : 'faq'; helpDraw(); helpLoad(true).then(() => { if (help.open) helpDraw(); }); }
+function helpClose(){ help.open = false; const m = document.querySelector('.helpm'); if (m) m.remove(); }
+function helpDraw(){
+  let m = document.querySelector('.helpm');
+  if (!m){ m = document.createElement('div'); m.className = 'modal helpm'; document.body.appendChild(m); m.addEventListener('click', e => { if (e.target === m) helpClose(); }); }
+  const old = (document.getElementById('hq') || {}).value || '';
+  const n = helpUnseen(), t = help.tab;
+  const faq = [...HELP_FAQ, ...help.faq.slice().sort((a, b) => (a.created || 0) - (b.created || 0)).map(f => [f.q, f.a])];
+  const body = t === 'tips' ? HELP_TIPS.map(x => `<div class="hq"><b>${esc(x[0])}</b><p>${esc(x[1])}</p></div>`).join('')
+    : t === 'faq' ? faq.map(x => `<details class="hq"><summary>${esc(x[0])}</summary><p>${esc(x[1])}</p></details>`).join('')
+    : `${help.sent ? `<div class="hans" style="margin:0 0 10px">✅ Verstuurd. Het antwoord verschijnt hier en je ziet een rood getal bij Hulp.</div>` : ''}
+       <label class="f">Staat je vraag er niet bij? Stel hem hier<textarea id="hq" rows="3" placeholder="Bijvoorbeeld: kan ik een speler ook halverwege een blok wisselen?">${esc(old)}</textarea></label>
+       ${help.err ? `<div class="muted" style="color:var(--red);margin:6px 0">${esc(help.err)}</div>` : ''}
+       <button class="btn pri full" style="margin-top:8px" data-act="helpSend">Vraag versturen</button>
+       ${help.mine.length ? `<div class="sgroup" style="margin-top:16px">Jouw vragen</div>${help.mine.slice().sort((a, b) => (b.created || 0) - (a.created || 0)).map(q => `<div class="hq"><b>${esc(q.text)}</b>${q.answer ? `<div class="hans"><small>Antwoord van ${esc(q.answeredBy || 'de beheerder')}</small>${esc(q.answer)}</div>` : `<p>Nog geen antwoord. Je krijgt een rood getal zodra er een is.</p>`}</div>`).join('')}` : ''}`;
+  m.innerHTML = `<div class="box helpbox"><div class="helph"><b>Hulp</b><button class="x" data-act="helpClose" aria-label="Sluiten">×</button></div>
+    <div class="helpt">${[['tips', 'Tips'], ['faq', 'FAQ'], ['ask', 'Vraag stellen']].map(([k, nm]) => `<button class="${t === k ? 'on' : ''}" data-act="helpTab" data-id="${k}">${nm}${k === 'ask' && n ? `<i class="hbdg">${n}</i>` : ''}</button>`).join('')}</div>${body}</div>`;
+  if (t === 'ask' && n){ help.mine.filter(q => q.answer && !q.seen).forEach(q => { q.seen = true; cloud.api.questionSeen(q.id).catch(() => {}); }); renderHelpFab(); }
+}
+async function helpAction(act, id, el){
+  if (act === 'helpOpen') return helpOpen();
+  if (act === 'helpClose') return helpClose();
+  if (act === 'helpTab'){ help.tab = id; help.sent = false; return helpDraw(); }
+  if (act === 'helpSend'){
+    const ta = document.getElementById('hq'), text = ta ? ta.value.trim() : '';
+    if (!text){ help.err = 'Typ eerst je vraag.'; helpDraw(); return; }
+    const t = team(), club = clubSlug(t.club) || '', qid = uid() + uid();
+    const q = {id: qid, uid: myUid(), name: myName(), email: (cloud.user && cloud.user.email) || '', club, clubName: t.club || '', team: teamLabel(t), text, created: Date.now()};
+    try { await cloud.api.questionAdd(club || '-', q); } catch(e){ console.error(e); help.err = 'Versturen lukt niet. Staan de nieuwe Firestore-regels erin? (' + (e.message || e) + ')'; helpDraw(); return; }
+    help.mine.push(q); help.sent = true; help.err = ''; if (ta) ta.value = ''; helpDraw();
+  }
+}
+setInterval(() => { if (document.visibilityState === 'visible'){ helpLoad(true); try { loadQuestions(); } catch(e){} } }, 90000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible'){ helpLoad(true); try { loadQuestions(); } catch(e){} } });
+
 /* ===================== Beheer (eigenaar en clubbeheer) ===================== */
+
 const clubSlug = name => String(name || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\b(rkvv|rksv|rkav|vv|sv|vsv|v\.v\.|s\.v\.)\b/g, ' ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
 const adm = {role: null, owner: false, clubs: [], sub: 'overzicht', view: null, data: null, loading: false, err: '', club: null};
+
+// ---- vragen van trainers (Beheerder → Vragen)
+adm.qs = []; adm.qOpen = 0; adm.answering = null;
+async function loadQuestions(){
+  if (!cloud.api || !cloud.api.questionsClub || !myUid() || (!adm.owner && !adm.clubs.length)) { adm.qOpen = 0; adm.qs = []; return; }
+  if (adm.owner && !adm.data && !adm.loading) await loadAdmin();
+  let keys = adm.owner ? new Set(['-', ...((adm.allClubs || []).map(c => c.id))]) : new Set(adm.clubs.map(c => c.key));
+  if (adm.owner && adm.data) adm.data.teams.forEach(t => keys.add(t.club || '-'));
+  const out = [];
+  await Promise.all([...keys].map(async k => { try { (await cloud.api.questionsClub(k)).forEach(q => out.push({...q, _club: k})); } catch(e){} }));
+  adm.qs = out.sort((a, b) => (b.created || 0) - (a.created || 0));
+  adm.qOpen = adm.qs.filter(q => !q.answer).length;
+  updateAdminTab(); if (ui.tab === 'beheer' && adm.sub === 'vragen' && !adm.answering) render();
+}
+function admQuestions(){
+  const open = adm.qs.filter(q => !q.answer), done = adm.qs.filter(q => q.answer);
+  const card = q => `<div class="card"><div class="muted" style="font-size:12px">${esc(q.name || 'Trainer')} · ${esc(q.team || '')}${q.clubName ? ' · ' + esc(q.clubName) : ''} · ${ago(q.created)}</div>
+    <h2 style="margin:4px 0 8px;font-size:17px">${esc(q.text)}</h2>
+    ${q.answer ? `<div class="hans"><small>Jouw antwoord${q.faq ? ' · staat in de FAQ' : ''}</small>${esc(q.answer)}</div>`
+    : adm.answering === q.id ? `<textarea id="qAns" rows="3" placeholder="Typ je antwoord"></textarea>
+      <label class="qfaq"><input type="checkbox" id="qFaq"><span><b>Ook opnemen in de FAQ</b><br>Alle trainers zien dan deze vraag met dit antwoord bij Hulp. Pas hieronder de vraag aan als je wilt.<input type="text" id="qFaqQ" value="${esc(q.text)}" style="width:100%;margin-top:6px"></span></label>
+      <div class="grid2" style="margin-top:10px"><button class="btn" data-act="admQOpen" data-id="">Annuleren</button><button class="btn pri" data-act="admQSend" data-id="${esc(q.id)}">Antwoord versturen</button></div>`
+    : `<button class="btn pri full" data-act="admQOpen" data-id="${esc(q.id)}">Beantwoorden</button>`}</div>`;
+  return `${open.length ? open.map(card).join('') : '<div class="card empty"><b>✅</b>Geen open vragen.</div>'}
+    ${done.length ? `<details class="ainact"><summary>Beantwoord (${done.length})</summary>${done.map(card).join('')}</details>` : ''}`;
+}
 // welke beheerrol heeft deze gebruiker?
 async function detectAdmin(){
   adm.owner = false; adm.clubs = [];
@@ -2544,14 +2658,14 @@ async function detectAdmin(){
   if (!adm.club && adm.clubs.length) adm.club = adm.clubs[0].key;
   // geen beheerder (meer)? dan ook geen meekijk-teams op deze telefoon
   if (!adm.owner && !adm.clubs.length){ const w = Object.keys(cloudMap()).filter(k => cloudMap()[k].admin); if (w.length) w.forEach(k => dropTeam(k)); }
-  updateAdminTab();
+  updateAdminTab(); loadQuestions();
 }
 function updateAdminTab(){
   const nav = document.getElementById('nav'); if (!nav) return;
   let b = nav.querySelector('[data-tab="beheer"]');
   const show = adm.owner || adm.clubs.length > 0;
   const ab = document.getElementById('admBtn');
-  if (ab){ if (show && !ab.innerHTML) ab.innerHTML = iconize('🛡️') + ' Beheerder'; ab.hidden = !show; }
+  if (ab){ const q = adm.qOpen || 0; ab.innerHTML = iconize('🛡️') + ' Beheerder' + (q ? `<span class="bdg">${q}</span>` : ''); ab.hidden = !show; }
   if (!show && ui.tab === 'beheer'){ ui.tab = 'matches'; render(); }
   document.body.classList.toggle('has-admin', show);
 }
@@ -2608,7 +2722,8 @@ function viewBeheer(){
   if (!adm.owner && !adm.clubs.length) return `<div class="card empty"><b>🛡️</b>Je hebt geen beheerrechten.</div>`;
   if (!adm.data){ setTimeout(() => loadAdmin(), 0); return `<div class="card empty"><b>⏳</b>Beheerdersgegevens laden…</div>`; }
   if (adm.err) return `<div class="card empty"><b>⚠️</b>${esc(adm.err)}<br><br><button class="btn" data-act="admReload">Opnieuw</button></div>`;
-  const subs = adm.owner ? [['overzicht', 'Overzicht'], ['clubs', 'Clubs'], ['trainers', 'Trainers']] : [['overzicht', 'Overzicht'], ['teams', 'Teams'], ['trainers', 'Trainers']];
+  const vq = ['vragen', 'Vragen' + (adm.qOpen ? ` (${adm.qOpen})` : '')];
+  const subs = adm.owner ? [['overzicht', 'Overzicht'], ['clubs', 'Clubs'], ['trainers', 'Trainers'], vq] : [['overzicht', 'Overzicht'], ['teams', 'Teams'], ['trainers', 'Trainers'], vq];
   let head = `<div class="admhead"><span class="admrole">${adm.owner ? 'EIGENAAR' : 'CLUBBEHEER'}</span>${!adm.owner && adm.clubs.length > 1 ? `<select data-admclub="1">${adm.clubs.map(c => `<option value="${esc(c.key)}" ${c.key === adm.club ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select>` : !adm.owner ? `<b>${esc((adm.clubs[0] || {}).name || '')}</b>` : ''}<button class="btn sm" data-act="admReload" aria-label="Vernieuwen">🔄</button></div>
     <div class="admsubs">${subs.map(([k, n]) => `<button class="${adm.sub === k && !adm.view ? 'on' : ''}" data-act="admSub" data-id="${k}">${n}</button>`).join('')}</div>`;
   if (adm.view){
@@ -2618,6 +2733,7 @@ function viewBeheer(){
     if (kind === 'trainer') return head + back + admTrainerView(id);
     if (kind === 'club') return head + back + admClubView(id);
   }
+  if (adm.sub === 'vragen') return head + admQuestions();
   if (adm.sub === 'trainers') return head + admTrainersList();
   if (adm.sub === 'clubs' && adm.owner) return head + admClubsList();
   if (adm.sub === 'teams') return head + admTeamsCard(adm.data.teams);
@@ -2760,6 +2876,16 @@ async function admAction(act, id){
   const api = cloud.api, d = adm.data;
   const reload = async msg => { if (msg) toast(msg); adm.data = null; await loadAdmin(true); };
   try {
+    if (act === 'admQOpen'){ adm.answering = id || null; return render(); }
+    if (act === 'admQSend'){
+      const q = adm.qs.find(x => x.id === id); if (!q) return;
+      const a = (document.getElementById('qAns') || {}).value.trim(), inFaq = !!(document.getElementById('qFaq') || {}).checked, fq = ((document.getElementById('qFaqQ') || {}).value || q.text).trim();
+      if (!a){ toast('Typ eerst een antwoord'); return; }
+      const v = {answer: a, answeredBy: shortName(myName()) || 'de beheerder', answeredAt: Date.now(), faq: inFaq};
+      await api.questionAnswer(q._club, q.uid, q.id, v);
+      if (inFaq) await api.faqSet({id: 'f' + q.id, q: fq, a, club: q._club === '-' ? '' : q._club, created: Date.now()});
+      adm.answering = null; await loadQuestions(); help.at = 0; helpLoad(true); toast(inFaq ? 'Antwoord verstuurd en in de FAQ gezet' : 'Antwoord verstuurd'); return render();
+    }
     if (act === 'admReload'){ await detectAdmin(); return reload(); }
     if (act === 'admSub'){ adm.sub = id; adm.view = null; return render(); }
     if (act === 'admBack'){ adm.view = adm.prev || null; adm.prev = null; return render(); }
@@ -3108,7 +3234,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-10.4';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-10.5';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
@@ -3209,6 +3335,14 @@ function firebaseApi(){
       pendingSet: (club, iid, v) => fs.setDoc(d('clubIndex', club, 'pending', iid), v),
       pendingDel: (club, iid) => fs.deleteDoc(d('clubIndex', club, 'pending', iid)),
       pendingList: async club => (await fs.getDocs(fs.collection(db, 'clubIndex', club, 'pending'))).docs.map(x => ({id: x.id, ...x.data()})),
+      questionAdd: async (club, v) => { await fs.setDoc(d('users', v.uid, 'questions', v.id), v); await fs.setDoc(d('clubQuestions', club || '-', 'items', v.id), v); },
+      questionsMine: async () => (await fs.getDocs(fs.collection(db, 'users', cloud.user.uid, 'questions'))).docs.map(x => ({id: x.id, ...x.data()})),
+      questionsClub: async club => (await fs.getDocs(fs.collection(db, 'clubQuestions', club || '-', 'items'))).docs.map(x => ({id: x.id, ...x.data()})),
+      questionAnswer: async (club, uid, id, v) => { await fs.updateDoc(d('clubQuestions', club || '-', 'items', id), v); await fs.updateDoc(d('users', uid, 'questions', id), v); },
+      questionSeen: id => fs.updateDoc(d('users', cloud.user.uid, 'questions', id), {seen: true}),
+      faqList: async () => (await fs.getDocs(fs.collection(db, 'faq'))).docs.map(x => ({id: x.id, ...x.data()})),
+      faqSet: v => fs.setDoc(d('faq', v.id), v),
+      faqDel: id => fs.deleteDoc(d('faq', id)),
       usersList: async n => (await fs.getDocs(n ? fs.query(fs.collection(db, 'users'), fs.limit(n)) : fs.collection(db, 'users'))).docs.map(x => ({id: x.id, ...x.data()})),
       clubAdminsList: async () => (await fs.getDocs(fs.collection(db, 'clubAdmins'))).docs.map(x => ({id: x.id, ...x.data()})),
       clubAdminsSet: (club, v) => fs.setDoc(d('clubAdmins', club), v, {merge: true}),
