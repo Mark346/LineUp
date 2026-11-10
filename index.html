@@ -2656,7 +2656,8 @@ const clubSlug = name => String(name || '').toLowerCase().normalize('NFD').repla
 const adm = {role: null, owner: false, clubs: [], sub: 'overzicht', view: null, data: null, loading: false, err: '', club: null};
 
 // ---- vragen van trainers (Beheerder → Vragen)
-adm.qs = []; adm.qOpen = 0; adm.answering = null;
+adm.qs = []; adm.qOpen = 0; adm.answering = null; adm.evs = []; adm.evUnseen = 0;
+const evSeenAt = () => { let v = 0; try { v = +localStorage.getItem('lineup.evSeen') || 0; if (!v){ v = Date.now(); localStorage.setItem('lineup.evSeen', String(v)); } } catch(e){} return v; };
 async function loadQuestions(){
   if (!cloud.api || !cloud.api.questionsClub || !myUid() || (!adm.owner && !adm.clubs.length)) { adm.qOpen = 0; adm.qs = []; return; }
   if (adm.owner && !adm.data && !adm.loading) await loadAdmin();
@@ -2664,6 +2665,8 @@ async function loadQuestions(){
   if (adm.owner && adm.data) adm.data.teams.forEach(t => keys.add(t.club || '-'));
   const out = [];
   await Promise.all([...keys].map(async k => { try { (await cloud.api.questionsClub(k)).forEach(q => out.push({...q, _club: k})); } catch(e){} }));
+  const evs = []; await Promise.all([...keys].map(async k => { try { (await cloud.api.eventsClub(k)).forEach(e => evs.push({...e, _club: k})); } catch(e){} }));
+  adm.evs = evs.sort((a, b) => (b.at || 0) - (a.at || 0)); adm.evUnseen = adm.evs.filter(e => e.at > evSeenAt() && e.uid !== myUid()).length;
   adm.qs = out.sort((a, b) => (b.created || 0) - (a.created || 0));
   adm.qOpen = adm.qs.filter(q => !q.answer).length;
   updateAdminTab(); if (ui.tab === 'beheer' && adm.sub === 'vragen' && !adm.answering && !adm.fe && !adm.ne) render();
@@ -2732,7 +2735,7 @@ function updateAdminTab(){
   let b = nav.querySelector('[data-tab="beheer"]');
   const show = adm.owner || adm.clubs.length > 0;
   const ab = document.getElementById('admBtn');
-  if (ab){ const q = adm.qOpen || 0; ab.innerHTML = iconize('🛡️') + ' Beheerder' + (q ? `<span class="bdg">${q}</span>` : ''); ab.hidden = !show; }
+  if (ab){ const q = (adm.qOpen || 0) + (adm.evUnseen || 0); ab.innerHTML = iconize('🛡️') + ' Beheerder' + (q ? `<span class="bdg">${q}</span>` : ''); ab.hidden = !show; }
   if (!show && ui.tab === 'beheer'){ ui.tab = 'matches'; render(); }
   document.body.classList.toggle('has-admin', show);
 }
@@ -2764,6 +2767,7 @@ async function loadAdmin(force){
       out.teams = (await Promise.all(idx.map(i => api.teamGet(i.id).then(d => d ? parseTeamDoc({...d, id: i.id}) : null).catch(() => null)))).filter(Boolean).filter(t => t.club === c);
       out.pending = (await api.pendingList(c).catch(() => [])).map(p => ({...p, club: c}));
     }
+    out.links = out.pending.filter(p => p.kind === 'clublink'); out.pending = out.pending.filter(p => p.kind !== 'clublink');
     adm.data = out;
   } catch(e){ console.error(e); adm.err = 'Laden lukt niet: ' + (e.message || e); }
   adm.loading = false; render();
@@ -2806,6 +2810,25 @@ function viewBeheer(){
   if (adm.sub === 'teams') return head + admTeamsCard(adm.data.teams);
   return head + admOverview();
 }
+
+function admEventsCard(){
+  const list = adm.evs.filter(e => e.uid !== myUid()).slice(0, 15), seen = evSeenAt(); if (!list.length) return '';
+  const txt = e => e.type === 'new' ? `<b>${esc(e.name || 'Een trainer')}</b> heeft team <b>${esc(e.team)}</b> aangemaakt` : e.type === 'request' ? `<b>${esc(e.name || 'Een trainer')}</b> vraagt om aan te haken bij <b>${esc(e.team)}</b>` : `<b>${esc(e.name || 'Een trainer')}</b> doet nu mee met <b>${esc(e.team)}</b>`;
+  const clubName = k => (((adm.data && adm.data.clubs) || []).find(c => c.id === k) || {}).name || k;
+  return `<div class="card"><div class="ahead"><h2>🔔 Meldingen</h2>${adm.evUnseen ? `<button class="btn sm" data-act="admEvRead">Alles gelezen</button>` : ''}</div>
+    ${list.map(e => `<div class="hq" ${e.at > seen ? 'style="background:var(--ysoft);border-radius:10px;padding:8px 10px;margin-bottom:4px"' : ''}><div>${txt(e)}</div><small class="muted">${ago(e.at)}${adm.owner ? ' · ' + esc(clubName(e._club)) : ''}${e.email ? ' · ' + esc(e.email) : ''}</small></div>`).join('')}</div>`;
+}
+function admLinkCard(k){
+  const l = ((adm.data && adm.data.links) || []).filter(p => p.club === k).sort((a, b) => (b.created || 0) - (a.created || 0))[0];
+  const live = l && l.expires > Date.now();
+  const n = l ? new Set(adm.evs.filter(e => e.via === l.id && (e.type === 'new' || e.type === 'request')).map(e => e.uid)).size : 0;
+  return `<div class="card"><h2>🔗 Link voor alle trainers</h2>
+    <div class="muted" style="margin-bottom:10px">Zet één link in de club-WhatsApp. Elke trainer kiest zijn team of maakt een nieuw team aan. Jij krijgt een melding bij elke trainer en elk team.</div>
+    ${live ? `<div class="hans" style="margin:0 0 10px"><small>Link actief tot ${fmtD(l.expires)}</small>${n} trainer${n === 1 ? '' : 's'} via deze link</div>
+      <button class="btn pri full" data-act="admLinkShare" data-id="${esc(l.id + '|' + k)}">📤 Link delen</button>
+      <button class="btn full" style="margin-top:8px" data-act="admLinkOff" data-id="${esc(l.id + '|' + k)}">Link uitzetten</button>`
+    : `${l ? '<div class="muted" style="margin-bottom:8px">De vorige link is verlopen of uitgezet.</div>' : ''}<button class="btn pri full" data-act="admLinkNew" data-id="${esc(k)}">🔗 Link maken en delen (30 dagen)</button>`}</div>`;
+}
 function admOverview(){
   const d = adm.data, tr = adminTrainers();
   const players = d.teams.reduce((n, t) => n + t.players.length, 0), week = d.teams.reduce((n, t) => n + t.thisWeek, 0);
@@ -2818,9 +2841,10 @@ function admOverview(){
   if (adm.owner && d.requests.length) req = `<div class="card"><div class="ahead"><h2>Aanvragen clubbeheer</h2>${achip(d.requests.length + ' nieuw', 1)}</div>
     ${d.requests.map(r => `${arow(r.name, esc(r.name || r.email), `wil beheerder worden van ${esc(r.clubName)}${r.func ? ' · ' + esc(r.func) : ''} · ${esc(r.email || '')}`)}<div class="grid2" style="margin:4px 0 10px"><button class="btn pri" data-act="reqOk" data-id="${esc(r.id)}">Goedkeuren</button><button class="btn" data-act="reqNo" data-id="${esc(r.id)}">Afwijzen</button></div>`).join('')}</div>`;
   const recent = d.teams.slice().sort((a, b) => b.updated - a.updated).slice(0, 5);
-  return `<div class="atiles">${tiles.join('')}</div>${req}
+  return `<div class="atiles">${tiles.join('')}</div>${req}${admEventsCard()}
     ${adm.owner ? admClubsList(true) : admTeamsCard(d.teams)}
     ${adm.owner ? '' : admMyClubCard()}
+    ${adm.owner ? '' : admLinkCard(adm.club)}
     <div class="card"><h2>Laatst actief</h2>${recent.map(t => arow(t.label, esc(t.label) + (t.clubName && adm.owner ? ' · ' + esc(t.clubName) : ''), ago(t.updated), '', 'admTeam', t.id)).join('') || '<div class="muted">Nog geen teams.</div>'}</div>`;
 }
 // clubbeheerder: wie beheren de club + beheer overdragen
@@ -2829,6 +2853,7 @@ function admMyClubCard(){
   const admins = Object.entries(c.uids || {});
   return `<div class="card"><h2>🛡️ Clubbeheer</h2>
     ${admins.map(([u, x]) => arow(x.name || x.email, esc(x.name || x.email || 'Beheerder') + (u === myUid() ? ' (jij)' : ''), esc(x.email || ''))).join('') || '<div class="muted">–</div>'}
+    <button class="btn full" style="margin-top:10px" data-act="admInviteAdmin" data-id="${esc(adm.club || '')}">📤 Clubbeheerder uitnodigen (link via WhatsApp)</button>
     <button class="btn full" style="margin-top:10px" data-act="admTransfer">🔁 Beheer overdragen aan een andere trainer</button>
     <div class="muted" style="margin-top:6px;font-size:12px">Na het overdragen ben jij geen clubbeheerder meer. Je teams als trainer houd je gewoon.</div></div>`;
 }
@@ -2897,9 +2922,10 @@ function admClubView(k){
   const ck = clubKey(name);
   return `<div class="card"><div style="display:flex;align-items:center;gap:12px">${ck ? `<span class="logo clublogo" style="box-shadow:none">${clubLogo(name)}</span>` : ''}<h2 style="margin:0;font-size:24px">${esc(name)}</h2></div>
       <div class="atiles" style="margin-top:10px">${tile(ts.length, 'teams')}${tile(trainers, 'trainers')}${tile(players, 'spelers')}</div></div>
-    ${k !== '-' ? `<div class="card"><h2>Clubbeheerders</h2>${c && c.uids ? Object.entries(c.uids).map(([u, x]) => arow(x.name, esc(x.name || x.email), esc(x.email || ''), `<button class="x" data-act="admRemoveClubAdmin" data-id="${esc(k + '|' + u)}" aria-label="Verwijderen">×</button>`)).join('') : '<div class="muted">Nog geen beheerders.</div>'}
+    ${k !== '-' ? `<div class="card"><h2>Clubbeheerders</h2>${c && c.uids ? Object.entries(c.uids).map(([u, x]) => arow(x.name, esc(x.name || x.email), esc(x.email || ''), `<button class="btn sm" data-act="admReplaceClubAdmin" data-id="${esc(k + '|' + u)}">🔁 Overnemen</button> <button class="x" data-act="admRemoveClubAdmin" data-id="${esc(k + '|' + u)}" aria-label="Verwijderen">×</button>`)).join('') : '<div class="muted">Nog geen beheerders.</div>'}
       <div class="row" style="margin-top:10px"><input id="admAdminMail" type="email" placeholder="E-mailadres nieuwe beheerder" style="flex:3"><button class="btn pri sm" style="flex:none" data-act="admAddClubAdmin" data-id="${esc(k)}">Toevoegen</button></div>
-      <div class="muted" style="margin-top:6px;font-size:12px">De persoon moet al een keer in LineMeUp hebben ingelogd.</div></div>` : ''}
+      <div class="muted" style="margin-top:6px;font-size:12px">De persoon moet al een keer in LineMeUp hebben ingelogd.</div>
+      <button class="btn full" style="margin-top:12px" data-act="admInviteAdmin" data-id="${esc(k)}">📤 Clubbeheerder uitnodigen (link via WhatsApp)</button></div>${admLinkCard(k)}` : ''}
     ${admTeamsCard(ts, k === '-' ? '' : k)}`;
 }
 // ---- meekijken (alleen lezen)
@@ -2952,6 +2978,29 @@ async function admAction(act, id){
       adm.ne = null; await helpLoad(true); toast('Bericht geplaatst'); return render();
     }
     if (act === 'admNewsDel'){ if (!await ask('Dit bericht verwijderen?', 'Verwijderen')) return; await api.newsDel(id); await helpLoad(true); return render(); }
+    if (act === 'admEvRead'){ try { localStorage.setItem('lineup.evSeen', String(Date.now())); } catch(e){} adm.evUnseen = 0; updateAdminTab(); return render(); }
+    if (act === 'admLinkNew' || act === 'admLinkShare' || act === 'admLinkOff'){
+      const [a1, a2] = act === 'admLinkNew' ? [null, id] : id.split('|'), k = a2;
+      const cl = d.clubs.find(x => x.id === k), cname = (cl && cl.name) || (d.teams.find(t => t.club === k) || {}).clubName || k;
+      if (act === 'admLinkOff'){ if (!await ask('Deze link uitzetten? Wie hem opent, kan niet meer meedoen.', 'Uitzetten')) return; await api.inviteDelete(a1).catch(() => {}); await api.pendingDel(k, a1); return reload('Link uitgezet'); }
+      let iid = a1;
+      if (act === 'admLinkNew'){
+        iid = randId(24); const expires = Date.now() + 30 * 864e5;
+        await api.inviteCreate(iid, {kind: 'clublink', club: k, clubName: cname, byName: myName(), by: myUid(), created: Date.now(), expires, usedBy: null});
+        await api.pendingSet(k, iid, {kind: 'clublink', created: Date.now(), expires, by: myUid()});
+        adm.data = null; loadAdmin(true);
+      }
+      shareInviteText(`⚽ Hoi trainers van ${cname}! We gebruiken LineMeUp voor de opstellingen en wissels. Open deze link, log in en kies je team of maak je team aan: ${inviteUrl(iid)}`);
+      return;
+    }
+    if (act === 'admInviteAdmin'){
+      const cl = d.clubs.find(x => x.id === id), cname = (cl && cl.name) || (d.teams.find(t => t.club === id) || {}).clubName || id;
+      const nm = await askText(`Naam van de nieuwe clubbeheerder van ${cname}`, ''); if (!nm || !nm.trim()) return;
+      const iid = randId(24);
+      await api.inviteCreate(iid, {kind: 'clubadmin', club: id, clubName: cname, name: nm.trim(), byName: myName(), by: myUid(), created: Date.now(), usedBy: null});
+      shareInviteText(`🛡️ Hoi ${nm.trim()}! Je bent uitgenodigd als clubbeheerder van ${cname} in LineMeUp. Open deze link, log in en je ziet bovenin de knop Beheerder: ${inviteUrl(iid)}`);
+      return;
+    }
     if (act === 'admFaqMove'){
       const [fid, dir] = id.split('|'), f = help.faq.find(x => x.id === fid); if (!f) return;
       const L = help.faq.filter(x => x.id !== '_init' && (x.kind || 'faq') === (f.kind || 'faq')).sort((a, b) => (a.order || a.created || 0) - (b.order || b.created || 0));
@@ -3024,6 +3073,14 @@ async function admAction(act, id){
       if (isOn) await api.clubAdminRemove(c, u);
       else await api.clubAdminsSet(c, {name: (cl && cl.name) || (d.teams.find(t => t.club === c) || {}).clubName || c, uids: {[u]: {name: x.name || '', email: x.email || ''}}});
       return reload(); }
+    if (act === 'admReplaceClubAdmin'){ const [c, u] = id.split('|'), cl = d.clubs.find(y => y.id === c) || {}, old = (cl.uids || {})[u] || {};
+      const cand = adminTrainers().filter(x => x.uid !== u && x.teams.some(t => t.club === c)), opts = cand.map(x => ({v: x.uid, n: `${x.name || x.email || 'Trainer'} · ${x.teams.filter(t => t.club === c).map(t => t.label).join(', ')}`})).concat([{v: '__mail', n: 'Iemand anders (e-mailadres)'}]);
+      const pick = await chooseDialog(`Wie neemt het clubbeheer over van ${old.name || old.email || 'deze beheerder'}?`, opts); if (!pick) return;
+      let nu = cand.find(x => x.uid === pick);
+      if (pick === '__mail'){ const mail = ((await askText('E-mailadres van de nieuwe clubbeheerder (die moet één keer ingelogd zijn):', '')) || '').trim().toLowerCase(); if (!mail) return;
+        const us = d.users.find(x => (x.email || '').toLowerCase() === mail); if (!us){ await tell('Er is nog niemand met dit e-mailadres ingelogd in LineMeUp.'); return; } nu = {uid: us.id, name: us.name, email: us.email}; }
+      if (!await ask(`${nu.name || nu.email} neemt het clubbeheer over. ${old.name || 'De huidige beheerder'} is daarna geen clubbeheerder meer.`, 'Overnemen')) return;
+      await api.clubAdminTransfer(c, u, nu.uid, {name: nu.name || '', email: nu.email || ''}); return reload(`${nu.name || nu.email} is nu clubbeheerder`); }
     if (act === 'admRemoveClubAdmin'){ const [c, u] = id.split('|'); if (!await ask('Deze beheerder verwijderen?', 'Verwijderen')) return; await api.clubAdminRemove(c, u); return reload(); }
     if (act === 'admAddClubAdmin'){ const mail = (document.getElementById('admAdminMail').value || '').trim().toLowerCase(); if (!mail) return;
       const us = d.users.find(x => (x.email || '').toLowerCase() === mail);
@@ -3098,11 +3155,12 @@ function shareInviteText(txt){
 async function joinNewTeam(iid, inv){
   const api = cloud.api;
   if (inv.usedBy && inv.usedBy !== myUid()){ await tell('Deze uitnodiging is al gebruikt. Vraag om een nieuwe link.'); return; }
-  if (!inv.usedBy) await api.inviteClaim(iid, myUid(), myName());
+  if (!inv.usedBy && inv.kind !== 'clublink') await api.inviteClaim(iid, myUid(), myName());
   createTeam(inv.teamName, inv.clubName, seasonName());
   const t = team(); t.fromInvite = iid; save();
   await createRemoteTeam(t); pruneEmpty(); await saveUserTeams(); save(); listenTeam(t.id);
-  api.pendingDel(inv.club, iid).catch(() => {});
+  if (inv.kind !== 'clublink') api.pendingDel(inv.club, iid).catch(() => {});
+  api.eventAdd(inv.club, {type: 'new', uid: myUid(), name: myName(), email: (cloud.user && cloud.user.email) || '', team: teamLabel(t), rid: (cloudCfg(t.id) || {}).id || '', at: Date.now(), via: iid}).catch(e => console.warn('melding', e));
   toast(`${teamLabel(t)} staat klaar`);
   let seen = false; try { seen = !!localStorage.getItem(TOUR_KEY); } catch(e){}
   if (!seen) await tourDialog();
@@ -3336,7 +3394,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-10.8';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-10.12';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
@@ -3450,6 +3508,9 @@ function firebaseApi(){
       faqDel: id => fs.deleteDoc(d('faq', id)),
       usersList: async n => (await fs.getDocs(n ? fs.query(fs.collection(db, 'users'), fs.limit(n)) : fs.collection(db, 'users'))).docs.map(x => ({id: x.id, ...x.data()})),
       clubAdminsList: async () => (await fs.getDocs(fs.collection(db, 'clubAdmins'))).docs.map(x => ({id: x.id, ...x.data()})),
+      eventAdd: (club, v) => fs.setDoc(d('clubIndex', club, 'events', 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8)), v),
+      eventsClub: async club => (await fs.getDocs(fs.collection(db, 'clubIndex', club, 'events'))).docs.map(x => ({id: x.id, ...x.data()})),
+      clubAdminJoin: async (club, via, clubName, info) => { const ref = d('clubAdmins', club), snap = await fs.getDoc(ref); const v = {uids: {[cloud.user.uid]: info}, via}; if (!snap.exists()) v.name = clubName || club; await fs.setDoc(ref, v, {merge: true}); },
       clubAdminsSet: (club, v) => fs.setDoc(d('clubAdmins', club), v, {merge: true}),
       clubAdminRemove: (club, u) => fs.updateDoc(d('clubAdmins', club), {['uids.' + u]: fs.deleteField()}),
       clubAdminTransfer: (club, me, u, info) => fs.updateDoc(d('clubAdmins', club), {['uids.' + u]: info, ['uids.' + me]: fs.deleteField()}),
@@ -3985,6 +4046,34 @@ async function openInviteNow(iid, resume){
   const api = await firebaseApi();
   const inv = await api.inviteGet(iid).catch(() => null);
   if (!inv){ setResume(null); if (!resume) await tell('Deze uitnodiging werkt niet (meer). Vraag de trainer om een nieuwe link.'); return; }
+  if (inv.kind === 'clublink'){
+    const made = S.teams.find(t => t.fromInvite === iid);
+    if (made){ setResume(null); S.active.team = made.id; ui.tab = 'matches'; ui.matchId = null; commit(); toast(`${teamLabel(made)} staat al in je app`); return; }
+    if (!inv.expires || inv.expires < Date.now()){ setResume(null); await tell('Deze clublink is verlopen of uitgezet. Vraag de clubbeheerder om een nieuwe link.'); return; }
+    if (!resume && !await inviteSheet({...inv, teamLabel: 'Trainers van ' + (inv.clubName || 'de club'), club: inv.clubName, multi: true, name: ''}, inviteUrl(iid))) return;
+    setResume(iid);
+    if (!await needLogin(`Log in of maak een account om mee te doen met ${inv.clubName}.`)) return;
+    const mine = new Set(Object.values(cloudMap()).map(c => c.id));
+    const ch = await clubTeamsSheet({...inv, teamName: ''}, mine);
+    if (!ch || ch.mode === 'cancel'){ setResume(null); return; }
+    if (ch.mode === 'join'){ if (await sendJoinRequest(ch.team, iid, inv)) setResume(null); return; }
+    const tn = await askText('Hoe heet jouw team? Bijvoorbeeld JO13-1', ''); if (!tn || !tn.trim()) return;
+    try { await joinNewTeam(iid, {...inv, teamName: tn.trim(), name: myName()}); setResume(null); } catch(e){ console.error(e); await tell('Dat lukt niet: ' + (e.message || e)); }
+    return;
+  }
+  if (inv.kind === 'clubadmin'){
+    if (inv.usedBy && inv.usedBy !== myUid()){ setResume(null); await tell('Deze uitnodiging is al gebruikt. Vraag om een nieuwe link.'); return; }
+    if (!resume && !await inviteSheet({...inv, teamLabel: 'Clubbeheerder', club: inv.clubName, multi: false}, inviteUrl(iid))) return;
+    setResume(iid);
+    if (!await needLogin(`Log in of maak een account om clubbeheerder te worden van ${inv.clubName}.`)) return;
+    if (inv.usedBy && inv.usedBy !== myUid()){ setResume(null); await tell('Deze uitnodiging is al gebruikt. Vraag om een nieuwe link.'); return; }
+    try {
+      if (!inv.usedBy) await api.inviteClaim(iid, myUid(), myName());
+      await api.clubAdminJoin(inv.club, iid, inv.clubName, {name: myName() || inv.name || '', email: (cloud.user && cloud.user.email) || ''});
+    } catch(e){ console.error(e); setResume(null); await tell('Clubbeheerder worden lukt niet: ' + (e.message || e)); return; }
+    setResume(null); await detectAdmin(); ui.tab = 'beheer'; adm.sub = 'overzicht'; adm.view = null; adm.data = null; render();
+    await tell(`Je bent nu clubbeheerder van ${inv.clubName}. Bovenin staat de knop Beheerder.`); return;
+  }
   if (inv.kind === 'newteam'){
     // al eerder met deze uitnodiging een team gemaakt? dan niet nog eens
     const made = S.teams.find(t => t.fromInvite === iid);
@@ -3998,7 +4087,7 @@ async function openInviteNow(iid, resume){
     const mine = new Set(Object.values(cloudMap()).map(c => c.id));
     const ch = inv.usedBy ? {mode: 'new'} : await clubTeamsSheet(inv, mine);
     if (!ch || ch.mode === 'cancel'){ setResume(null); return; }
-    if (ch.mode === 'join'){ if (await sendJoinRequest(ch.team)) setResume(null); return; }
+    if (ch.mode === 'join'){ if (await sendJoinRequest(ch.team, iid, inv)) setResume(null); return; }
     try { await joinNewTeam(iid, inv); setResume(null); } catch(e){ console.error(e); await tell('Dat lukt niet: ' + (e.message || e)); }
     return;
   }
@@ -4065,7 +4154,7 @@ function inviteSheet(inv, url){
     const lbl = inv.teamLabel || 'een team';
     d.innerHTML = iconize(`<div class="box" style="max-height:90vh;overflow:auto">
       <div class="svhead" style="margin:0 0 10px"><div class="logo ${clubKey(inv.club) ? 'clublogo' : ''}">${clubLogo(inv.club)}</div><div><div class="club">${esc(inv.club || 'LineMeUp')}</div><div class="svteam">${esc(lbl)}</div></div></div>
-      <p style="margin-top:0;font-size:15px;font-weight:500;line-height:1.45">Hoi ${esc(inv.multi ? 'trainer' : (inv.name || 'trainer'))}! ${inv.kind === 'newteam' ? `<b>${esc(inv.byName || 'De club')}</b> nodigt je uit om trainer te worden van <b>${esc(lbl)}</b>${inv.clubName ? ' bij ' + esc(inv.clubName) : ''}. Na het inloggen staat je team klaar en voeg je je spelers toe.` : `<b>${esc(inv.byName || 'Een trainer')}</b> deelt <b>${esc(lbl)}</b> met je in LineMeUp. Samen maken jullie de opstellingen; wijzigingen zien jullie bij elkaar meteen.`}</p>
+      <p style="margin-top:0;font-size:15px;font-weight:500;line-height:1.45">Hoi ${esc(inv.multi ? 'trainer' : (inv.name || 'trainer'))}! ${inv.kind === 'clublink' ? `<b>${esc(inv.byName || 'De club')}</b> nodigt je uit voor <b>${esc(inv.clubName || 'de club')}</b> in LineMeUp. Je maakt je eigen team aan, of haakt aan bij een team dat er al is.` : inv.kind === 'clubadmin' ? `<b>${esc(inv.byName || 'De eigenaar')}</b> nodigt je uit om <b>clubbeheerder</b> te worden van <b>${esc(inv.clubName || 'de club')}</b>. Je ziet dan alle teams en trainers van de club en kunt trainers uitnodigen.` : inv.kind === 'newteam' ? `<b>${esc(inv.byName || 'De club')}</b> nodigt je uit om trainer te worden van <b>${esc(lbl)}</b>${inv.clubName ? ' bij ' + esc(inv.clubName) : ''}. Na het inloggen staat je team klaar en voeg je je spelers toe.` : `<b>${esc(inv.byName || 'Een trainer')}</b> deelt <b>${esc(lbl)}</b> met je in LineMeUp. Samen maken jullie de opstellingen; wijzigingen zien jullie bij elkaar meteen.`}</p>
       <div class="muted" style="margin:-4px 0 12px;font-size:13px">🔒 Je logt één keer in met Google of met je e-mailadres. Zo kan alleen jij bij jouw teams.</div>
       <button class="btn pri full big" data-r="ok">✅ Meedoen</button>
       ${standalone ? '' : `<div class="sgroup" style="margin-top:16px">📲 LineMeUp op je beginscherm zetten</div>
@@ -4293,18 +4382,19 @@ async function clubTeamsSheet(inv, mine){
     d.innerHTML = iconize(`<div class="box" style="max-height:90vh;overflow:auto"><p>Is jouw team er al?</p>
       <div class="muted" style="margin-bottom:10px">Deze teams van ${esc(inv.clubName)} gebruiken LineMeUp al. Train je samen met een van deze trainers? Vraag dan om aan te haken.</div>
       ${teams.map(t => `<div class="arow"><span class="mav">${esc(((t.trainers || [])[0] || t.label || '?').charAt(0).toUpperCase())}</span><span class="grow"><b>${esc(t.label)}</b><small>${esc((t.trainers || []).join(', ') || 'trainer')}${t.players != null ? ' · ' + t.players + ' spelers' : ''}</small></span><button class="btn sm pri" data-r="j:${esc(t.id)}">Aanhaken</button></div>`).join('')}
-      <button class="btn pri full" style="margin-top:12px" data-r="new">＋ Mijn team ${esc(inv.teamName)} aanmaken</button>
+      <button class="btn pri full" style="margin-top:12px" data-r="new">＋ Mijn team ${esc(inv.teamName || '')} aanmaken</button>
       <button class="btn full" style="margin-top:8px;border:0;background:none" data-r="cancel">Annuleren</button></div>`);
     d.addEventListener('click', e => { e.stopPropagation(); const b = e.target.closest('[data-r]'); if (!b) return; d.remove(); const r = b.dataset.r; res(r === 'new' ? {mode: 'new'} : r === 'cancel' ? {mode: 'cancel'} : {mode: 'join', team: teams.find(t => t.id === r.slice(2))}); });
     document.body.appendChild(d);
   });
 }
-async function sendJoinRequest(t){
+async function sendJoinRequest(t, via, inv){
   const msg = await askText(`Verzoek sturen om mee te doen met ${t.label}? ${(t.trainers || []).join(' en ') || 'De trainer'} moet je eerst toelaten. Je kunt er een berichtje bij zetten:`, '');
   if (msg === null) return false;
   try {
     await cloud.api.joinReqSet(t.id, myUid(), {name: myName(), email: (cloud.user && cloud.user.email) || '', msg: String(msg).slice(0, 200), created: Date.now()});
     const at = Date.now();
+    if (via && inv) cloud.api.eventAdd(inv.club, {type: 'request', uid: myUid(), name: myName(), email: (cloud.user && cloud.user.email) || '', team: t.label, rid: t.id, at, via}).catch(e => console.warn('melding', e));
     setPend([...pendList().filter(p => p.rid !== t.id), {rid: t.id, label: t.label, at}]);
     cloud.api.userSet(myUid(), {pending: {[t.id]: {label: t.label, at}}}).catch(() => {});
     render();
@@ -4368,6 +4458,7 @@ async function answerJoin(key, ok){
       await cloud.api.teamAddMember(c.id, uidR);
       t.people = t.people || {}; t.people[uidR] = {name: r.name || 'Trainer', email: r.email || '', joined: Date.now()};
       save(); cloudPushTeam(tid, true);
+      const ck = clubSlug(t.club); if (ck) cloud.api.eventAdd(ck, {type: 'join', uid: uidR, name: r.name || '', email: r.email || '', team: teamLabel(t), rid: c.id, at: Date.now()}).catch(() => {});
     }
     await cloud.api.joinReqDel(c.id, uidR);
     joinReqs[tid] = (joinReqs[tid] || []).filter(x => x.id !== uidR); render();
