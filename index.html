@@ -611,6 +611,8 @@
   .hfab.ping{animation:hping 1.4s ease-in-out infinite}@keyframes hping{50%{transform:scale(1.08)}}
   body.hashelp{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
   body.watching .hfab,body.gate .hfab{display:none}
+  body.inadm #teams,body.inadm nav#nav{display:none!important}
+  body.inadm header{padding-bottom:14px}
   .helpbox{max-width:520px!important;padding:16px!important}
   .helph{display:flex;align-items:center;gap:8px;margin-bottom:10px}.helph b{flex:1;font-size:20px}.helph .x{font-size:26px}
   .helpt{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}.helpt button{border:0;border-radius:999px;padding:8px 13px;font:inherit;font-weight:800;font-size:14px;background:var(--gsoft);color:var(--ink);position:relative}.helpt button.on{background:var(--g);color:#fff}
@@ -1118,6 +1120,7 @@ function render(){
   document.body.classList.remove('gate');
   const watching = isViewOnly();
   document.body.classList.toggle('watching', watching);
+  document.body.classList.toggle('inadm', ui.tab === 'beheer' && !watching);
   const wb = document.getElementById('wbar'); if (wb) wb.innerHTML = iconize(watchBanner());
   renderHeader();
   try { setCloudStatus(); } catch(e){}
@@ -1847,7 +1850,7 @@ document.addEventListener('click', async e => {
   const el = e.target.closest('[data-act],[data-tab]');
   if (drag.suppress){ drag.suppress = false; if (e.target.closest('[data-drag],#livePitch,#benchZone')) return; }
   if (!el || el.tagName === 'SELECT' || (el.tagName === 'INPUT')) return;
-  if (el.dataset.tab){ if (el.dataset.tab === 'settings') ui.sOpen = true; go(el.dataset.tab); return; }
+  if (el.dataset.tab){ if (el.dataset.tab === 'settings') ui.sOpen = true; go(el.dataset.tab === 'beheer' && ui.tab === 'beheer' ? 'matches' : el.dataset.tab); return; }
   const act = el.dataset.act, id = el.dataset.id, se = season(), m = match();
   if (/^adm|^req(Ok|No)$/.test(act)){ await admAction(act, id); return; }
   if (/^help/.test(act)){ await helpAction(act, id, el); return; }
@@ -2574,6 +2577,12 @@ async function helpLoad(force){
   try { help.mine = await cloud.api.questionsMine(); } catch(e){ console.warn('questions', e); }
   renderHelpFab();
 }
+const helpSeeded = () => help.faq.some(f => f.id === '_init');
+function helpList(kind){
+  const mine = clubSlug(team().club) || '';
+  const dyn = help.faq.filter(f => f.id !== '_init' && (f.kind || 'faq') === kind && (!f.club || f.club === mine)).sort((a, b) => (a.order || a.created || 0) - (b.order || b.created || 0)).map(f => [f.q, f.a]);
+  return helpSeeded() ? dyn : [...(kind === 'tip' ? HELP_TIPS : HELP_FAQ), ...dyn];
+}
 const helpUnseen = () => help.mine.filter(q => q.answer && !q.seen).length;
 function renderHelpFab(){
   const b = document.getElementById('hfab'); if (!b) return;
@@ -2591,8 +2600,8 @@ function helpDraw(){
   if (!m){ m = document.createElement('div'); m.className = 'modal helpm'; document.body.appendChild(m); m.addEventListener('click', e => { if (e.target === m) helpClose(); }); }
   const old = (document.getElementById('hq') || {}).value || '';
   const n = helpUnseen(), t = help.tab;
-  const faq = [...HELP_FAQ, ...help.faq.slice().sort((a, b) => (a.created || 0) - (b.created || 0)).map(f => [f.q, f.a])];
-  const body = t === 'tips' ? HELP_TIPS.map(x => `<div class="hq"><b>${esc(x[0])}</b><p>${esc(x[1])}</p></div>`).join('')
+  const faq = helpList('faq'), tips = helpList('tip');
+  const body = t === 'tips' ? tips.map(x => `<div class="hq"><b>${esc(x[0])}</b><p>${esc(x[1])}</p></div>`).join('')
     : t === 'faq' ? faq.map(x => `<details class="hq"><summary>${esc(x[0])}</summary><p>${esc(x[1])}</p></details>`).join('')
     : `${help.sent ? `<div class="hans" style="margin:0 0 10px">✅ Verstuurd. Het antwoord verschijnt hier en je ziet een rood getal bij Hulp.</div>` : ''}
        <label class="f">Staat je vraag er niet bij? Stel hem hier<textarea id="hq" rows="3" placeholder="Bijvoorbeeld: kan ik een speler ook halverwege een blok wisselen?">${esc(old)}</textarea></label>
@@ -2635,7 +2644,25 @@ async function loadQuestions(){
   await Promise.all([...keys].map(async k => { try { (await cloud.api.questionsClub(k)).forEach(q => out.push({...q, _club: k})); } catch(e){} }));
   adm.qs = out.sort((a, b) => (b.created || 0) - (a.created || 0));
   adm.qOpen = adm.qs.filter(q => !q.answer).length;
-  updateAdminTab(); if (ui.tab === 'beheer' && adm.sub === 'vragen' && !adm.answering) render();
+  updateAdminTab(); if (ui.tab === 'beheer' && adm.sub === 'vragen' && !adm.answering && !adm.fe) render();
+}
+
+// ---- tips en FAQ bijhouden (Beheerder → Vragen)
+adm.fe = null;
+const canEditFaq = f => adm.owner || !!(f.club && adm.clubs.some(c => c.key === f.club));
+function admFaqManager(){
+  const seeded = helpSeeded(), list = k => help.faq.filter(f => f.id !== '_init' && (f.kind || 'faq') === k).sort((a, b) => (a.order || a.created || 0) - (b.order || b.created || 0));
+  const row = (f, k) => `<div class="hq" style="display:flex;gap:8px;align-items:flex-start"><div style="flex:1;min-width:0"><b>${esc(f.q)}</b><p>${esc(f.a)}</p>${f.club ? `<small class="muted">Alleen voor club ${esc((adm.clubs.find(c => c.key === f.club) || {}).name || f.club)}</small>` : ''}</div>${canEditFaq(f) ? `<button class="btn sm" data-act="admFaqEdit" data-id="${esc(f.id)}">Wijzig</button><button class="x" data-act="admFaqDel" data-id="${esc(f.id)}" aria-label="Verwijderen">×</button>` : ''}</div>`;
+  const dflt = k => (k === 'tip' ? HELP_TIPS : HELP_FAQ).map(x => `<div class="hq"><b>${esc(x[0])}</b><p>${esc(x[1])}</p></div>`).join('');
+  const form = adm.fe ? `<div class="card" style="background:var(--ysoft)"><h2 style="font-size:17px">${adm.fe.id ? 'Wijzigen' : adm.fe.kind === 'tip' ? 'Nieuwe tip' : 'Nieuwe FAQ-vraag'}</h2>
+      <label class="f">${adm.fe.kind === 'tip' ? 'Titel' : 'Vraag'}<input id="feT" value="${esc(adm.fe.q || '')}"></label>
+      <label class="f">${adm.fe.kind === 'tip' ? 'Tekst' : 'Antwoord'}<textarea id="feA" rows="4">${esc(adm.fe.a || '')}</textarea></label>
+      ${!adm.owner && adm.clubs.length ? `<div class="muted" style="font-size:12px">Deze komt te staan bij de trainers van ${esc(adm.clubs.map(c => c.name).join(', '))}.</div>` : ''}
+      <div class="grid2" style="margin-top:10px"><button class="btn" data-act="admFaqCancel">Annuleren</button><button class="btn pri" data-act="admFaqSave">Opslaan</button></div></div>` : '';
+  const sect = (k, nm) => `<div class="sgroup" style="margin-top:12px">${nm}</div>${seeded ? (list(k).map(f => row(f, k)).join('') || '<div class="muted">Nog niets.</div>') : dflt(k) + list(k).map(f => row(f, k)).join('')}<button class="btn sm" style="margin-top:8px" data-act="admFaqNew" data-id="${k}">＋ ${k === 'tip' ? 'Tip' : 'FAQ-vraag'} toevoegen</button>`;
+  return `<div class="card"><h2>📚 Tips en FAQ bijhouden</h2><div class="muted">Dit zien trainers bij Hulp. ${seeded ? '' : adm.owner ? 'De standaardtekst kun je pas wijzigen als je hem overneemt.' : 'De standaardtekst wordt door de eigenaar beheerd; jij kunt eigen items voor je club toevoegen.'}</div>
+    ${!seeded && adm.owner ? `<button class="btn full" style="margin-top:10px" data-act="admFaqSeed">⬇️ Standaard tips en FAQ overnemen om te bewerken</button>` : ''}
+    ${form}${sect('tip', 'Tips')}${sect('faq', 'FAQ')}</div>`;
 }
 function admQuestions(){
   const open = adm.qs.filter(q => !q.answer), done = adm.qs.filter(q => q.answer);
@@ -2647,7 +2674,8 @@ function admQuestions(){
       <div class="grid2" style="margin-top:10px"><button class="btn" data-act="admQOpen" data-id="">Annuleren</button><button class="btn pri" data-act="admQSend" data-id="${esc(q.id)}">Antwoord versturen</button></div>`
     : `<button class="btn pri full" data-act="admQOpen" data-id="${esc(q.id)}">Beantwoorden</button>`}</div>`;
   return `${open.length ? open.map(card).join('') : '<div class="card empty"><b>✅</b>Geen open vragen.</div>'}
-    ${done.length ? `<details class="ainact"><summary>Beantwoord (${done.length})</summary>${done.map(card).join('')}</details>` : ''}`;
+    ${done.length ? `<details class="ainact"><summary>Beantwoord (${done.length})</summary>${done.map(card).join('')}</details>` : ''}
+    ${admFaqManager()}`;
 }
 // welke beheerrol heeft deze gebruiker?
 async function detectAdmin(){
@@ -2724,7 +2752,7 @@ function viewBeheer(){
   if (adm.err) return `<div class="card empty"><b>⚠️</b>${esc(adm.err)}<br><br><button class="btn" data-act="admReload">Opnieuw</button></div>`;
   const vq = ['vragen', 'Vragen' + (adm.qOpen ? ` (${adm.qOpen})` : '')];
   const subs = adm.owner ? [['overzicht', 'Overzicht'], ['clubs', 'Clubs'], ['trainers', 'Trainers'], vq] : [['overzicht', 'Overzicht'], ['teams', 'Teams'], ['trainers', 'Trainers'], vq];
-  let head = `<div class="admhead"><span class="admrole">${adm.owner ? 'EIGENAAR' : 'CLUBBEHEER'}</span>${!adm.owner && adm.clubs.length > 1 ? `<select data-admclub="1">${adm.clubs.map(c => `<option value="${esc(c.key)}" ${c.key === adm.club ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select>` : !adm.owner ? `<b>${esc((adm.clubs[0] || {}).name || '')}</b>` : ''}<button class="btn sm" data-act="admReload" aria-label="Vernieuwen">🔄</button></div>
+  let head = `<div class="admhead"><button class="btn sm" data-tab="matches">‹ Terug naar app</button><span class="admrole">${adm.owner ? 'EIGENAAR' : 'CLUBBEHEER'}</span>${!adm.owner && adm.clubs.length > 1 ? `<select data-admclub="1">${adm.clubs.map(c => `<option value="${esc(c.key)}" ${c.key === adm.club ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select>` : !adm.owner ? `<b>${esc((adm.clubs[0] || {}).name || '')}</b>` : ''}<button class="btn sm" data-act="admReload" aria-label="Vernieuwen">🔄</button></div>
     <div class="admsubs">${subs.map(([k, n]) => `<button class="${adm.sub === k && !adm.view ? 'on' : ''}" data-act="admSub" data-id="${k}">${n}</button>`).join('')}</div>`;
   if (adm.view){
     const [kind, id] = adm.view;
@@ -2876,6 +2904,23 @@ async function admAction(act, id){
   const api = cloud.api, d = adm.data;
   const reload = async msg => { if (msg) toast(msg); adm.data = null; await loadAdmin(true); };
   try {
+    if (act === 'admFaqNew'){ adm.fe = {id: null, kind: id, q: '', a: ''}; return render(); }
+    if (act === 'admFaqEdit'){ const f = help.faq.find(x => x.id === id); if (!f) return; adm.fe = {id, kind: f.kind || 'faq', q: f.q, a: f.a}; return render(); }
+    if (act === 'admFaqCancel'){ adm.fe = null; return render(); }
+    if (act === 'admFaqSave'){
+      const q = (document.getElementById('feT') || {}).value.trim(), a = (document.getElementById('feA') || {}).value.trim();
+      if (!q || !a){ toast('Vul beide velden in'); return; }
+      const old = adm.fe.id && help.faq.find(x => x.id === adm.fe.id), fid = adm.fe.id || 'f' + uid() + uid();
+      await api.faqSet({id: fid, kind: adm.fe.kind, q, a, club: old ? (old.club || '') : (adm.owner ? '' : adm.club || ''), created: old ? old.created : Date.now(), order: old ? old.order || old.created : Date.now()});
+      adm.fe = null; await helpLoad(true); toast('Opgeslagen'); return render();
+    }
+    if (act === 'admFaqDel'){ if (!await ask('Dit item verwijderen?', 'Verwijderen')) return; await api.faqDel(id); await helpLoad(true); return render(); }
+    if (act === 'admFaqSeed'){
+      let n = 0; const t0 = Date.now();
+      for (const [k, arr] of [['tip', HELP_TIPS], ['faq', HELP_FAQ]]) for (const x of arr){ await api.faqSet({id: `d-${k}-${n}`, kind: k, q: x[0], a: x[1], club: '', created: t0 + n, order: t0 + n}); n++; }
+      await api.faqSet({id: '_init', kind: 'init', q: '', a: '', club: '', created: t0, order: t0});
+      await helpLoad(true); toast('Overgenomen. Je kunt nu alles wijzigen'); return render();
+    }
     if (act === 'admQOpen'){ adm.answering = id || null; return render(); }
     if (act === 'admQSend'){
       const q = adm.qs.find(x => x.id === id); if (!q) return;
@@ -3234,7 +3279,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-10.5';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-10.6';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
