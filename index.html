@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="LineUp">
+<meta name="apple-mobile-web-app-title" content="LineMeUp">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="application-name" content="LineUp">
+<meta name="application-name" content="LineMeUp">
 <link rel="manifest" href="manifest.webmanifest?v=6">
 <link rel="icon" type="image/svg+xml" href="icon.svg?v=6">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=6">
@@ -15,7 +15,7 @@
 <meta name="theme-color" content="#0f6b35">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,500;0,600;0,700;0,800;0,900;1,800;1,900&family=Barlow:wght@500;600;700;800&family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@500;600;700;800;900&family=Roboto+Slab:wght@700;800;900&display=swap" rel="stylesheet">
-<title>LineUp</title>
+<title>LineMeUp</title>
 <style>
   /* ===================== Thema's ===================== */
   :root, body[data-theme="neon"]{
@@ -543,6 +543,7 @@
   .notif .btn:not(.pri){background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.3)}
   .card.pend{border:2px dashed var(--ybd);background:var(--ysoft)}
   .roval{min-height:48px;box-sizing:border-box;border-radius:12px;border:1px solid var(--line);background:var(--surf2);padding:8px 12px;display:flex;flex-direction:column;justify-content:center;font-weight:800}.roval small{font-size:12px;font-weight:600;color:var(--muted)}
+  .arowx{display:flex;align-items:center;gap:4px;border-bottom:1px solid var(--line)}.arowx .arow{flex:1;border-bottom:0}
   .ainact{margin-top:8px}.ainact summary{cursor:pointer;font-weight:800;color:var(--muted);padding:8px 0}.ainact .arow{opacity:.7}
   .peekbar{display:flex;align-items:center;gap:10px;background:#111;color:#fff;border-radius:14px;padding:10px 12px;margin:8px 0;font-size:14px}.peekbar span{flex:1}.peekbar .btn{background:#fff;color:#111;border:0;white-space:nowrap}
   .sbar{position:sticky;top:calc(var(--phh, 0px) + 6px);z-index:20;background:#151515;color:#fff;border-radius:20px;padding:10px 12px 12px;margin-bottom:12px;box-shadow:0 6px 16px rgba(0,0,0,.18)}
@@ -598,7 +599,12 @@
   .wbarin .weye{width:38px;height:38px;flex:none;border-radius:12px;background:var(--y);color:var(--on-y);display:flex;align-items:center;justify-content:center}
   .wbarin .grow{flex:1;min-width:0;display:flex;flex-direction:column}.wbarin small{font-size:11px;font-weight:900;letter-spacing:.06em;opacity:.7}.wbarin b{font-size:17px;line-height:1.2}.wbarin .wnames{letter-spacing:0;font-weight:600;font-size:12px}
   .wbarin .btn{background:#fff;color:#111;border:0;white-space:nowrap}
-  body.watching #teams,body.watching nav [data-tab="beheer"],body.watching #cloudDot{display:none!important}
+  body.watching #admBtn,body.watching #cloudDot{display:none!important}
+  .admbtn{margin-left:auto;display:inline-flex;align-items:center;gap:6px;border:0;border-radius:999px;padding:9px 14px;font:inherit;font-weight:900;font-size:14px;background:linear-gradient(135deg,#ffc400,#ff8a00);color:#1a1200;box-shadow:0 2px 10px rgba(255,160,0,.55);cursor:pointer;white-space:nowrap}
+  .admbtn[hidden]{display:none}
+  .admbtn.on{background:#1a1200;color:#ffc400;box-shadow:0 0 0 2px #ffc400}
+  .admbtn .ic{width:18px;height:18px}
+  .wtabs{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.wtabs button{border:0;border-radius:999px;padding:6px 12px;font:inherit;font-weight:800;font-size:13px;background:rgba(255,255,255,.14);color:#fff}.wtabs button.on{background:var(--y);color:var(--on-y)}
   body.watching header{padding-top:8px}
   .vobanner{display:flex;align-items:center;gap:10px;background:var(--ink);color:#fff;border-radius:16px;padding:10px 12px;margin:0 0 12px;font-size:14px}.vobanner span{flex:1}.vobanner .btn{background:var(--y);color:var(--on-y);border:0}
   .nm2{display:flex;gap:6px}.nm2 input{padding:6px 8px;min-width:0;flex:1}
@@ -699,7 +705,7 @@
 <script>document.body.dataset.theme = "graslicht";</script>
 <div id="wbar"></div>
 <header>
-  <div class="brand"><div class="logo" id="logoBox"></div><div><div class="club" id="clubName"></div><div class="app wordmark"><i class="speed"></i>Line<span>Up</span></div></div><span id="cloudDot" class="cloud" data-act="goCloud"></span></div>
+  <div class="brand"><div class="logo" id="logoBox"></div><div><div class="club" id="clubName"></div><div class="app wordmark"><i class="speed"></i>Line<span>MeUp</span></div></div><span id="cloudDot" class="cloud" data-act="goCloud"></span><button id="admBtn" class="admbtn" data-tab="beheer" hidden></button></div>
   <div class="teams" id="teams"></div>
   <nav id="nav">
   <button data-tab="matches"><b>📋</b>Wedstrijden</button>
@@ -769,7 +775,7 @@ function iconize(html){
   }).join('');
 }
 const stripEmo = t => String(t).replace(EMO_RE, '').replace(/\s{2,}/g, ' ').trim();
-const LOGO_MARK = `<svg viewBox="0 0 512 512" class="mark" aria-label="LineUp"><defs><linearGradient id="lu-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#f1f1f1"/></linearGradient><linearGradient id="lu-s" gradientUnits="userSpaceOnUse" x1="20" y1="0" x2="210" y2="0"><stop offset="0" stop-color="#ffe14d" stop-opacity="0"/><stop offset=".6" stop-color="#ffe14d" stop-opacity=".85"/><stop offset="1" stop-color="#fff3a6"/></linearGradient><radialGradient id="lu-bg" cx=".25" cy=".15" r="1.05"><stop offset="0" stop-color="#13803f"/><stop offset=".6" stop-color="#0f6b35"/><stop offset="1" stop-color="#0b5a2c"/></radialGradient><radialGradient id="lu-glow" cx=".63" cy=".5" r=".42"><stop offset="0" stop-color="#ffe14d" stop-opacity=".30"/><stop offset="1" stop-color="#ffe14d" stop-opacity="0"/></radialGradient><clipPath id="lu-ball"><circle cx="322" cy="256" r="116"/></clipPath></defs><rect width="512" height="512" rx="112" fill="url(#lu-bg)"/><rect width="512" height="512" rx="112" fill="url(#lu-glow)"/><g stroke="url(#lu-s)" stroke-linecap="round" fill="none"><path d="M70 180H196" stroke-width="20"/><path d="M30 256H186" stroke-width="28"/><path d="M84 332H200" stroke-width="20"/></g><circle cx="322" cy="256" r="125" fill="#ffe14d"/><g transform="rotate(-18 322 256)"><circle cx="322" cy="256" r="116" fill="url(#lu-g)"/><g clip-path="url(#lu-ball)" fill="#0a0a0a" stroke="#0a0a0a" stroke-width="9" stroke-linejoin="round"><polygon points="322.0,214.0 361.9,243.0 346.7,290.0 297.3,290.0 282.1,243.0"/><path d="M322.0 214.0L322.0 170.0"/><path d="M361.9 243.0L403.8 229.4"/><path d="M346.7 290.0L372.5 325.6"/><path d="M297.3 290.0L271.5 325.6"/><path d="M282.1 243.0L240.2 229.4"/><path d="M322.0 170.0L266.7 180.0"/><path d="M322.0 170.0L377.3 180.0"/><path d="M403.8 229.4L377.3 180.0"/><path d="M403.8 229.4L411.4 285.0"/><path d="M372.5 325.6L411.4 285.0"/><path d="M372.5 325.6L322.0 350.0"/><path d="M271.5 325.6L322.0 350.0"/><path d="M271.5 325.6L232.6 285.0"/><path d="M240.2 229.4L232.6 285.0"/><path d="M240.2 229.4L266.7 180.0"/><polygon points="374.9,183.2 363.3,147.4 393.7,125.3 424.1,147.4 412.5,183.2"/><polygon points="407.6,283.8 438.0,261.7 468.5,283.8 456.8,319.6 419.2,319.6"/><polygon points="322.0,346.0 352.4,368.1 340.8,403.9 303.2,403.9 291.6,368.1"/><polygon points="236.4,283.8 224.8,319.6 187.2,319.6 175.5,283.8 206.0,261.7"/><polygon points="269.1,183.2 231.5,183.2 219.9,147.4 250.3,125.3 280.7,147.4"/></g></g></svg>`;
+const LOGO_MARK = `<svg viewBox="0 0 512 512" class="mark" aria-label="LineMeUp"><defs><linearGradient id="lu-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#f1f1f1"/></linearGradient><linearGradient id="lu-s" gradientUnits="userSpaceOnUse" x1="20" y1="0" x2="210" y2="0"><stop offset="0" stop-color="#ffe14d" stop-opacity="0"/><stop offset=".6" stop-color="#ffe14d" stop-opacity=".85"/><stop offset="1" stop-color="#fff3a6"/></linearGradient><radialGradient id="lu-bg" cx=".25" cy=".15" r="1.05"><stop offset="0" stop-color="#13803f"/><stop offset=".6" stop-color="#0f6b35"/><stop offset="1" stop-color="#0b5a2c"/></radialGradient><radialGradient id="lu-glow" cx=".63" cy=".5" r=".42"><stop offset="0" stop-color="#ffe14d" stop-opacity=".30"/><stop offset="1" stop-color="#ffe14d" stop-opacity="0"/></radialGradient><clipPath id="lu-ball"><circle cx="322" cy="256" r="116"/></clipPath></defs><rect width="512" height="512" rx="112" fill="url(#lu-bg)"/><rect width="512" height="512" rx="112" fill="url(#lu-glow)"/><g stroke="url(#lu-s)" stroke-linecap="round" fill="none"><path d="M70 180H196" stroke-width="20"/><path d="M30 256H186" stroke-width="28"/><path d="M84 332H200" stroke-width="20"/></g><circle cx="322" cy="256" r="125" fill="#ffe14d"/><g transform="rotate(-18 322 256)"><circle cx="322" cy="256" r="116" fill="url(#lu-g)"/><g clip-path="url(#lu-ball)" fill="#0a0a0a" stroke="#0a0a0a" stroke-width="9" stroke-linejoin="round"><polygon points="322.0,214.0 361.9,243.0 346.7,290.0 297.3,290.0 282.1,243.0"/><path d="M322.0 214.0L322.0 170.0"/><path d="M361.9 243.0L403.8 229.4"/><path d="M346.7 290.0L372.5 325.6"/><path d="M297.3 290.0L271.5 325.6"/><path d="M282.1 243.0L240.2 229.4"/><path d="M322.0 170.0L266.7 180.0"/><path d="M322.0 170.0L377.3 180.0"/><path d="M403.8 229.4L377.3 180.0"/><path d="M403.8 229.4L411.4 285.0"/><path d="M372.5 325.6L411.4 285.0"/><path d="M372.5 325.6L322.0 350.0"/><path d="M271.5 325.6L322.0 350.0"/><path d="M271.5 325.6L232.6 285.0"/><path d="M240.2 229.4L232.6 285.0"/><path d="M240.2 229.4L266.7 180.0"/><polygon points="374.9,183.2 363.3,147.4 393.7,125.3 424.1,147.4 412.5,183.2"/><polygon points="407.6,283.8 438.0,261.7 468.5,283.8 456.8,319.6 419.2,319.6"/><polygon points="322.0,346.0 352.4,368.1 340.8,403.9 303.2,403.9 291.6,368.1"/><polygon points="236.4,283.8 224.8,319.6 187.2,319.6 175.5,283.8 206.0,261.7"/><polygon points="269.1,183.2 231.5,183.2 219.9,147.4 250.3,125.3 280.7,147.4"/></g></g></svg>`;
 
 /* ===================== Data ===================== */
 const KEY = 'opstellingmaker.v1';
@@ -863,7 +869,7 @@ const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch
 const LOGO_KEY = 'opstellingmaker.logo';
 let logoSrc = null;
 const CLUBS = {maliskamp: {logo: 'club-maliskamp.png', name: 'Maliskamp'}, emplina: {logo: 'club-emplina.png', name: 'Emplina'}};
-const clubKey = name => { const n = String(name || '').toLowerCase(); return Object.keys(CLUBS).find(k => n.includes(k)) || ''; };
+const clubKey = name => '';  // één ontwerp voor alle clubs
 function applyClub(name){ const k = clubKey(name); if (document.body.dataset.club !== k) document.body.dataset.club = k; return k; }
 const clubLogo = name => { const k = clubKey(name); return k ? `<img src="${CLUBS[k].logo}" alt="Logo ${esc(CLUBS[k].name)}">` : LOGO_MARK; };
 function renderLogo(){ const b = document.getElementById('logoBox'), k = applyClub(team().club); const tc = document.querySelector('meta[name=theme-color]'); if (tc) tc.content = k === 'maliskamp' ? '#ffffff' : k === 'emplina' ? '#004a99' : '#0f6b35'; if (b){ b.classList.toggle('clublogo', !!k); b.innerHTML = clubLogo(team().club); } const c = document.getElementById('clubName'); if (c && logoSrc && c.textContent && !c.querySelector('img')) c.insertAdjacentHTML('afterbegin', `<img src="${logoSrc}" alt="" class="clubimg">`); }
@@ -1080,12 +1086,14 @@ function renderHeader(){
   document.documentElement.style.setProperty('--team', teamColor(t)); document.documentElement.style.setProperty('--team-on', onColor(teamColor(t)));
   renderLogo();
   const cn = document.getElementById('clubName'); if (cn) cn.textContent = t.club || '';
-  document.title = (t.club ? t.club + ' · ' : '') + 'LineUp';
-  document.getElementById('teams').innerHTML = iconize(
+  document.title = (t.club ? t.club + ' · ' : '') + 'LineMeUp';
+  const watchingNow = isViewOnly(), curAs = (cloudCfg(t.id) || {}).as;
+  document.getElementById('teams').innerHTML = watchingNow ? iconize(sortedTeams().filter(x => (cloudCfg(x.id) || {}).admin && (cloudCfg(x.id) || {}).as === curAs).map(x => `<button class="pill tpill ${x.id === t.id ? 'on' : ''}" data-act="team" data-id="${x.id}">${x.inactive ? '💤 ' : ''}${esc(teamLabel(x))}</button>`).join('')) : iconize(
     `<button class="pill addt" data-act="newTeamSheet" aria-label="Nieuw team">＋</button>` +
     sortedTeams().filter(x => !(cloudCfg(x.id) || {}).admin && (!x.inactive || x.id === t.id)).map(x => `<button class="pill tpill ${x.id === t.id ? 'on' : ''}" data-act="team" data-id="${x.id}">${x.inactive ? '💤 ' : ''}${esc(teamLabel(x))}</button>`).join('') +
     (S.teams.some(x => x.inactive && x.id !== t.id && !(cloudCfg(x.id) || {}).admin) ? `<button class="pill" data-act="inactiveTeams">💤 Niet actief (${S.teams.filter(x => x.inactive && x.id !== t.id && !(cloudCfg(x.id) || {}).admin).length})</button>` : ''));
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === ui.tab));
+  const abn = document.getElementById('admBtn'); if (abn) abn.classList.toggle('on', ui.tab === 'beheer');
 }
 function render(){
   if (typeof WIE_ID !== 'undefined' && WIE_ID){ renderWie(); return; }
@@ -1278,9 +1286,9 @@ function viewMatch(){
       ${roster.map(p => { const on = isIn(m, p.id); return `<button class="attb ${on ? 'ja' : 'nee'}" data-act="togglePresent" data-id="${p.id}">${on ? '✅' : '❌'} <span>${esc(pshort(p))}${p.guest ? ' <small>invaller</small>' : ''}</span></button>`; }).join('') || '<span class="muted">Nog geen spelers – voeg ze toe bij Instellingen.</span>'}
     </div>
     <div class="muted" style="margin-top:6px">Tik op een naam om iemand af of aan te melden.${ph === 'live' ? ' Tijdens de wedstrijd geldt dat vanaf het huidige blok; zijn plek wordt opgevuld door de reserve met de minste minuten.' : ''}</div>
-    <div class="row" style="margin-top:10px"><input id="guestName" placeholder="Invaller (naam)" list="otherNames" style="flex:3"><button class="btn sm" style="flex:none" data-act="addGuest">＋ Invaller</button></div>
+    ${ph === 'prep' ? '' : `<div class="row" style="margin-top:10px"><input id="guestName" placeholder="Invaller (naam)" list="otherNames" style="flex:3"><button class="btn sm" style="flex:none" data-act="addGuest">＋ Invaller</button></div>
     <datalist id="otherNames">${S.teams.flatMap(t => t.id === team().id ? [] : t.seasons[t.seasons.length - 1].players.map(p => `<option value="${esc(p.name)}">`)).join('')}</datalist>
-    ${(m.guests || []).length ? `<div class="muted" style="margin-top:8px">Invallers: ${m.guests.map(g => `${esc(pshort(g))} <button class="x" style="font-size:16px" data-act="delGuest" data-id="${g.id}">×</button>`).join(' ')}</div>` : ''}
+    ${(m.guests || []).length ? `<div class="muted" style="margin-top:8px">Invallers: ${m.guests.map(g => `${esc(pshort(g))} <button class="x" style="font-size:16px" data-act="delGuest" data-id="${g.id}">×</button>`).join(' ')}</div>` : ''}`}
     </details>
   </div>`;
 
@@ -1650,7 +1658,7 @@ function teamInfoCard(x){
     <div class="muted">${ls.players.length} spelers · ${ls.matches.length} wedstrijden · ${ls.matches.filter(m => m.phase === 'done').length} gespeeld</div>
   </div>
   <div class="card">
-    <h2>🔧 Beheer</h2>
+    <h2>🔧 Team beheren</h2>
     <button class="btn full" style="margin-bottom:8px" data-act="copyTeam" data-id="${x.id}">📋 Kopie maken voor nieuw seizoen</button>
     <div class="muted" style="margin:-2px 0 12px">Neemt spelers en instellingen mee, zonder wedstrijden. Bijv. JO8 26/27 → JO9 27/28.</div>
     <button class="btn full" style="margin-bottom:8px" data-act="resetSeason" data-id="${x.id}">🔄 Seizoen resetten</button>
@@ -1828,7 +1836,7 @@ document.addEventListener('click', async e => {
   if (act === 'reqSend'){ await sendRequest(); return; }
   if (act === 'reqCancel'){ await cloud.api.reqDel(myUid()).catch(() => {}); adm.myReq = null; render(); return; }
   if (act === 'verifyMail'){ try { await cloud.api.sendVerify(); tell('We hebben je een e-mail gestuurd. Klik op de link erin en log daarna opnieuw in.'); } catch(e){ tell('Versturen lukt niet: ' + (e.message || e)); } return; }
-  if (act === 'voStop'){ stopWatching(S.active.team); return; }
+  if (act === 'voStop'){ stopWatching(); return; }
   const tgt = el.dataset.scope === 'match' ? m && m.settings : se;
   switch (act){
     case 'team': S.active.team = id; ui.matchId = null; ui.sel = null; ui.tab = 'matches'; commit(); window.scrollTo(0, 0); break;
@@ -1888,11 +1896,12 @@ document.addEventListener('click', async e => {
     }
     case 'saveDone': await saveDone(m); break;
     case 'addGuest': {
-      const n = document.getElementById('guestName').value.trim();
-      if (!n){ document.getElementById('guestName').focus(); return; }
+      const gi = (el.closest('.row') || document).querySelector('input') || document.getElementById('guestName');
+      const n = gi.value.trim();
+      if (!n){ gi.focus(); return; }
       const g = {id:uid(), name:n, number:'', pref:[], guest:true};
       m.guests = m.guests || []; m.guests.push(g); m.present.push(g.id);
-      commit(); toast(`${n} doet mee als invaller`); break;
+      commit(); toast(`${n} staat bij de reserves`); break;
     }
     case 'delGuest': {
       m.guests = (m.guests || []).filter(g => g.id !== id); m.present = m.present.filter(x => x !== id);
@@ -2380,7 +2389,7 @@ async function startSurvey(se, t){
 function shareSurvey(se, t){
   const url = surveyUrl(se.survey.sid);
   const txt = `⚽ ${teamLabel(t)}: vul hier je voor- en achternaam en je favoriete posities in! ${url}`;
-  if (navigator.share) navigator.share({title: 'LineUp – ' + teamLabel(t), text: txt}).catch(() => {});
+  if (navigator.share) navigator.share({title: 'LineMeUp – ' + teamLabel(t), text: txt}).catch(() => {});
   else navigator.clipboard?.writeText(txt).then(() => toast('Link gekopieerd – plak hem in de team-app'), () => tell(url));
 }
 async function fetchSurvey(se, quiet){
@@ -2542,8 +2551,9 @@ function updateAdminTab(){
   const nav = document.getElementById('nav'); if (!nav) return;
   let b = nav.querySelector('[data-tab="beheer"]');
   const show = adm.owner || adm.clubs.length > 0;
-  if (show && !b){ nav.insertAdjacentHTML('beforeend', iconize(`<button data-tab="beheer"><b>🛡️</b>Beheer</button>`)); }
-  if (!show && b){ b.remove(); if (ui.tab === 'beheer'){ ui.tab = 'matches'; render(); } }
+  const ab = document.getElementById('admBtn');
+  if (ab){ if (show && !ab.innerHTML) ab.innerHTML = iconize('🛡️') + ' Beheerder'; ab.hidden = !show; }
+  if (!show && ui.tab === 'beheer'){ ui.tab = 'matches'; render(); }
   document.body.classList.toggle('has-admin', show);
 }
 const fmtD = t => t ? new Date(t).toLocaleDateString('nl-NL', {day:'numeric', month:'short', year: new Date(t).getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined}) : '–';
@@ -2597,7 +2607,7 @@ const achip = (x, strong) => `<span class="achip ${strong ? 'on' : ''}">${esc(x)
 function viewBeheer(){
   if (!myUid()) return `<div class="card empty"><b>🔒</b>Log in om de beheeromgeving te gebruiken.</div>`;
   if (!adm.owner && !adm.clubs.length) return `<div class="card empty"><b>🛡️</b>Je hebt geen beheerrechten.</div>`;
-  if (!adm.data){ setTimeout(() => loadAdmin(), 0); return `<div class="card empty"><b>⏳</b>Beheergegevens laden…</div>`; }
+  if (!adm.data){ setTimeout(() => loadAdmin(), 0); return `<div class="card empty"><b>⏳</b>Beheerdersgegevens laden…</div>`; }
   if (adm.err) return `<div class="card empty"><b>⚠️</b>${esc(adm.err)}<br><br><button class="btn" data-act="admReload">Opnieuw</button></div>`;
   const subs = adm.owner ? [['overzicht', 'Overzicht'], ['clubs', 'Clubs'], ['trainers', 'Trainers']] : [['overzicht', 'Overzicht'], ['teams', 'Teams'], ['trainers', 'Trainers']];
   let head = `<div class="admhead"><span class="admrole">${adm.owner ? 'EIGENAAR' : 'CLUBBEHEER'}</span>${!adm.owner && adm.clubs.length > 1 ? `<select data-admclub="1">${adm.clubs.map(c => `<option value="${esc(c.key)}" ${c.key === adm.club ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select>` : !adm.owner ? `<b>${esc((adm.clubs[0] || {}).name || '')}</b>` : ''}<button class="btn sm" data-act="admReload" aria-label="Vernieuwen">🔄</button></div>
@@ -2665,7 +2675,7 @@ function admTrainersList(){
   return `<label class="f">Zoeken<input data-admq="1" value="${esc(adm.q || '')}" placeholder="Naam, e-mail of team" autocomplete="off"></label>
     <div class="card"><div class="ahead"><h2>${tr.length} trainers</h2><button class="btn sm" data-act="admInvite" data-id="${esc(adm.owner ? '' : adm.club)}">＋ Uitnodigen</button></div>
     ${list.map(x => arow(x.name || x.email, esc(x.name || 'Naam onbekend'), `${esc(x.email || 'e-mail nog onbekend')}${x.provider ? ' · ' + (x.provider === 'google.com' ? 'Google' : 'e-mail') : ''} · ${esc(x.teams.map(t => t.label).join(', ') || 'geen team')}`,
-      achip(x.blocked ? 'Geblokkeerd' : x.isOwner ? 'Eigenaar' : x.clubAdmin.length ? 'Clubbeheer' : x.teams.some(t => t.role === 'owner') ? 'Teambeheer' : 'Trainer', x.isOwner), adm.owner ? 'admTrainer' : '', x.uid)).join('') || '<div class="muted">Geen trainers gevonden.</div>'}</div>`;
+      achip(x.blocked ? 'Geblokkeerd' : x.isOwner ? 'Eigenaar' : x.clubAdmin.length ? 'Clubbeheerder' : 'Trainer', x.isOwner), 'admTrainer', x.uid)).join('') || '<div class="muted">Geen trainers gevonden.</div>'}</div>`;
 }
 function admTeamView(id){
   const t = adm.data.teams.find(x => x.id === id); if (!t) return `<div class="card empty">Team niet gevonden.</div>`;
@@ -2673,17 +2683,16 @@ function admTeamView(id){
   return `<div class="card"><small class="achip">${esc(t.clubName || 'Zonder club')}</small><h2 style="margin:6px 0 10px;font-size:26px">${esc(t.label)}${t.inactive ? ' <span class="achip">💤 niet actief</span>' : ''}</h2>
       <div class="atiles">${tile(t.players.length, 'spelers')}${tile(t.played, 'gespeeld')}${tile(t.won, 'gewonnen')}</div><div class="muted" style="margin-top:8px">Laatst gewijzigd: ${ago(t.updated)}</div></div>
     <div class="card"><div class="ahead"><h2>Trainers</h2><button class="btn sm" data-act="admInviteTeam" data-id="${esc(id)}">＋ Uitnodigen</button></div>
-      ${Object.entries(t.members).map(([u, role]) => { const p = t.people[u] || {}; return arow(p.name, esc(p.name || 'Trainer'), `${esc(p.email || '')}${p.email ? ' · ' : ''}${role === 'owner' ? 'beheert het team' : 'trainer'}`, `<button class="x" data-act="admKick" data-id="${esc(id + '|' + u)}" aria-label="Verwijderen uit team">×</button>`); }).join('')}
+      ${Object.entries(t.members).map(([u, role]) => { const p = t.people[u] || {}; return `<div class="arowx">${arow(p.name, esc(p.name || 'Trainer'), `${esc(p.email || '')}${p.email ? ' · ' : ''}trainer`, achip('›'), 'admTrainer', u)}<button class="x" data-act="admKick" data-id="${esc(id + '|' + u)}" aria-label="Verwijderen uit team">×</button></div>`; }).join('')}
       ${t.invites.map(iv => arow(iv.name, esc(iv.name), 'uitgenodigd · nog niet meegedaan', achip('Wacht'))).join('')}</div>
     <div class="card"><h2>Spelers</h2><div class="achips">${t.players.map(p => achip(p.name)).join('') || '<span class="muted">Nog geen spelers.</span>'}</div></div>
-    <div class="card"><div class="ahead"><h2>Wedstrijden</h2><button class="btn sm" data-act="admOpenTeam" data-id="${esc(id)}">👁️ Meekijken</button></div>
+    <div class="card"><div class="ahead"><h2>Wedstrijden</h2></div>
       ${t.matches.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '')).map(m => {
         const ph = {prep: 'Voorbereiding', live: 'Bezig', post: 'Na wedstrijd', done: 'Gespeeld'}[m.phase] || '';
         const sc = m.phase === 'done' || m.phase === 'post' ? `${m.goalsFor || 0}–${m.goalsAgainst || 0}` : '';
         const nm = m.home === false ? `${m.opponent || 'Tegenstander'} – ${t.clubName || 'wij'}` : `${t.clubName || 'Wij'} – ${m.opponent || 'tegenstander'}`;
-        return arow(sc || ph.charAt(0), esc(nm), `${m.date ? fmtD(Date.parse(m.date + 'T12:00')) + ' · ' : ''}${ph}${sc ? ' · ' + sc : ''}`, achip('👁️'), 'admWatch', id + '|' + m.id);
+        return arow(sc || ph.charAt(0), esc(nm), `${m.date ? fmtD(Date.parse(m.date + 'T12:00')) + ' · ' : ''}${ph}${sc ? ' · ' + sc : ''}`, '');
       }).join('') || '<div class="muted">Nog geen wedstrijden.</div>'}</div>
-    <button class="btn pri full" style="margin-bottom:8px" data-act="admOpenTeam" data-id="${esc(id)}">👁️ ${local ? 'Ga naar team' : 'Meekijken en aanpassen'}</button>
     <div class="grid2"><button class="btn" data-act="admInactive" data-id="${esc(id)}">${t.inactive ? '✅ Weer actief maken' : '💤 Niet actief zetten'}</button><button class="btn red" data-act="admDelTeam" data-id="${esc(id)}">Team verwijderen</button></div>`;
 }
 function admTrainerView(u){
@@ -2692,11 +2701,11 @@ function admTrainerView(u){
   const clubs = [...new Set(adm.data.teams.map(t => t.club).filter(Boolean))];
   return `<div class="card">${arow(x.name, `<span style="font-size:20px">${esc(x.name || 'Naam onbekend')}</span>`, esc(x.clubAdmin.length ? 'Clubbeheer · ' + x.clubAdmin.join(', ') : x.isOwner ? 'Eigenaar' : 'Trainer'))}
       ${kv('E-mail', esc(x.email || 'onbekend'))}${kv('Inloggen via', x.provider ? (x.provider === 'google.com' ? 'Google' : 'e-mail en wachtwoord') : 'onbekend')}${kv('Account sinds', fmtD(x.created))}${kv('Laatst actief', x.lastActive ? ago(x.lastActive) : 'onbekend')}${x.blocked ? kv('Status', '<span style="color:var(--red)">Geblokkeerd</span>') : ''}</div>
-    <div class="card"><h2>Teams</h2>${x.teams.map(t => `${arow(t.label, esc(t.label) + (t.clubName ? ' · ' + esc(t.clubName) : ''), t.role === 'owner' ? 'beheert het team' : 'trainer', achip('›'), 'admTeam', t.id)}`).join('') || '<div class="muted">Geen teams.</div>'}
-      ${x.teams.length ? `<div class="achips" style="margin-top:8px">${x.teams.map(t => `<button class="achip" data-act="admOpenTeam" data-id="${esc(t.id)}">👁️ Meekijken: ${esc(t.label)}</button>`).join('')}</div>` : ''}</div>
-    <div class="card"><details ${clubs.some(c => { const cl = adm.data.clubs.find(y => y.id === c); return cl && cl.uids && cl.uids[u]; }) ? 'open' : ''}><summary>🛡️ Clubbeheerrechten</summary><div class="muted" style="margin:8px 0">Een clubbeheerder ziet alle teams van de club. Een gewone trainer heeft dit niet nodig.</div>
+    <div class="card"><h2>Teams</h2>${x.teams.map(t => `${arow(t.label, esc(t.label) + (t.clubName ? ' · ' + esc(t.clubName) : ''), 'trainer', achip('›'), 'admTeam', t.id)}`).join('') || '<div class="muted">Geen teams.</div>'}
+      ${x.teams.length && x.uid !== myUid() ? `<button class="btn pri full" style="margin-top:10px" data-act="admWatchUser" data-id="${esc(x.uid)}">👁️ Meekijken als ${esc(shortName(x.name || '') || 'deze trainer')}</button><div class="muted" style="margin-top:6px;font-size:12px">Je ziet de app precies zoals deze trainer hem ziet, met al zijn of haar teams.</div>` : ''}</div>
+    <div class="card" ${adm.owner ? '' : 'hidden'}><details ${clubs.some(c => { const cl = adm.data.clubs.find(y => y.id === c); return cl && cl.uids && cl.uids[u]; }) ? 'open' : ''}><summary>🛡️ Clubbeheerrechten</summary><div class="muted" style="margin:8px 0">Een clubbeheerder ziet alle teams van de club. Een gewone trainer heeft dit niet nodig.</div>
       ${clubs.map(c => { const cl = adm.data.clubs.find(y => y.id === c), on = cl && cl.uids && cl.uids[u], nm = (cl && cl.name) || (adm.data.teams.find(t => t.club === c) || {}).clubName || c; return `<div class="arow"><span class="grow"><b>${esc(nm)}</b><small>${on ? 'Is clubbeheerder' : 'Geen beheerrechten'}</small></span><button class="btn sm ${on ? 'red' : ''}" data-act="admToggleClubAdmin" data-id="${esc(c + '|' + u)}">${on ? 'Weghalen' : 'Beheerder maken'}</button></div>`; }).join('') || '<span class="muted">Nog geen clubs.</span>'}</details></div>
-    ${x.isOwner ? '' : `<div class="grid2"><button class="btn red" data-act="admKickAll" data-id="${esc(u)}">Uit alle teams</button><button class="btn red" data-act="admBlock" data-id="${esc(u)}">${x.blocked ? 'Blokkade opheffen' : 'Account blokkeren'}</button></div>
+    ${x.isOwner || !adm.owner ? '' : `<div class="grid2"><button class="btn red" data-act="admKickAll" data-id="${esc(u)}">Uit alle teams</button><button class="btn red" data-act="admBlock" data-id="${esc(u)}">${x.blocked ? 'Blokkade opheffen' : 'Account blokkeren'}</button></div>
     <div class="muted" style="margin-top:8px;font-size:12px">Het account zelf verwijder je in Firebase → Authentication → Users.</div>`}`;
 }
 function admClubView(k){
@@ -2708,7 +2717,7 @@ function admClubView(k){
       <div class="atiles" style="margin-top:10px">${tile(ts.length, 'teams')}${tile(trainers, 'trainers')}${tile(players, 'spelers')}</div></div>
     ${k !== '-' ? `<div class="card"><h2>Clubbeheerders</h2>${c && c.uids ? Object.entries(c.uids).map(([u, x]) => arow(x.name, esc(x.name || x.email), esc(x.email || ''), `<button class="x" data-act="admRemoveClubAdmin" data-id="${esc(k + '|' + u)}" aria-label="Verwijderen">×</button>`)).join('') : '<div class="muted">Nog geen beheerders.</div>'}
       <div class="row" style="margin-top:10px"><input id="admAdminMail" type="email" placeholder="E-mailadres nieuwe beheerder" style="flex:3"><button class="btn pri sm" style="flex:none" data-act="admAddClubAdmin" data-id="${esc(k)}">Toevoegen</button></div>
-      <div class="muted" style="margin-top:6px;font-size:12px">De persoon moet al een keer in LineUp hebben ingelogd.</div></div>` : ''}
+      <div class="muted" style="margin-top:6px;font-size:12px">De persoon moet al een keer in LineMeUp hebben ingelogd.</div></div>` : ''}
     ${admTeamsCard(ts, k === '-' ? '' : k)}`;
 }
 // ---- meekijken (alleen lezen)
@@ -2716,27 +2725,34 @@ const VO_OK = ['team', 'goSettings', 'goSettings2', 'goPlayers', 'stab', 'openMa
 const isViewOnly = () => { try { return !!(cloudCfg(S.active.team) || {}).admin; } catch(e){ return false; } };
 function watchBanner(){
   if (!isViewOnly()) return '';
-  const t = team(), names = Object.values(t.people || {}).map(p => shortName(p.name || '')).filter(Boolean).join(', ');
-  return `<div class="wbarin"><span class="weye">👁️</span><span class="grow"><small>JE KIJKT MEE${t.club ? ' · ' + esc(String(t.club).toUpperCase()) : ''}</small><b>${esc(teamLabel(t))}</b>${names ? `<small class="wnames">${esc(names)}</small>` : ''}</span><button class="btn sm" data-act="voStop">‹ Terug naar beheer</button></div>`;
+  const cur = cloudCfg(S.active.team) || {};
+  const t = team(), who = cur.asName || Object.values(t.people || {}).map(p => shortName(p.name || '')).filter(Boolean)[0] || 'trainer';
+  return `<div class="wbarin"><span class="weye">👁️</span><span class="grow"><small>JE KIJKT MEE ALS</small><b>${esc(who)}</b></span><button class="btn sm" data-act="voStop">‹ Terug naar Beheerder</button></div>
+`;
 }
-function stopWatching(tid){
-  unlinkLive(tid);
-  const map = cloudMap(); delete map[tid]; setCloudMap(map);
-  S.teams = S.teams.filter(t => t.id !== tid);
+function stopWatching(){
+  const map = cloudMap();
+  Object.keys(map).filter(k => map[k].admin).forEach(k => { unlinkLive(k); delete map[k]; S.teams = S.teams.filter(t => t.id !== k); });
+  setCloudMap(map);
   if (!S.teams.length) S = defaultState();
   if (!S.teams.some(t => t.id === S.active.team)) S.active.team = S.teams[0].id;
   ui.matchId = null; ui.tab = 'beheer'; commit(); window.scrollTo(0, 0);
 }
-async function watchTeam(rid, mid){
-  const api = cloud.api;
-  let tid = Object.keys(cloudMap()).find(k => cloudMap()[k].id === rid && S.teams.some(t => t.id === k));
-  if (!tid){
-    const r = await api.teamGet(rid), td = teamFromRemote(r, null); if (!td){ await tell('Dit team kon niet geladen worden.'); return; }
-    tid = uid(); S.teams.push({...td, id: tid}); const map = cloudMap(); map[tid] = {id: rid, v: 7, admin: true}; setCloudMap(map); normalize();
-    listenTeam(tid);
+// meekijken als een gebruiker: al zijn/haar teams worden geladen
+async function watchUser(who, startRid){
+  const api = cloud.api, x = adminTrainers().find(y => y.uid === who); if (!x || !x.teams.length) return;
+  const tids = []; let first = null;
+  for (const tm of x.teams){
+    let tid = Object.keys(cloudMap()).find(k => cloudMap()[k].id === tm.id && S.teams.some(t => t.id === k));
+    if (!tid){
+      const r = await api.teamGet(tm.id).catch(() => null), td = r && teamFromRemote(r, null); if (!td) continue;
+      tid = uid(); S.teams.push({...td, id: tid}); const map = cloudMap(); map[tid] = {id: tm.id, v: 7, admin: true, as: who, asName: x.name || x.email || ''}; setCloudMap(map); normalize(); listenTeam(tid);
+    }
+    tids.push(tid); if (tm.id === startRid) first = tid;
   }
-  S.active.team = tid; ui.tab = 'matches'; ui.matchId = mid || null; ui.sel = null;
-  if (mid) ui.seg = 0;
+  if (!tids.length){ await tell('Deze teams konden niet geladen worden.'); return; }
+  const act = tids.filter(t => !(S.teams.find(y => y.id === t) || {}).inactive);
+  S.active.team = first || act[0] || tids[0]; ui.tab = 'matches'; ui.matchId = null; ui.sel = null;
   commit(); window.scrollTo(0, 0);
 }
 
@@ -2784,7 +2800,7 @@ async function admAction(act, id){
     if (act === 'admRemoveClubAdmin'){ const [c, u] = id.split('|'); if (!await ask('Deze beheerder verwijderen?', 'Verwijderen')) return; await api.clubAdminRemove(c, u); return reload(); }
     if (act === 'admAddClubAdmin'){ const mail = (document.getElementById('admAdminMail').value || '').trim().toLowerCase(); if (!mail) return;
       const us = d.users.find(x => (x.email || '').toLowerCase() === mail);
-      if (!us){ await tell('Er is nog niemand met dit e-mailadres ingelogd in LineUp. Vraag diegene eerst één keer in te loggen.'); return; }
+      if (!us){ await tell('Er is nog niemand met dit e-mailadres ingelogd in LineMeUp. Vraag diegene eerst één keer in te loggen.'); return; }
       const cl = d.clubs.find(y => y.id === id);
       await api.clubAdminsSet(id, {name: (cl && cl.name) || (d.teams.find(t => t.club === id) || {}).clubName || id, uids: {[us.id]: {name: us.name || '', email: us.email || ''}}}); return reload(`${us.name || mail} is nu clubbeheerder`); }
     if (act === 'admNewClub'){ const n = await askText('Naam van de club (bijvoorbeeld Maliskamp):', ''); if (!n || !n.trim()) return; const k = clubSlug(n);
@@ -2794,8 +2810,7 @@ async function admAction(act, id){
     if (act === 'admDelTeam'){ const t = d.teams.find(x => x.id === id);
       if (!await ask(`${t.label} definitief verwijderen? Alle spelers, wedstrijden en statistieken van dit team verdwijnen voor alle trainers.`, 'Verwijderen')) return;
       await api.teamDelete(id); if (t.club) await api.idxDel(t.club, id).catch(() => {}); adm.view = null; return reload(`${t.label} verwijderd`); }
-    if (act === 'admOpenTeam') return watchTeam(id);
-    if (act === 'admWatch'){ const [rid, mid] = id.split('|'); return watchTeam(rid, mid); }
+    if (act === 'admWatchUser'){ return watchUser(id.split('|')[0]); }
     if (act === 'admInvite' || act === 'admInviteTeam') return admInviteSheet(act === 'admInviteTeam' ? {team: id} : {club: id});
   } catch(e){ console.error(e); tell('Dat lukt niet: ' + (e.message || e)); }
 }
@@ -2814,7 +2829,7 @@ function admInviteSheet(pre){
         ${clubs.length > 1 || adm.owner ? `<label class="f">Club<select id="ivClub">${clubs.map(k => `<option value="${esc(k)}" ${k === club ? 'selected' : ''}>${esc(clubName(k))}</option>`).join('')}</select></label>` : ''}
         <label class="f">Naam trainer<input id="ivName" placeholder="bv. Rick Smit" maxlength="40" autocomplete="off"></label>
         ${mode === 'nieuw' ? `<label class="f">Teamnaam<input id="ivTeam" placeholder="bv. JO13-1" maxlength="30" autocomplete="off"></label>
-          <div class="muted" style="font-size:13px;margin:-2px 0 10px">Het team komt bij ${esc(clubName(club))} met seizoen ${esc(seasonName())} en de KNVB-instellingen bij de teamnaam. De trainer logt in via de link en wordt beheerder van het team.</div>`
+          <div class="muted" style="font-size:13px;margin:-2px 0 10px">Het team komt bij ${esc(clubName(club))} met seizoen ${esc(seasonName())} en de KNVB-instellingen bij de teamnaam. De trainer logt in via de link en wordt trainer van het team.</div>`
           : `<label class="f">Team<select id="ivTeamSel">${teams.map(t => `<option value="${esc(t.id)}" ${t.id === pre.team ? 'selected' : ''}>${esc(t.label)}</option>`).join('')}</select></label>`}
         <button class="btn pri full big" data-r="ok">Link maken en delen</button>
         <button class="btn full" style="margin-top:8px" data-r="no">Annuleren</button></div>`);
@@ -2835,12 +2850,12 @@ function admInviteSheet(pre){
           await api.inviteCreate(iid, {kind: 'newteam', club, clubName: clubName(club), teamName: tn, teamLabel: tn, name, byName: myName(), by: myUid(), created: Date.now(), usedBy: null});
           await api.pendingSet(club, iid, {name, teamName: tn, created: Date.now(), by: myUid()});
           box.remove(); res();
-          shareInviteText(`⚽ Hoi ${name}! Je bent uitgenodigd om trainer te worden van ${tn} bij ${clubName(club)} in LineUp. Open deze link, log in en je team staat klaar: ${inviteUrl(iid)}`);
+          shareInviteText(`⚽ Hoi ${name}! Je bent uitgenodigd om trainer te worden van ${tn} bij ${clubName(club)} in LineMeUp. Open deze link, log in en je team staat klaar: ${inviteUrl(iid)}`);
         } else {
           const rid = box.querySelector('#ivTeamSel').value, t = d.teams.find(x => x.id === rid); if (!t) return;
           await api.inviteCreate(iid, {team: rid, name, teamLabel: t.label, club: t.clubName || '', byName: myName(), by: myUid(), created: Date.now(), usedBy: null});
           box.remove(); res();
-          shareInviteText(`⚽ Hoi ${name}! Ik deel ${t.label} met je in LineUp, dan kunnen we samen de opstellingen maken. Open deze link om mee te doen: ${inviteUrl(iid)}`);
+          shareInviteText(`⚽ Hoi ${name}! Ik deel ${t.label} met je in LineMeUp, dan kunnen we samen de opstellingen maken. Open deze link om mee te doen: ${inviteUrl(iid)}`);
         }
         adm.data = null; loadAdmin(true);
       } catch(err){ console.error(err); tell('Uitnodiging maken lukt niet: ' + (err.message || err)); }
@@ -2849,7 +2864,7 @@ function admInviteSheet(pre){
   });
 }
 function shareInviteText(txt){
-  if (navigator.share) navigator.share({title: 'LineUp', text: txt}).catch(() => {});
+  if (navigator.share) navigator.share({title: 'LineMeUp', text: txt}).catch(() => {});
   else navigator.clipboard?.writeText(txt).then(() => toast('Uitnodiging gekopieerd – plak hem in WhatsApp'), () => tell(txt));
 }
 // ---- nieuw team via uitnodiging
@@ -2870,8 +2885,8 @@ async function joinNewTeam(iid, inv){
 function requestCard(){
   if (!cloud.user || adm.owner) return '';
   const r = adm.myReq;
-  if (adm.clubs.length) return `<div class="card"><h2>🛡️ Clubbeheer</h2><div class="muted">Je bent beheerder van ${esc(adm.clubs.map(c => c.name).join(', '))}. Je vindt alles onder het tabblad <b>Beheer</b>.</div></div>`;
-  if (r) return `<div class="card"><h2>🛡️ Clubbeheer aangevraagd</h2><div class="muted">Je aanvraag voor ${esc(r.clubName)} wacht op goedkeuring. Zodra die er is, verschijnt het tabblad Beheer.</div><button class="btn full" style="margin-top:10px" data-act="reqCancel">Aanvraag intrekken</button></div>`;
+  if (adm.clubs.length) return `<div class="card"><h2>🛡️ Clubbeheer</h2><div class="muted">Je bent beheerder van ${esc(adm.clubs.map(c => c.name).join(', '))}. Je vindt alles onder de gele knop <b>Beheerder</b> bovenin.</div></div>`;
+  if (r) return `<div class="card"><h2>🛡️ Clubbeheer aangevraagd</h2><div class="muted">Je aanvraag voor ${esc(r.clubName)} wacht op goedkeuring. Zodra die er is, verschijnt de gele knop Beheerder bovenin.</div><button class="btn full" style="margin-top:10px" data-act="reqCancel">Aanvraag intrekken</button></div>`;
   return `<div class="card"><details><summary>🛡️ Clubbeheer aanvragen</summary>
     <div class="muted" style="margin:8px 0">Ben je jeugdcoördinator of bestuurslid? Als clubbeheerder zie je alle teams en trainers van je club en kun je trainers uitnodigen.</div>
     <label class="f">Club<input id="reqClub" value="${esc(team().club || '')}" autocomplete="off"></label>
@@ -3094,7 +3109,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-09.5';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-10.3';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
@@ -3552,7 +3567,7 @@ function loginDialog(intro, startMode){
     let mode = startMode === 'up' ? 'up' : 'in';
     const draw = (msg = '', ok = false) => {
       const email = d.querySelector('#auMail')?.value || '', name = d.querySelector('#auName')?.value || myName();
-      d.innerHTML = iconize(`<div class="box" style="max-height:90vh;overflow:auto"><p>👤 ${mode === 'up' ? 'Nieuw account maken' : 'Inloggen bij LineUp'}</p>
+      d.innerHTML = iconize(`<div class="box" style="max-height:90vh;overflow:auto"><p>👤 ${mode === 'up' ? 'Nieuw account maken' : 'Inloggen bij LineMeUp'}</p>
         ${intro ? `<div class="muted" style="margin:-4px 0 12px">${esc(intro)}</div>` : ''}
         <button class="btn full gbtn" data-r="google"><svg viewBox="0 0 48 48" width="20" height="20" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.3-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.3-.4-3.5z"/></svg>Doorgaan met Google</button>
         <div class="ordiv"><span>of met e-mail</span></div>
@@ -3657,8 +3672,8 @@ async function inviteTrainer(t){
 }
 function sendInvite(t, inv){
   const url = inviteUrl(inv.id);
-  const txt = `⚽ Hoi ${inv.name}! Ik deel ${teamLabel(t)} met je in LineUp, dan kunnen we samen de opstellingen maken. Open deze link om mee te doen: ${url}`;
-  if (navigator.share) navigator.share({title: 'LineUp – ' + teamLabel(t), text: txt}).catch(() => {});
+  const txt = `⚽ Hoi ${inv.name}! Ik deel ${teamLabel(t)} met je in LineMeUp, dan kunnen we samen de opstellingen maken. Open deze link om mee te doen: ${url}`;
+  if (navigator.share) navigator.share({title: 'LineMeUp – ' + teamLabel(t), text: txt}).catch(() => {});
   else navigator.clipboard?.writeText(txt).then(() => toast('Uitnodiging gekopieerd – plak hem in WhatsApp'), () => tell(url));
 }
 async function cancelInvite(t, iid){
@@ -3790,20 +3805,20 @@ function installSteps(){
       <li>Open deze pagina in <b>Safari</b>. Zit je in WhatsApp? Tik op het kompas of op ••• → <i>Open in Safari</i>.</li>
       <li>Tik onderin op de <b>deelknop</b> (vierkantje met pijl omhoog).</li>
       <li>Scroll omlaag en kies <b>Zet op beginscherm</b> → <b>Voeg toe</b>.</li>
-      <li>Open LineUp vanaf je beginscherm en <b>log in met hetzelfde account</b>. Je teams staan er dan meteen in.</li>
+      <li>Open LineMeUp vanaf je beginscherm en <b>log in met hetzelfde account</b>. Je teams staan er dan meteen in.</li>
     </ol></div>`;
   const and = `<div class="istep"><b>🤖 Android</b><ol>
       <li>Open deze pagina in <b>Chrome</b>. Zit je in WhatsApp? Tik op ⋮ → <i>Openen in Chrome</i>.</li>
       <li>Tik rechtsboven op <b>⋮</b> → <b>App installeren</b> of <b>Toevoegen aan startscherm</b>.</li>
-      <li>Open LineUp vanaf je startscherm. Ben je hier al ingelogd, dan staat het team er meteen in; anders log je daar in met hetzelfde account.</li>
-    </ol><button class="btn sm" id="installBtn" data-r="install" ${installEvt ? '' : 'hidden'}>📲 Installeer LineUp nu</button></div>`;
+      <li>Open LineMeUp vanaf je startscherm. Ben je hier al ingelogd, dan staat het team er meteen in; anders log je daar in met hetzelfde account.</li>
+    </ol><button class="btn sm" id="installBtn" data-r="install" ${installEvt ? '' : 'hidden'}>📲 Installeer LineMeUp nu</button></div>`;
   return pf === 'android' ? and + `<details><summary class="muted">Heb je een iPhone?</summary>${ios}</details>`
     : pf === 'ios' ? ios + `<details><summary class="muted">Heb je een Android-telefoon?</summary>${and}</details>`
     : ios + and;
 }
 function installCard(){
   if (isStandalone()) return '';
-  return `<div class="card"><h2>📲 LineUp op je beginscherm</h2><div class="muted" style="margin-bottom:6px">Dan open je LineUp voortaan als een gewone app.</div>${installSteps()}</div>`;
+  return `<div class="card"><h2>📲 LineMeUp op je beginscherm</h2><div class="muted" style="margin-bottom:6px">Dan open je LineMeUp voortaan als een gewone app.</div>${installSteps()}</div>`;
 }
 function inviteSheet(inv, url){
   return new Promise(res => {
@@ -3811,12 +3826,12 @@ function inviteSheet(inv, url){
     const standalone = isStandalone();
     const lbl = inv.teamLabel || 'een team';
     d.innerHTML = iconize(`<div class="box" style="max-height:90vh;overflow:auto">
-      <div class="svhead" style="margin:0 0 10px"><div class="logo ${clubKey(inv.club) ? 'clublogo' : ''}">${clubLogo(inv.club)}</div><div><div class="club">${esc(inv.club || 'LineUp')}</div><div class="svteam">${esc(lbl)}</div></div></div>
-      <p style="margin-top:0;font-size:15px;font-weight:500;line-height:1.45">Hoi ${esc(inv.multi ? 'trainer' : (inv.name || 'trainer'))}! ${inv.kind === 'newteam' ? `<b>${esc(inv.byName || 'De club')}</b> nodigt je uit om trainer te worden van <b>${esc(lbl)}</b>${inv.clubName ? ' bij ' + esc(inv.clubName) : ''}. Na het inloggen staat je team klaar en voeg je je spelers toe.` : `<b>${esc(inv.byName || 'Een trainer')}</b> deelt <b>${esc(lbl)}</b> met je in LineUp. Samen maken jullie de opstellingen; wijzigingen zien jullie bij elkaar meteen.`}</p>
+      <div class="svhead" style="margin:0 0 10px"><div class="logo ${clubKey(inv.club) ? 'clublogo' : ''}">${clubLogo(inv.club)}</div><div><div class="club">${esc(inv.club || 'LineMeUp')}</div><div class="svteam">${esc(lbl)}</div></div></div>
+      <p style="margin-top:0;font-size:15px;font-weight:500;line-height:1.45">Hoi ${esc(inv.multi ? 'trainer' : (inv.name || 'trainer'))}! ${inv.kind === 'newteam' ? `<b>${esc(inv.byName || 'De club')}</b> nodigt je uit om trainer te worden van <b>${esc(lbl)}</b>${inv.clubName ? ' bij ' + esc(inv.clubName) : ''}. Na het inloggen staat je team klaar en voeg je je spelers toe.` : `<b>${esc(inv.byName || 'Een trainer')}</b> deelt <b>${esc(lbl)}</b> met je in LineMeUp. Samen maken jullie de opstellingen; wijzigingen zien jullie bij elkaar meteen.`}</p>
       <div class="muted" style="margin:-4px 0 12px;font-size:13px">🔒 Je logt één keer in met Google of met je e-mailadres. Zo kan alleen jij bij jouw teams.</div>
       <button class="btn pri full big" data-r="ok">✅ Meedoen</button>
-      ${standalone ? '' : `<div class="sgroup" style="margin-top:16px">📲 LineUp op je beginscherm zetten</div>
-      <div class="muted" style="margin-bottom:8px">Doe eerst mee, zet LineUp daarna op je beginscherm en log daar in. Dan open je LineUp voortaan als een gewone app.</div>
+      ${standalone ? '' : `<div class="sgroup" style="margin-top:16px">📲 LineMeUp op je beginscherm zetten</div>
+      <div class="muted" style="margin-bottom:8px">Doe eerst mee, zet LineMeUp daarna op je beginscherm en log daar in. Dan open je LineMeUp voortaan als een gewone app.</div>
       ${installSteps()}`}
       <button class="btn full" style="margin-top:12px" data-r="no">Niet nu</button></div>`);
     document.body.appendChild(d);
@@ -3847,7 +3862,7 @@ function accountCard(){
     <div class="mrow"><span class="mav">${esc((myName() || '?').charAt(0).toUpperCase())}</span><span class="grow"><b>${esc(myName() || 'Naam onbekend')}</b><small>${esc(cloud.user.email || '')}</small></span><button class="btn sm" data-act="editMyName">✏️</button></div>
     ${cloud.user.provider === 'password' && !cloud.user.emailVerified ? `<div class="muted" style="margin-top:10px;font-size:13px">Je e-mailadres is nog niet bevestigd. <a href="#" data-act="verifyMail">Bevestigingsmail sturen</a></div>` : ''}
     <button class="btn full" style="margin-top:10px" data-act="logout">Uitloggen</button>
-    <div class="muted" style="text-align:center;margin-top:10px;font-size:12px">LineUp versie ${APP_VERSION}</div>
+    <div class="muted" style="text-align:center;margin-top:10px;font-size:12px">LineMeUp versie ${APP_VERSION}</div>
   </div>${requestCard()}`;
 }
 function cloudCard(t = team()){
@@ -3874,18 +3889,18 @@ function cloudCard(t = team()){
     <button class="btn full" style="margin-top:8px" data-act="pasteInvite">🔗 Ik heb een uitnodigingslink gekregen</button>
   </div>`;
   const st = cloud.outdated ? 'old' : (L ? L.status : 'busy');
-  const members = L ? L.members : {}, people = t.people || {}, owner = isOwner(t.id);
-  const ids = Object.keys(members).sort((a, b) => (members[b] === 'owner') - (members[a] === 'owner') || (people[a]?.name || '').localeCompare(people[b]?.name || ''));
+  const members = L ? L.members : {}, people = t.people || {};
+  const ids = Object.keys(members).sort((a, b) => (people[a]?.name || '').localeCompare(people[b]?.name || ''));
   return `
   <div class="card">${head}
-    <div class="set"><div class="lbl">Online bewaard<small>${owner ? 'Jij beheert dit team' : 'Gedeeld door ' + esc(people[ids.find(x => members[x] === 'owner')]?.name || 'een trainer')}</small></div><b class="cloud ${st}">${{ok:'✓ Opgeslagen', busy:'… Bezig', err:'⚠️ Geen verbinding', old:'⬆️ Ververs de app', off:'—'}[st] || ''}</b></div>
+    <div class="set"><div class="lbl">Online bewaard<small>Gedeeld met je mede-trainers</small></div><b class="cloud ${st}">${{ok:'✓ Opgeslagen', busy:'… Bezig', err:'⚠️ Geen verbinding', old:'⬆️ Ververs de app', off:'—'}[st] || ''}</b></div>
     <div class="sgroup" style="margin-top:14px">Gedeeld met</div>
     <div class="mlist">
-      ${ids.map(u => { const me = u === myUid(), p = people[u] || {}; return `<div class="mrow"><span class="mav">${esc((p.name || '?').charAt(0).toUpperCase())}</span><span class="grow"><b>${esc(p.name || 'Trainer')}${me ? ' (jij)' : ''}</b><small>${members[u] === 'owner' ? 'Beheerder' : 'Trainer'}${p.joined ? ' · sinds ' + new Date(p.joined).toLocaleDateString('nl-NL', {day:'numeric', month:'short'}) : ''}</small></span>${owner && !me ? `<button class="x" data-act="removeMember" data-id="${esc(u)}" aria-label="Verwijderen">×</button>` : ''}</div>`; }).join('')}
+      ${ids.map(u => { const me = u === myUid(), p = people[u] || {}; return `<div class="mrow"><span class="mav">${esc((p.name || '?').charAt(0).toUpperCase())}</span><span class="grow"><b>${esc(p.name || 'Trainer')}${me ? ' (jij)' : ''}</b><small>Trainer${p.joined ? ' · sinds ' + new Date(p.joined).toLocaleDateString('nl-NL', {day:'numeric', month:'short'}) : ''}</small></span>${!me ? `<button class="x" data-act="removeMember" data-id="${esc(u)}" aria-label="Verwijderen">×</button>` : ''}</div>`; }).join('')}
       ${(t.invites || []).map(iv => `<div class="mrow inv"><span class="mav">${esc((iv.name || '?').charAt(0).toUpperCase())}</span><span class="grow"><b>${esc(iv.name)}</b><small>Uitgenodigd · nog niet meegedaan</small></span><button class="btn sm" data-act="reInvite" data-id="${esc(iv.id)}">📤</button><button class="x" data-act="cancelInvite" data-id="${esc(iv.id)}" aria-label="Intrekken">×</button></div>`).join('')}
     </div>
     <button class="btn pri full" style="margin-top:12px" data-act="inviteTrainer">＋ Trainer uitnodigen (link via WhatsApp)</button>
-    ${owner ? '' : `<button class="btn full" style="margin-top:8px" data-act="leaveTeam">Dit team verlaten</button>`}
+    ${ids.length > 1 ? `<button class="btn full" style="margin-top:8px" data-act="leaveTeam">Dit team verlaten</button>` : ''}
   </div>`;
 }
 /* ===================== Nieuwe trainers: welkom, rondleiding, aanhaken ===================== */
@@ -4038,7 +4053,7 @@ async function clubTeamsSheet(inv, mine){
   return new Promise(res => {
     const d = document.createElement('div'); d.className = 'modal';
     d.innerHTML = iconize(`<div class="box" style="max-height:90vh;overflow:auto"><p>Is jouw team er al?</p>
-      <div class="muted" style="margin-bottom:10px">Deze teams van ${esc(inv.clubName)} gebruiken LineUp al. Train je samen met een van deze trainers? Vraag dan om aan te haken.</div>
+      <div class="muted" style="margin-bottom:10px">Deze teams van ${esc(inv.clubName)} gebruiken LineMeUp al. Train je samen met een van deze trainers? Vraag dan om aan te haken.</div>
       ${teams.map(t => `<div class="arow"><span class="mav">${esc(((t.trainers || [])[0] || t.label || '?').charAt(0).toUpperCase())}</span><span class="grow"><b>${esc(t.label)}</b><small>${esc((t.trainers || []).join(', ') || 'trainer')}${t.players != null ? ' · ' + t.players + ' spelers' : ''}</small></span><button class="btn sm pri" data-r="j:${esc(t.id)}">Aanhaken</button></div>`).join('')}
       <button class="btn pri full" style="margin-top:12px" data-r="new">＋ Mijn team ${esc(inv.teamName)} aanmaken</button>
       <button class="btn full" style="margin-top:8px;border:0;background:none" data-r="cancel">Annuleren</button></div>`);

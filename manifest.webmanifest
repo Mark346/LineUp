@@ -1,6 +1,6 @@
 {
-  "name": "LineUp",
-  "short_name": "LineUp",
+  "name": "LineMeUp",
+  "short_name": "LineMeUp",
   "description": "Opstellingen, wissels en speeltijd voor je voetbalteam",
   "start_url": "./",
   "scope": "./",
