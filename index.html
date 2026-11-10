@@ -623,7 +623,7 @@
   .wtabs{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.wtabs button{border:0;border-radius:999px;padding:6px 12px;font:inherit;font-weight:800;font-size:13px;background:rgba(255,255,255,.14);color:#fff}.wtabs button.on{background:var(--y);color:var(--on-y)}
   body.watching header{padding-top:8px}
   .vobanner{display:flex;align-items:center;gap:10px;background:var(--ink);color:#fff;border-radius:16px;padding:10px 12px;margin:0 0 12px;font-size:14px}.vobanner span{flex:1}.vobanner .btn{background:var(--y);color:var(--on-y);border:0}
-  .nm2{display:flex;gap:6px}.nm2 input{padding:6px 8px;min-width:0;flex:1}
+  .nm2{display:flex;gap:6px}.nm2 input{padding:6px 8px;min-width:0;flex:1}.nm2 input.initIn{flex:0 0 64px;text-align:center}
   .svhead{display:flex;align-items:center;gap:12px;margin:2px 2px 14px}
   .svhead .logo{width:52px;height:52px}
   .svhead .club{font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:800;color:var(--muted)}
@@ -855,7 +855,12 @@ function defaultState(){
     {id:uid(), name:'JO15', color:'#c8102e', seasons:[defaultSeason(sn, 11, '1-4-3-3', 3, 70)]}
   ], active:{team:null, season:{}}};
 }
+function lastInitial(l){ const all = String(l || '').trim().split(/\s+/).filter(Boolean), w = all.filter(x => !/^(van|de|der|den|het|ter|ten|te|in|op|'t|t|v\.|d\.|v\/d|la|le|du|da|di|von|el|al)$/i.test(x)); const c = (w[0] || all[all.length - 1] || '').replace(/[^\p{L}]/gu, ''); return c ? c[0].toLocaleUpperCase('nl') : ''; }
+function initName(full){ const w = String(full || '').trim().split(/\s+/).filter(Boolean); if (!w.length) return ''; const li = lastInitial(w.slice(1).join(' ')); return li ? w[0] + ' ' + li : w[0]; }
+const pid = () => 'p' + Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4);
 function normalize(){
+  // elke speler: naam = voornaam + eerste letter achternaam, en een uniek speler-ID waar statistieken en speeltijd aan hangen
+  (S.teams || []).forEach(t => (t.seasons || []).forEach(se => { const seen = new Set(); (se.players || []).forEach(p => { p.name = initName(p.name); if (!p.id || seen.has(p.id)) p.id = pid(); seen.add(p.id); }); }));
   S.active = S.active || {team:null, season:{}};
   S.active.season = S.active.season || {};
   S.teams.forEach(t => t.seasons.forEach(se => { if (se.fieldPlayers === 6 && se.formation === '1-2-1-2' && !se.f1131){ se.formation = '1-1-3-1'; } se.f1131 = true; }));
@@ -908,7 +913,7 @@ const player = id => season().players.find(p => p.id === id) || guestOf(id);
 const TUSSEN = new Set(['van','de','der','den','het','ter','ten','te','in','op',"'t",'t','v.','d.','v/d','la','le','du','da','di','von','el','al']);
 const splitName = full => { const w = String(full || '').trim().split(/\s+/).filter(Boolean); return {first: w[0] || '', last: w.slice(1).join(' ')}; };
 const lastCore = last => { const w = String(last || '').split(/\s+/).filter(Boolean); return w.find(x => !TUSSEN.has(x.toLowerCase())) || w[w.length - 1] || ''; };
-const shortName = full => { const {first, last} = splitName(full); const c = lastCore(last); return c ? `${first} ${c[0].toUpperCase()}.` : first; };
+const shortName = full => { const {first, last} = splitName(full); const c = lastCore(last); return c ? `${first} ${c[0].toUpperCase()}` : first; };
 const cap = w => w ? w[0].toLocaleUpperCase('nl') + w.slice(1) : w;
 const niceFirst = f => String(f || '').trim().split(/\s+/).filter(Boolean).map(w => w.split('-').map(cap).join('-')).join(' ');
 const niceLast = l => String(l || '').trim().split(/\s+/).filter(Boolean).map(w => TUSSEN.has(w.toLowerCase()) ? w.toLowerCase() : w.split('-').map(cap).join('-')).join(' ');
@@ -1578,17 +1583,18 @@ function viewPlayers(){
     ${se.players.length ? se.players.map(p => `
       <div class="item" style="flex-wrap:wrap">
         <div class="num">${esc(p.number || '•')}</div>
-        <div class="grow nm2"><input value="${esc(splitName(p.name).first)}" data-pn="first" data-id="${p.id}" placeholder="Voornaam" aria-label="Voornaam"><input value="${esc(splitName(p.name).last)}" data-pn="last" data-id="${p.id}" placeholder="Achternaam" aria-label="Achternaam"></div>
+        <div class="grow nm2"><input value="${esc(splitName(p.name).first)}" data-pn="first" data-id="${p.id}" placeholder="Voornaam" aria-label="Voornaam"><input class="initIn" value="${esc(splitName(p.name).last)}" data-pn="last" data-id="${p.id}" placeholder="Letter" maxlength="3" aria-label="Eerste letter achternaam" autocapitalize="characters"></div>
         <button class="x" data-act="delPlayer" data-id="${p.id}">×</button>
         ${usePos() ? `<div class="pprow">${[0, 1, 2].map(k => `<label><span>${k + 1}e keus</span><select data-pp="${k}" data-id="${p.id}"><option value="">–</option><optgroup label="Linie">${POS_GROUPS.slice(0, 3).map(g => `<option value="${g.v}" ${(p.pos || [])[k] === g.v ? 'selected' : ''}>${g.s}</option>`).join('')}</optgroup><optgroup label="Kant van het veld">${POS_GROUPS.slice(3).map(g => `<option value="${g.v}" ${(p.pos || [])[k] === g.v ? 'selected' : ''}>${g.s}</option>`).join('')}</optgroup><optgroup label="Positie (${esc(se.formation)})">${posCodes(se).map(c => `<option value="${c}" ${(p.pos || [])[k] === c ? 'selected' : ''}>${c} · ${POS_NAMES[c]}</option>`).join('')}${(p.pos || [])[k] && !(p.pos[k] || '').startsWith('g:') && !posCodes(se).includes(p.pos[k]) ? `<option value="${esc(p.pos[k])}" selected>${esc(p.pos[k])} (andere formatie)</option>` : ''}</optgroup></select></label>`).join('')}</div>` : ''}
       </div>`).join('') : `<div class="empty"><b>👥</b>Nog geen spelers. Voeg ze hieronder toe.</div>`}
   </div>
   <div class="card">
     <h2>➕ Speler toevoegen aan ${esc(team().name)}</h2>
-    <div class="row"><input id="newName" placeholder="Voornaam" style="flex:2" autocapitalize="words"><input id="newLast" placeholder="Achternaam" style="flex:2" autocapitalize="words" enterkeyhint="done"><input id="newNum" placeholder="#" inputmode="numeric" style="flex:1;min-width:0"></div>
+    <div class="row"><input id="newName" placeholder="Voornaam" style="flex:2" autocapitalize="words"><input id="newLast" placeholder="Achterletter" style="flex:1;min-width:0" maxlength="3" autocapitalize="characters" enterkeyhint="done"></div>
+    ${usePos() ? `<details style="margin-top:10px"><summary class="muted">🎯 Favoriete posities (optioneel)</summary><div class="pprow" style="margin-top:8px">${[0, 1, 2].map(k => `<label><span>${k + 1}e keus</span><select id="newPos${k}"><option value="">–</option><optgroup label="Linie">${POS_GROUPS.slice(0, 3).map(g => `<option value="${g.v}">${g.s}</option>`).join('')}</optgroup><optgroup label="Kant van het veld">${POS_GROUPS.slice(3).map(g => `<option value="${g.v}">${g.s}</option>`).join('')}</optgroup><optgroup label="Positie (${esc(se.formation)})">${posCodes(se).map(c => `<option value="${c}">${c} · ${POS_NAMES[c]}</option>`).join('')}</optgroup></select></label>`).join('')}</div></details>` : ''}
     <button class="btn pri full" style="margin-top:10px" data-act="addPlayer">Speler toevoegen</button>
     <details style="margin-top:12px"><summary class="muted">📝 Meerdere namen tegelijk plakken</summary>
-      <textarea id="bulk" rows="5" style="margin-top:8px" placeholder="Eén speler per regel: voornaam achternaam"></textarea>
+      <textarea id="bulk" rows="5" style="margin-top:8px" placeholder="Eén speler per regel: voornaam achternaam (alleen de eerste letter van de achternaam wordt bewaard)"></textarea>
       <button class="btn sm" style="margin-top:6px" data-act="bulk">Alles toevoegen</button>
     </details>
     ${others.length ? `<details style="margin-top:8px"><summary class="muted">📥 Overnemen uit ander team/seizoen</summary>
@@ -1840,9 +1846,11 @@ function regenIfNeeded(m){
   else { generate(m, false); toast('Opstelling bijgewerkt'); }
 }
 function addPlayerFromForm(){
-  const se = season(), n = (niceFirst(document.getElementById('newName').value) + ' ' + niceLast(document.getElementById('newLast')?.value || '')).trim();
+  const se = season(), n = initName(niceFirst(document.getElementById('newName').value) + ' ' + (document.getElementById('newLast')?.value || '').trim());
   if (!n){ document.getElementById('newName').focus(); return; }
-  se.players.push({id:uid(), name:n, number:document.getElementById('newNum').value.trim(), pref:[]});
+  const pos = [0, 1, 2].map(k => (document.getElementById('newPos' + k) || {}).value || '').map((c, i, a) => a.indexOf(c) === i ? c : '');
+  const np = {id: pid(), name: n, number: '', pref: []}; if (pos.some(Boolean)) np.pos = pos;
+  se.players.push(np);
   commit(); toast(`${shortName(n)} toegevoegd`); document.getElementById('newName').focus();
 }
 
@@ -2020,15 +2028,15 @@ document.addEventListener('click', async e => {
     case 'addPlayer': addPlayerFromForm(); break;
     case 'bulk': {
       const names = document.getElementById('bulk').value.split(/\n|,/).map(s => s.trim()).filter(Boolean);
-      names.forEach(n => se.players.push({id:uid(), name:n, number:'', pref:[]}));
+      names.forEach(n => se.players.push({id:pid(), name:initName(n), number:'', pref:[]}));
       commit(); toast(`${names.length} spelers toegevoegd`); break;
     }
     case 'copyPlayers': {
       const from = S.teams.flatMap(t => t.seasons).find(s => s.id === document.getElementById('copyFrom').value);
       if (!from) return;
-      const have = new Set(se.players.map(p => p.name.toLowerCase()));
+      const have = new Set(se.players.map(p => p.name.toLowerCase())), haveId = new Set(se.players.map(p => p.id));
       let c = 0;
-      from.players.forEach(p => { if (!have.has(p.name.toLowerCase())){ se.players.push({...p, id:uid(), pref:[...(p.pref || [])]}); c++; } });
+      from.players.forEach(p => { if (!have.has(p.name.toLowerCase())){ se.players.push({...p, id: haveId.has(p.id) ? pid() : p.id, pref:[...(p.pref || [])]}); c++; } });
       commit(); toast(`${c} spelers overgenomen`); break;
     }
     case 'pref': {
@@ -2188,7 +2196,7 @@ document.addEventListener('change', e => {
     commit(); pollSync(); return;
   }
   if (el.dataset.s){ se[el.dataset.s] = el.value.trim() || se[el.dataset.s]; commit(); return; }
-  if (el.dataset.pn){ const p = player(el.dataset.id), nm = splitName(p.name); nm[el.dataset.pn] = el.value.trim().replace(/\s+/g, ' '); if (!nm.first){ el.value = splitName(p.name).first; return; } p.name = `${nm.first} ${nm.last}`.trim(); commit(); return; }
+  if (el.dataset.pn){ const p = player(el.dataset.id), nm = splitName(p.name); nm[el.dataset.pn] = el.dataset.pn === 'last' ? lastInitial(el.value) : el.value.trim().replace(/\s+/g, ' '); if (el.dataset.pn === 'last') el.value = nm.last; if (!nm.first){ el.value = splitName(p.name).first; return; } p.name = `${nm.first} ${nm.last}`.trim(); commit(); return; }
   if (el.dataset.p){ const p = player(el.dataset.id); p[el.dataset.p] = el.value.trim() || p.name; commit(); return; }
   if (el.dataset.pp !== undefined){
     const p = player(el.dataset.id), k = +el.dataset.pp; p.pos = (p.pos || ['', '', '']).slice(0, 3); while (p.pos.length < 3) p.pos.push('');
@@ -2216,7 +2224,7 @@ document.addEventListener('toggle', e => { const k = e.target.dataset && e.targe
 
 document.addEventListener('keydown', e => {
   if (e.key !== 'Enter') return;
-  if (e.target.id === 'newName' || e.target.id === 'newNum'){ e.preventDefault(); addPlayerFromForm(); return; }
+  if (e.target.id === 'newName' || e.target.id === 'newLast'){ e.preventDefault(); addPlayerFromForm(); return; }
   const map = {newTeam:'addTeam', newSeason:'addSeason'};
   if (map[e.target.id]) document.querySelector(`[data-act="${map[e.target.id]}"]`).click();
 });
@@ -2430,10 +2438,10 @@ async function fetchSurvey(se, quiet){
       se.survey.seen.push(r.id);
       const first = niceFirst(String(d.f || '').slice(0, 30)), last = niceLast(String(d.l || '').slice(0, 40));
       if (!first) continue;
-      const full = `${first} ${last}`.trim();
+      const full = initName(`${first} ${last}`.trim());
       let p = se.players.find(x => normName(x.name) === normName(full));
       if (!p){ const solo = se.players.filter(x => normName(x.name) === normName(first)); if (solo.length === 1) p = solo[0]; }
-      if (!p){ p = {id: uid(), name: full, number: '', pref: []}; se.players.push(p); added++; }
+      if (!p){ p = {id: pid(), name: full, number: '', pref: []}; se.players.push(p); added++; }
       else p.name = full;
       p.pos = (Array.isArray(d.p) ? d.p : []).slice(0, 3).map(c => String(c || '').slice(0, 6)); while (p.pos.length < 3) p.pos.push('');
       se.survey.answered[p.id] = r.at || Date.now(); updated++;
@@ -3394,7 +3402,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-10.12';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-10.13';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
