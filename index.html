@@ -47,6 +47,7 @@
   .row{display:flex;gap:8px;align-items:center}
   .row>*{flex:1}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
   label.f,div.f{display:block;font-size:13px;color:var(--muted);margin-bottom:10px}div.f>span{margin-bottom:4px}
   label.f>*{margin-top:5px}
   details summary{cursor:pointer;font-weight:700;list-style:none}
@@ -859,6 +860,7 @@ function lastInitial(l){ const all = String(l || '').trim().split(/\s+/).filter(
 function initName(full){ const w = String(full || '').trim().split(/\s+/).filter(Boolean); if (!w.length) return ''; const li = lastInitial(w.slice(1).join(' ')); return li ? w[0] + ' ' + li : w[0]; }
 const pid = () => 'p' + Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4);
 function normalize(){
+  (S.teams || []).forEach(t => (t.seasons || []).forEach(se => { se.tours = se.tours || []; se.rules = se.rules || []; }));
   // elke speler: naam = voornaam + eerste letter achternaam, en een uniek speler-ID waar statistieken en speeltijd aan hangen
   (S.teams || []).forEach(t => (t.seasons || []).forEach(se => { const seen = new Set(); (se.players || []).forEach(p => { p.name = initName(p.name); if (!p.id || seen.has(p.id)) p.id = pid(); seen.add(p.id); }); }));
   S.active = S.active || {team:null, season:{}};
@@ -928,6 +930,174 @@ function pshort(p){
 const pname = id => { const p = player(id); return p ? pshort(p) : '?'; };
 const isGK = p => (p.pref || []).includes('K');
 const match = () => season().matches.find(m => m.id === ui.matchId);
+const tour = () => season().tours.find(t => t.id === ui.tourId);
+const tourOf = m => m && m.tourId ? season().tours.find(t => t.id === m.tourId) : null;
+const tourMatches = t => season().matches.filter(m => m.tourId === t.id);
+const ROUNDS = [['poule', 'Poule'], ['kwart', 'Kwartfinale'], ['halve', 'Halve finale'], ['finale', 'Finale']];
+const roundName = r => (ROUNDS.find(x => x[0] === r) || ROUNDS[0])[1];
+const RULE_KINDS = [['samen', 'wisselen samen (samen erin, samen eruit)'], ['nietbank', 'nooit samen op de bank']];
+const ruleKindName = k => (RULE_KINDS.find(x => x[0] === k) || RULE_KINDS[0])[1];
+// welke actieve regels komen in de huidige planning niet uit?
+function ruleCheck(m){
+  const rules = activeRules(m); if (!rules.length || !m.segments) return [];
+  const bad = [];
+  rules.forEach(r => {
+    let n = 0;
+    m.segments.forEach(lu => { if (isEmptySeg(lu)) return;
+      const a = lu.includes(r.a), b = lu.includes(r.b);
+      if (r.type === 'samen' ? a !== b : (!a && !b)) n++; });
+    if (n) bad.push({r, n});
+  });
+  return bad;
+}
+function ruleClash(se){
+  const cnt = {};
+  (se.rules || []).forEach(r => { cnt[r.a] = (cnt[r.a] || 0) + 1; cnt[r.b] = (cnt[r.b] || 0) + 1; });
+  return Object.keys(cnt).filter(id => cnt[id] > 1 && player(id));
+}
+function activeRules(m){ const off = m.ruleOff || []; return (season().rules || []).filter(r => r.a && r.b && !off.includes(r.id) && (m.present || []).includes(r.a) && (m.present || []).includes(r.b)); }
+// minuten die in eerdere wedstrijden van hetzelfde toernooi al gespeeld zijn
+function tourCarry(m){
+  const res = {}; if (!m.tourId) return res;
+  const ms = season().matches, upto = ms.indexOf(m);
+  ms.forEach((x, i) => { if (i >= upto || x.tourId !== m.tourId || !x.segments) return;
+    const times = segTimes(x.settings);
+    x.segments.forEach((lu, s) => lu.forEach(id => { if (id) res[id] = (res[id] || 0) + (times[s][1] - times[s][0]); }));
+  });
+  return res;
+}
+// wisselregels toepassen op de keuze voor één blok
+function applyRules(m, chosen, here, mins, n){
+  const rules = activeRules(m); if (!rules.length) return chosen;
+  const set = new Set(chosen), inRule = new Set(rules.flatMap(r => [r.a, r.b]));
+  const dropOne = keep => [...set].filter(id => !inRule.has(id) && !keep.includes(id)).sort((a, b) => (mins[b] || 0) - (mins[a] || 0))[0];
+  rules.forEach(r => {
+    const ha = here.includes(r.a), hb = here.includes(r.b); if (!ha || !hb) return;
+    if (r.type === 'nietbank'){
+      if (set.has(r.a) || set.has(r.b)) return;
+      const add = (mins[r.a] || 0) <= (mins[r.b] || 0) ? r.a : r.b, out = dropOne([add]);
+      if (out){ set.delete(out); set.add(add); }
+    } else if (set.has(r.a) !== set.has(r.b)){
+      const inOne = set.has(r.a) ? r.a : r.b, other = inOne === r.a ? r.b : r.a, out = dropOne([inOne, other]);
+      if (out){ set.delete(out); set.add(other); } else set.delete(inOne);
+    }
+  });
+  let out = [...set];
+  if (out.length < n){
+    const pairOk = id => !rules.some(r => r.type === 'samen' && (r.a === id || r.b === id) && !set.has(r.a === id ? r.b : r.a));
+    here.filter(id => !set.has(id)).sort((a, b) => (mins[a] || 0) - (mins[b] || 0)).forEach(id => { if (out.length < n && pairOk(id)){ set.add(id); out.push(id); } });
+    here.filter(id => !set.has(id)).sort((a, b) => (mins[a] || 0) - (mins[b] || 0)).forEach(id => { if (out.length < n){ set.add(id); out.push(id); } });
+  }
+  return out.slice(0, n);
+}
+
+
+/* ===================== Toernooien ===================== */
+const tourTime = t => [t.arrive ? `aanwezig ${t.arrive}` : '', t.start ? `start ${t.start}` : '', t.end ? `ca. ${t.end} klaar` : ''].filter(Boolean).join(' · ');
+const tourResult = t => t.pos ? `${t.pos}${t.of ? ' van ' + t.of : ''}` : '';
+function tourBig(t){
+  const ms = tourMatches(t), ph = t.phase || 'prep';
+  return `<button class="mbig ${ph === 'live' ? 'live' : 'prep'}" data-act="tourOpen" data-id="${t.id}">
+    <span class="mbt"><b>🏆 ${esc(t.name || 'Toernooi')}</b><small>${fmtDate(t.date)}${tourTime(t) ? ' · ' + esc(tourTime(t)) : ''} · ${(t.present || []).length} spelers${ms.length ? ` · ${ms.length} wedstrijd${ms.length === 1 ? '' : 'en'}` : ''}</small></span>
+    <span class="mph">${ph === 'live' ? 'Bezig' : 'Voorbereiding'}</span></button>`;
+}
+function tourRow(t){
+  const ms = tourMatches(t);
+  return `<div class="item match" data-act="tourOpen" data-id="${t.id}">
+      <div class="grow"><div class="name">🏆 ${esc(t.name || 'Toernooi')}</div>
+        <div class="muted">${fmtDate(t.date)} · ${(t.present || []).length} spelers${ms.length ? ` · ${ms.length} wedstrijd${ms.length === 1 ? '' : 'en'}` : ''}</div></div>
+      ${tourResult(t) ? `<b>${esc(tourResult(t))}</b>` : ''}
+      <span class="badge ok">Klaar</span></div>`;
+}
+function tourShareText(t){
+  const se = season(), names = (t.present || []).map(id => (se.players.find(p => p.id === id) || {}).name).filter(Boolean);
+  return `🏆 ${t.name || 'Toernooi'}${t.date ? ' · ' + fmtDate(t.date, {weekday:'long', day:'numeric', month:'long'}) : ''}\n`
+    + (t.place ? `📍 ${t.place}\n` : '')
+    + (t.arrive ? `⏰ Om ${t.arrive} aanwezig` : '') + (t.start ? `${t.arrive ? ', we' : '⏰ We'} beginnen ${t.start}` : '') + ((t.arrive || t.start) ? '\n' : '')
+    + (t.end ? `🏁 We zijn rond ${t.end} klaar\n` : '')
+    + (names.length ? `\n👥 Mee: ${names.join(', ')}` : '');
+}
+function viewTour(){
+  const t = tour(); if (!t){ ui.tourId = null; return viewMatches(); }
+  const se = season(), ph = t.phase || 'prep', ms = tourMatches(t);
+  const pres = new Set(t.present || []);
+  const head = `<div class="card mhead">
+    <div class="mt">🏆 ${esc(t.name || 'Toernooi')}</div>
+    <div class="muted">${t.place ? '📍 ' + esc(t.place) + ' · ' : ''}${fmtDate(t.date, {weekday:'long', day:'numeric', month:'long'})}</div>
+    ${tourTime(t) ? `<div class="muted">⏰ ${esc(tourTime(t))}</div>` : ''}
+    ${ph === 'done' && tourResult(t) ? `<div class="muted" style="margin-top:4px">🏅 Geëindigd als ${esc(tourResult(t))}</div>` : ''}
+  </div>`;
+  const info = ph === 'done' ? '' : `<div class="card">
+    <div class="grid2">
+      <label class="f">Naam<input data-tr="name" value="${esc(t.name || '')}" placeholder="bv. Paastoernooi"></label>
+      <label class="f">Datum<input type="date" data-tr="date" value="${esc(t.date || '')}"></label>
+    </div>
+    <label class="f">Locatie<input data-tr="place" value="${esc(t.place || '')}" placeholder="bv. Sportpark De Hoef, Rosmalen"></label>
+    ${t.place ? `<a class="maplink" href="${esc(mapsUrl(t.place))}" target="_blank" rel="noopener">📍 Bekijk in Google Maps</a>` : ''}
+    <div class="grid3" style="margin-top:10px">
+      <label class="f">Aanwezig<input type="time" data-tr="arrive" value="${esc(t.arrive || '')}"></label>
+      <label class="f">Begintijd<input type="time" data-tr="start" value="${esc(t.start || '')}"></label>
+      <label class="f">Ca. eindtijd<input type="time" data-tr="end" value="${esc(t.end || '')}"></label>
+    </div>
+    <div class="muted" style="margin-top:8px">De eindtijd is een schatting voor de ouders. Je kunt hem altijd bijwerken.</div>
+  </div>`;
+  const list = se.players.map(p => ({id: p.id, n: pshort(p)}));
+  const ja = list.filter(p => attOf(t, p.id) === 'ja').length;
+  const att = `<div class="card">
+    <div class="atthead"><h2>👥 Wie zijn erbij?</h2><span class="attcount"><b>${ja || pres.size}</b> aanwezig</span></div>
+    <button class="btn pri full" style="margin-bottom:12px" data-act="tourPoll">📣 ${t.poll ? 'Link opnieuw delen in de team-app' : 'Vraag het de spelers / ouders (link delen)'}</button>
+    ${attLegend}
+    ${attButtons(list, pid => attOf(t, pid), 'tourAtt')}
+    <div class="muted" style="margin:8px 0 10px;font-size:12px">Tik op een naam om het zelf aan te passen. "Kan niet" haalt de speler uit de wedstrijden van dit toernooi.</div>
+  </div>`;
+  const mrow = m => `<div class="item match">
+      <span class="badge" style="flex:none">${esc(roundName(m.round))}</span>
+      <div class="grow" data-act="openMatch" data-id="${m.id}"><div class="name">${esc(m.opponent || 'Tegenstander')}</div>
+        <div class="muted">${m.time ? esc(m.time) + ' · ' : ''}${hasScore(m) ? scoreLine(m) : phaseName(m.phase)}</div></div>
+      ${ph === 'done' ? '' : `<button class="x" data-act="tourDelMatch" data-id="${m.id}" aria-label="Wedstrijd verwijderen">×</button>`}
+    </div>`;
+  const games = `<div class="card list">
+    <h2>⚽ Wedstrijden <span class="muted" style="font-weight:400">${ms.length ? '' : '(hoeft niet)'}</span></h2>
+    ${ms.length ? ms.map(mrow).join('') : '<div class="muted">Nog geen wedstrijden. Je kunt het toernooi ook gebruiken voor alleen de aanwezigheid.</div>'}
+    ${ph === 'done' ? '' : `<div class="row" style="margin-top:10px">
+      <select id="trRound" style="flex:2">${ROUNDS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select>
+      <button class="btn sm" style="flex:none" data-act="tourAddMatch" ${pres.size ? '' : 'disabled style="opacity:.5;flex:none"'}>＋ Wedstrijd</button></div>
+      ${pres.size ? '<div class="muted" style="margin-top:6px">De minuten worden eerlijk over alle wedstrijden van het toernooi verdeeld.</div>' : '<div class="muted" style="margin-top:6px">Zet eerst spelers op aanwezig.</div>'}`}
+  </div>`;
+  const foot = ph === 'prep' ? `<button class="btn pri full big" data-act="tourStart">▶️ Toernooi starten</button>`
+    : ph === 'live' ? `<button class="btn pri full big" data-act="tourFinish">🏁 Toernooi afsluiten</button>`
+    : `<button class="btn full" style="margin-bottom:12px" data-act="tourReopen">✏️ Eindpositie aanpassen</button>`;
+  return `<div class="phases"><button class="pback" data-act="tourBack" aria-label="Terug">‹</button>
+      <button class="${ph === 'prep' ? 'on' : 'past'}">Voorbereiding</button><button class="${ph === 'live' ? 'on' : ph === 'done' ? 'past' : ''}">Bezig</button><button class="${ph === 'done' ? 'on' : ''}">Klaar</button></div>
+    ${head}${info}${att}${games}${foot}
+    ${ph === 'done' ? '' : `<button class="btn full" style="margin-bottom:12px" data-act="tourDel">🗑️ Toernooi verwijderen</button>`}`;
+}
+function tourAdd(){
+  const se = season();
+  const t = {id: uid(), name: '', place: '', date: new Date().toISOString().slice(0, 10), arrive: '', start: '', end: '', present: se.players.map(p => p.id), phase: 'prep', pos: '', of: ''};
+  se.tours.push(t); ui.tourId = t.id; ui.matchId = null; commit(); window.scrollTo(0, 0);
+}
+function tourNewMatch(t, round){
+  const se = season();
+  const m = {id: uid(), opponent: '', date: t.date, home: true, tourId: t.id, round: round || 'poule',
+    present: (t.present || []).slice(), keepers: {}, goalsFor: '', goalsAgainst: '',
+    settings: {fieldPlayers: se.fieldPlayers, formation: se.formation, subMoments: se.subMoments, matchMinutes: se.matchMinutes, keeperMode: se.keeperMode, base: se.subMoments + 1},
+    segments: Array.from({length: se.subMoments + 1}, () => Array(positions(se.fieldPlayers, se.formation).length).fill(null)),
+    phase: 'prep', cur: 0, goals: {}};
+  se.matches.push(m); ui.open = {}; ui.tourId = null; ui.matchId = m.id; ui.seg = 0; ui.sel = null; commit(); window.scrollTo(0, 0);
+}
+async function tourFinishDialog(t){
+  const opts = [{v: '1e', n: '1e · kampioen'}, {v: '2e', n: '2e'}, {v: '3e', n: '3e'}, {v: '__anders', n: 'Andere plek…'}, {v: '__geen', n: 'Geen eindstand'}];
+  let pos = await chooseDialog(`Hoe is ${t.name || 'het toernooi'} geëindigd?`, opts);
+  if (!pos) return false;
+  if (pos === '__anders'){ const v = await askText('Welke plek?', ''); if (!v || !v.trim()) return false; pos = v.trim(); }
+  if (pos === '__geen') pos = '';
+  let of = '';
+  if (pos){ const n = await askText('Van hoeveel teams? (mag leeg)', t.of || ''); of = (n || '').trim(); }
+  t.pos = pos; t.of = of; t.phase = 'done'; commit(); window.scrollTo(0, 0);
+  toast(pos ? `Toernooi afgesloten · ${tourResult(t)}` : 'Toernooi afgesloten');
+  return true;
+}
 
 /* ===================== Opstelling berekenen ===================== */
 function shuffled(a){ a = a.slice(); for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
@@ -979,7 +1149,8 @@ function generate(m, mix, from){
   const present = m.present.filter(id => player(id));
   const order = mix ? shuffled(present) : present.slice();
   const mins = {}, benchedLast = {}, playedCodes = {};
-  order.forEach(id => { mins[id] = 0; benchedLast[id] = false; playedCodes[id] = new Set(); });
+  const carry = tourCarry(m);
+  order.forEach(id => { mins[id] = carry[id] || 0; benchedLast[id] = false; playedCodes[id] = new Set(); });
   const keep = from > 0 && m.segments ? m.segments.slice(0, from).map(lu => lu.slice()) : [];
   from = keep.length;
   let prev = null;
@@ -999,6 +1170,7 @@ function generate(m, mix, from){
     let chosen = here.map((id, i) => ({id, i}))
       .sort((a, b) => (mins[a.id] - mins[b.id]) || ((benchedLast[b.id] ? 1 : 0) - (benchedLast[a.id] ? 1 : 0)) || (a.i - b.i))
       .slice(0, pos.length).map(o => o.id);
+    chosen = applyRules(m, chosen, here, mins, Math.min(pos.length, here.length));
     if (usePos() && pos[0].line === 'K' && !chosen.some(canKeep)){
       const k = here.filter(id => canKeep(id) && !chosen.includes(id)).sort((a, b) => mins[a] - mins[b])[0];
       if (k && chosen.length) chosen[chosen.length - 1] = k;
@@ -1131,7 +1303,7 @@ function render(){
   try { setCloudStatus(); } catch(e){}
   let ban = ''; try { ban = loginBanner() + (watching ? '' : (ui.matchId ? '' : joinReqCard())); } catch(e){}
   if (watching && ui.tab === 'beheer') ui.tab = 'matches';
-  app.innerHTML = iconize(ban + ({matches: ui.matchId ? viewMatch : viewMatches, stats: viewStats, settings: viewSettings, beheer: viewBeheer}[ui.tab] || viewMatches)());
+  app.innerHTML = iconize(ban + ({matches: ui.matchId ? viewMatch : (ui.tourId ? viewTour : viewMatches), stats: viewStats, settings: viewSettings, beheer: viewBeheer}[ui.tab] || viewMatches)());
   try { maybeOnbPopup(); } catch(e){}
   try { renderHelpFab(); helpLoad(); } catch(e){}
   const phb = document.querySelector('.phases'); if (phb) document.documentElement.style.setProperty('--phh', phb.offsetHeight + 'px');
@@ -1154,8 +1326,10 @@ function viewMatches(){
   if (t.name === PLACEHOLDER && !hasContent(t) && pendList().length && S.teams.length === 1)
     return `${pendCard()}<div class="card empty"><b>⏳</b>Zodra een trainer je toelaat, verschijnt het team hier vanzelf. Je hoeft niets te doen.</div>`;
   const order = {live:0, post:1, prep:2};
-  const open = se.matches.filter(m => m.phase !== 'done').sort((a, b) => (order[a.phase] - order[b.phase]) || (a.date || '').localeCompare(b.date || ''));
-  const done = se.matches.filter(m => m.phase === 'done').sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const open = se.matches.filter(m => m.phase !== 'done' && !m.tourId).sort((a, b) => (order[a.phase] - order[b.phase]) || (a.date || '').localeCompare(b.date || ''));
+  const done = se.matches.filter(m => m.phase === 'done' && !m.tourId).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const tOpen = (se.tours || []).filter(t => t.phase !== 'done').sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  const tDone = (se.tours || []).filter(t => t.phase === 'done').sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   return `
   ${pendCard()}
   ${t.inactive ? `<div class="card pend"><div class="arow" style="border:0;padding:0"><span class="mav">💤</span><span class="grow"><b>Dit team staat op niet actief</b><small>Het staat niet tussen je teams bovenin.</small></span><button class="btn sm" data-act="toggleInactive" data-id="${t.id}">Weer actief</button></div></div>` : ''}
@@ -1163,16 +1337,18 @@ function viewMatches(){
   <div class="summary" data-act="goSettings2">
     <div><b>${esc(teamLabel(t))}</b> · ${settingsLine(se)} · ${se.players.length} spelers</div><span>⚙️ wijzigen</span>
   </div>
-  ${open.length ? `<div class="sgroup" style="margin-top:6px">In voorbereiding & bezig</div>
+  ${open.length || tOpen.length ? `<div class="sgroup" style="margin-top:6px">In voorbereiding & bezig</div>${tOpen.map(tourBig).join('')}
     ${open.map(m => `<button class="mbig ${m.phase}" data-act="openMatch" data-id="${m.id}">
       <span class="mbt"><b>${esc(matchTitle(m))}</b><small>${fmtDate(m.date)} · ${m.present.length} spelers${hasScore(m) ? ' · ' + scoreLine(m) : ''}</small></span>
       <span class="mph">${phaseName(m.phase)}</span>
     </button>`).join('')}` : ''}
-  ${!se.matches.length && se.players.length ? `<div class="card empty"><b>📅</b>Nog geen wedstrijden.<br>Plan je eerste wedstrijd; de app loopt even met je door de instellingen.</div>` : ''}
+  ${!se.matches.length && !(se.tours || []).length && se.players.length ? `<div class="card empty"><b>📅</b>Nog geen wedstrijden.<br>Plan je eerste wedstrijd; de app loopt even met je door de instellingen.</div>` : ''}
   <button class="btn pri full big" data-act="${se.matches.length ? 'newMatch' : 'firstMatch'}" ${se.players.length ? '' : 'disabled style="opacity:.5"'}>＋ ${se.matches.length ? 'Nieuwe wedstrijd' : 'Eerste wedstrijd plannen'}</button>
+  <button class="btn full" style="margin:-4px 0 12px" data-act="tourNew" ${se.players.length ? '' : 'disabled style="opacity:.5"'}>🏆 Toernooi toevoegen</button>
   <div class="card list">
     <h2>✅ Gespeeld</h2>
-    ${done.length ? done.map(matchRow).join('') : `<div class="empty"><b>🏁</b>Nog geen gespeelde wedstrijden dit seizoen.</div>`}
+    ${tDone.map(tourRow).join('')}
+    ${done.length ? done.map(matchRow).join('') : (tDone.length ? '' : `<div class="empty"><b>🏁</b>Nog geen gespeelde wedstrijden dit seizoen.</div>`)}
   </div>`;
 }
 
@@ -1364,13 +1540,26 @@ function viewMatch(){
     ${Object.entries(goals).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]).map(([id, n]) => `<div class="set"><div class="lbl">${esc(pname(id))}</div><b>${'⚽'.repeat(Math.min(n, 6))} ${n}</b></div>`).join('') || '<div class="muted">Geen doelpuntenmakers ingevuld.</div>'}
   </div>`;
 
+  const warn = ph === 'done' ? [] : ruleCheck(m);
+  const rulesCard = (season().rules || []).length && ph !== 'done' ? `<div class="card">
+    <details data-key="rules" ${(ui.open.rules ?? !!warn.length) ? 'open' : ''}>
+    <summary>🔁 Wisselregels <span class="muted" style="font-weight:400">${activeRules(m).length} actief${warn.length ? ' · ⚠️ komt niet uit' : ''}</span></summary>
+    ${warn.length ? `<div class="card pend" style="margin:8px 0">${warn.map(w => `<div><b>⚠️ ${esc(pshort(player(w.r.a)))} &amp; ${esc(pshort(player(w.r.b)))}</b> – ${esc(ruleKindName(w.r.type))} lukt niet in ${w.n} blok${w.n === 1 ? '' : 'ken'}.</div>`).join('')}
+      <div class="muted" style="margin-top:6px">Er zijn te weinig spelers, of twee regels botsen. Zet een regel uit, of pas de opstelling met de hand aan.</div></div>` : ''}
+    ${(season().rules || []).map(r => { const off = (m.ruleOff || []).includes(r.id), mis = !(m.present || []).includes(r.a) || !(m.present || []).includes(r.b);
+      return `<div class="item"><div class="grow"><div class="name">${esc(pshort(player(r.a)) || '?')} &amp; ${esc(pshort(player(r.b)) || '?')}</div>
+        <div class="muted">${esc(ruleKindName(r.type))}${mis ? ' · niet allebei aanwezig' : ''}</div></div>
+        <button class="btn sm" data-act="ruleOff" data-id="${r.id}">${off ? 'Aanzetten' : 'Uitzetten'}</button></div>`; }).join('')}
+    <div class="muted" style="margin-top:6px">Uitzetten geldt alleen voor deze wedstrijd. Regels beheren doe je bij Instellingen → Spelers.</div>
+    </details></div>` : '';
+  const tourCard = tourOf(m) ? `<div class="summary" data-act="tourOpen" data-id="${m.tourId}"><div>🏆 <b>${esc(tourOf(m).name || 'Toernooi')}</b> · ${esc(roundName(m.round))}</div><span>terug</span></div>` : '';
   let body;
-  if (ph === 'prep') body = `${infoCard}${attCard(m)}${guestCard}${lineupCard}${minutesCard}
+  if (ph === 'prep') body = `${tourCard}${infoCard}${attCard(m)}${guestCard}${rulesCard}${lineupCard}${minutesCard}
     <button class="btn pri full big" data-act="phase" data-v="live">▶️ Start wedstrijd</button>
     <div class="grid2" style="margin-bottom:12px"><button class="btn" data-act="share">📤 Delen</button><button class="btn" data-act="print">🖨️ Printen</button></div>`;
-  else if (ph === 'live') body = scoreBar(m, cur) + (fontLevel() === 3 ? `${listCard(m, times, cur, last)}${goalsCard(m, true)}${presenceCard}${minutesCard}` : `${lineupCard}${goalsCard(m, true)}${minutesCard}${presenceCard}`);
-  else if (ph === 'post') body = `${postCard}${(m.events || []).length ? goalsCard(m, false, 'Verloop') : ''}<div style="height:12px"></div>${lineupCard}${minutesCard}`;
-  else body = `${doneCard}${(m.events || []).length ? goalsCard(m, false, 'Verloop') : ''}${minutesCard}${lineupCard}
+  else if (ph === 'live') body = tourCard + scoreBar(m, cur) + (fontLevel() === 3 ? `${listCard(m, times, cur, last)}${goalsCard(m, true)}${presenceCard}${minutesCard}` : `${lineupCard}${goalsCard(m, true)}${minutesCard}${presenceCard}`);
+  else if (ph === 'post') body = `${tourCard}${postCard}${(m.events || []).length ? goalsCard(m, false, 'Verloop') : ''}<div style="height:12px"></div>${lineupCard}${minutesCard}`;
+  else body = `${tourCard}${doneCard}${(m.events || []).length ? goalsCard(m, false, 'Verloop') : ''}${minutesCard}${lineupCard}
     <div class="grid2" style="margin-bottom:12px"><button class="btn" data-act="share">📤 Delen</button><button class="btn" data-act="print">🖨️ Printen</button></div>
     <button class="btn full" style="margin-bottom:12px" data-act="phase" data-v="post">✏️ Uitslag of doelpunten aanpassen</button>`;
 
@@ -1588,6 +1777,16 @@ function viewPlayers(){
         ${usePos() ? `<div class="pprow">${[0, 1, 2].map(k => `<label><span>${k + 1}e keus</span><select data-pp="${k}" data-id="${p.id}"><option value="">–</option><optgroup label="Linie">${POS_GROUPS.slice(0, 3).map(g => `<option value="${g.v}" ${(p.pos || [])[k] === g.v ? 'selected' : ''}>${g.s}</option>`).join('')}</optgroup><optgroup label="Kant van het veld">${POS_GROUPS.slice(3).map(g => `<option value="${g.v}" ${(p.pos || [])[k] === g.v ? 'selected' : ''}>${g.s}</option>`).join('')}</optgroup><optgroup label="Positie (${esc(se.formation)})">${posCodes(se).map(c => `<option value="${c}" ${(p.pos || [])[k] === c ? 'selected' : ''}>${c} · ${POS_NAMES[c]}</option>`).join('')}${(p.pos || [])[k] && !(p.pos[k] || '').startsWith('g:') && !posCodes(se).includes(p.pos[k]) ? `<option value="${esc(p.pos[k])}" selected>${esc(p.pos[k])} (andere formatie)</option>` : ''}</optgroup></select></label>`).join('')}</div>` : ''}
       </div>`).join('') : `<div class="empty"><b>👥</b>Nog geen spelers. Voeg ze hieronder toe.</div>`}
   </div>
+  ${se.players.length > 1 ? `<div class="card list">
+    <h2>🔁 Wisselregels <span class="muted" style="font-weight:400">(${(se.rules || []).length})</span></h2>
+    ${ruleClash(se).length ? `<div class="card pend" style="margin:0 0 10px"><b>⚠️ Let op</b><div>${ruleClash(se).map(id => esc(pshort(player(id)))).join(', ')} ${ruleClash(se).length === 1 ? 'zit' : 'zitten'} in meer dan één regel. Dat kan botsen; de app meldt het bij de wedstrijd als het niet uitkomt.</div></div>` : ''}
+    <div class="muted" style="margin-bottom:8px">Twee spelers die samen wisselen, of die nooit samen op de bank mogen. Geldt bij "eerlijk verdelen" in elke wedstrijd en elk toernooi; per wedstrijd kun je een regel uitzetten.</div>
+    ${(se.rules || []).map(r => `<div class="item"><div class="grow"><div class="name">${esc(pshort(player(r.a)) || 'speler weg')} &amp; ${esc(pshort(player(r.b)) || 'speler weg')}</div><div class="muted">${esc(ruleKindName(r.type))}</div></div><button class="x" data-act="ruleDel" data-id="${r.id}" aria-label="Regel verwijderen">×</button></div>`).join('') || '<div class="muted">Nog geen regels.</div>'}
+    <div class="row" style="margin-top:10px"><select id="rlA" style="flex:1"><option value="">Speler 1</option>${se.players.map(p => `<option value="${p.id}">${esc(pshort(p))}</option>`).join('')}</select>
+      <select id="rlB" style="flex:1"><option value="">Speler 2</option>${se.players.map(p => `<option value="${p.id}">${esc(pshort(p))}</option>`).join('')}</select></div>
+    <div class="row" style="margin-top:8px"><select id="rlT" style="flex:2">${RULE_KINDS.map(([v, l]) => `<option value="${v}">${l[0].toUpperCase() + l.slice(1)}</option>`).join('')}</select>
+      <button class="btn sm" style="flex:none" data-act="ruleAdd">＋ Regel</button></div>
+  </div>` : ''}
   <div class="card">
     <h2>➕ Speler toevoegen aan ${esc(team().name)}</h2>
     <div class="row"><input id="newName" placeholder="Voornaam" style="flex:2" autocapitalize="words"><input id="newLast" placeholder="Achterletter" style="flex:1;min-width:0" maxlength="3" autocapitalize="characters" enterkeyhint="done"></div>
@@ -1938,8 +2137,36 @@ document.addEventListener('click', async e => {
       commit(); break;
     }
     case 'newMatch': newMatch(); break;
+    case 'tourNew': tourAdd(); break;
+    case 'tourOpen': ui.tourId = id; ui.matchId = null; render(); window.scrollTo(0, 0); break;
+    case 'tourBack': ui.tourId = null; render(); window.scrollTo(0, 0); break;
+    case 'tourPres': { const t = tour(); const i = (t.present || []).indexOf(id); if (i >= 0) t.present.splice(i, 1); else (t.present = t.present || []).push(id);
+      tourMatches(t).filter(m => m.phase === 'prep').forEach(m => { m.present = (t.present || []).slice(); fitSegments(m); }); commit(); break; }
+    case 'tourAtt': await coachAnswer(tour(), id, se); break;
+    case 'tourPoll': await startPoll(tour()); break;
+    case 'tourShare': { const t = tour(); const txt = tourShareText(t);
+      if (navigator.share) navigator.share({title: t.name || 'Toernooi', text: txt}).catch(() => {});
+      else navigator.clipboard?.writeText(txt).then(() => toast('Bericht gekopieerd – plak het in de team-app'), () => tell(txt)); break; }
+    case 'tourStart': { const t = tour(); if (!(t.present || []).length){ await tell('Zet eerst spelers op aanwezig.'); break; } t.phase = 'live'; commit(); break; }
+    case 'tourFinish': { const t = tour(); await tourFinishDialog(t); break; }
+    case 'tourReopen': { const t = tour(); const old = t.phase; t.phase = 'live'; if (!await tourFinishDialog(t)){ t.phase = old; render(); } break; }
+    case 'tourAddMatch': { const t = tour(); tourNewMatch(t, (document.getElementById('trRound') || {}).value); break; }
+    case 'tourDelMatch': { const m = se.matches.find(x => x.id === id); if (!m) break;
+      if (!await ask(`${roundName(m.round)}${m.opponent ? ' tegen ' + m.opponent : ''} verwijderen?`, 'Verwijderen')) break;
+      se.matches.splice(se.matches.indexOf(m), 1); commit(); break; }
+    case 'tourDel': { const t = tour(); const n = tourMatches(t).length;
+      if (!await ask(`${t.name || 'Dit toernooi'} verwijderen?${n ? ` Ook de ${n} wedstrijd${n === 1 ? '' : 'en'} erin.` : ''}`, 'Verwijderen')) break;
+      season().matches = se.matches.filter(m => m.tourId !== t.id); se.tours.splice(se.tours.indexOf(t), 1); ui.tourId = null; commit(); break; }
+    case 'ruleAdd': { const a = (document.getElementById('rlA') || {}).value, b = (document.getElementById('rlB') || {}).value, ty = (document.getElementById('rlT') || {}).value;
+      if (!a || !b || a === b){ await tell('Kies twee verschillende spelers.'); break; }
+      if ((se.rules || []).some(r => r.type === ty && ((r.a === a && r.b === b) || (r.a === b && r.b === a)))){ await tell('Die regel staat er al.'); break; }
+      (se.rules = se.rules || []).push({id: uid(), a, b, type: ty}); commit(); toast('Regel toegevoegd'); break; }
+    case 'ruleDel': { se.rules = (se.rules || []).filter(r => r.id !== id); commit(); break; }
+    case 'ruleOff': { const m = match(); if (!m) break; const off = m.ruleOff = m.ruleOff || [];
+      const i = off.indexOf(id); if (i >= 0) off.splice(i, 1); else off.push(id);
+      if (m.phase === 'prep') regenIfNeeded(m); commit(); break; }
     case 'openMatch': ui.open = {}; ui.tab = 'matches'; ui.matchId = id; ui.seg = 0; ui.sel = null; render(); window.scrollTo(0, 0); break;
-    case 'back': ui.matchId = null; ui.sel = null; render(); break;
+    case 'back': { const mm = match(); ui.tourId = mm && mm.tourId ? mm.tourId : null; } ui.matchId = null; ui.sel = null; render(); window.scrollTo(0, 0); break;
     case 'step': {
       const k = el.dataset.k, [mn, mx, stp] = LIMITS[k];
       tgt[k] = Math.max(mn, Math.min(mx, tgt[k] + (+el.dataset.d) * stp));
@@ -2202,6 +2429,7 @@ document.addEventListener('change', e => {
     const p = player(el.dataset.id), k = +el.dataset.pp; p.pos = (p.pos || ['', '', '']).slice(0, 3); while (p.pos.length < 3) p.pos.push('');
     p.pos = p.pos.map((c, i) => i !== k && c === el.value ? '' : c); p.pos[k] = el.value; commit(); return;
   }
+  if (el.dataset.tr){ const t = tour(); if (t){ t[el.dataset.tr] = el.value.trim(); if (el.dataset.tr === 'date') tourMatches(t).forEach(m => { if (m.phase === 'prep') m.date = t.date; }); save(); if (el.dataset.tr === 'place' || el.dataset.tr === 'name') render(); } return; }
   if (el.dataset.ts){ const t = S.teams.find(x => x.id === el.dataset.id); t.seasons[0].name = el.value.trim() || t.seasons[0].name; commit(); return; }
   if (el.dataset.t === 'name'){
     const t = S.teams.find(x => x.id === el.dataset.id), nn = el.value.trim();
@@ -3256,7 +3484,15 @@ const attLegend = `<div class="attleg"><span><i class="ja"></i>Erbij</span><span
 // ---- trainer: link maken en antwoorden binnenhalen
 const pollUrl = pid => location.origin + location.pathname + '?wie=' + pid;
 const polls = {};   // pid -> {unsub}
+const isTourObj = x => x && !x.settings;
+function pollPayloadTour(tr, t = team(), se = season()){
+  return {team: cloudCfg(t.id) && !isLegacy(cloudCfg(t.id)) ? cloudCfg(t.id).id : '', teamLabel: teamLabel(t), club: t.club || '',
+    tour: tr.name || 'Toernooi', opponent: '', home: true, address: tr.place || '', date: tr.date || '',
+    kickoff: tr.start || '', arrive: tr.arrive || '', end: tr.end || '',
+    players: se.players.map(p => ({id: p.id, n: pshort(p)}))};
+}
 function pollPayload(m, t = team(), se = season()){
+  if (isTourObj(m)) return pollPayloadTour(m, t, se);
   return {team: cloudCfg(t.id) && !isLegacy(cloudCfg(t.id)) ? cloudCfg(t.id).id : '', teamLabel: teamLabel(t), club: t.club || '',
     opponent: m.opponent || '', home: m.home !== false, address: m.home === false ? (m.address || '') : '', date: m.date || '', kickoff: m.kickoff || '', arrive: arriveTime(m, se),
     players: se.players.map(p => ({id: p.id, n: pshort(p)}))};
@@ -3274,32 +3510,42 @@ async function startPoll(m){
   sharePoll(m);
 }
 function sharePoll(m){
+  if (isTourObj(m)){
+    const txt = tourShareText(m) + (m.poll ? `\n\n👉 Geef door of je erbij bent: ${pollUrl(m.poll.id)}` : '');
+    if (navigator.share) navigator.share({title: m.name || 'Toernooi', text: txt}).catch(() => {});
+    else navigator.clipboard?.writeText(txt).then(() => toast('Bericht gekopieerd – plak het in de team-app'), () => tell(txt));
+    return;
+  }
   const at = arriveTime(m), d = m.date ? new Date(m.date + 'T12:00').toLocaleDateString('nl-NL', {weekday:'long', day:'numeric', month:'long'}) : 'de wedstrijd';
   const txt = `⚽ ${d.charAt(0).toUpperCase() + d.slice(1)} spelen we ${m.home === false ? 'uit' : 'thuis'}${m.opponent ? ' tegen ' + m.opponent : ''}.${at ? ' Aanwezig om ' + hhmm(at) + '.' : ''}${m.kickoff ? ' Aftrap ' + hhmm(m.kickoff) + '.' : ''}${m.home === false && m.address ? ' Adres: ' + m.address + '.' : ''} Tik op je naam en laat weten of je erbij bent: ${pollUrl(m.poll.id)}`;
   if (navigator.share) navigator.share({title: 'Wie zijn erbij?', text: txt}).catch(() => {});
   else navigator.clipboard?.writeText(txt).then(() => toast('Bericht gekopieerd – plak het in de team-app'), () => tell(txt));
 }
-function applyAnswers(m, answers){
+function applyAnswers(m, answers, se){
   m.att = {...answers};
+  m.present = m.present || [];
+  const open = m.phase === 'prep' || (isTourObj(m) && m.phase === 'live');
   Object.entries(m.att).forEach(([pid, v]) => {
-    if (m.phase !== 'prep') return;
+    if (!open) return;
     if (v === 'ja' && !m.present.includes(pid)) m.present.push(pid);
-    if (v === 'nee' && m.present.includes(pid)){ m.present = m.present.filter(x => x !== pid); m.segments.forEach(lu => lu.forEach((x, i) => { if (x === pid) lu[i] = null; })); }
+    if (v === 'nee' && m.present.includes(pid)){ m.present = m.present.filter(x => x !== pid); (m.segments || []).forEach(lu => lu.forEach((x, i) => { if (x === pid) lu[i] = null; })); }
   });
+  if (isTourObj(m) && se) se.matches.filter(x => x.tourId === m.id && x.phase === 'prep').forEach(x => { x.present = m.present.slice(); x.att = {...m.att}; fitSegments(x); });
 }
 function watchPolls(){
   if (!cloud.api || !cloud.api.pollListen || !myUid()) return;
   const want = new Set();
-  S.teams.forEach(t => t.seasons.forEach(se => se.matches.forEach(m => {
+  S.teams.forEach(t => t.seasons.forEach(se => [...se.matches, ...(se.tours || [])].forEach(m => {
     if (!m.poll || m.phase === 'done') return;
     want.add(m.poll.id);
     if (polls[m.poll.id]) return;
     const mid = m.id;
     polls[m.poll.id] = {unsub: cloud.api.pollListen(m.poll.id, d => {
       if (!d) return;
-      const mm = S.teams.flatMap(x => x.seasons).flatMap(x => x.matches).find(x => x.id === mid); if (!mm) return;
+      const sse = S.teams.flatMap(x => x.seasons).find(x => [...x.matches, ...(x.tours || [])].some(y => y.id === mid));
+      const mm = sse && [...sse.matches, ...(sse.tours || [])].find(x => x.id === mid); if (!mm) return;
       if (JSON.stringify(d.answers || {}) === JSON.stringify(mm.att || {})) return;
-      applyAnswers(mm, d.answers || {}); save();
+      applyAnswers(mm, d.answers || {}, sse); save();
       const a = document.activeElement;
       if (!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) && !document.querySelector('.modal')) render();
     }, e => console.error(e))};
@@ -3311,7 +3557,7 @@ function pollSync(){
   if (!cloud.api || !cloud.api.pollUpdate || !myUid()) return;
   clearTimeout(pollSyncTimer);
   pollSyncTimer = setTimeout(() => {
-    S.teams.forEach(t => (cloudCfg(t.id) || {}).admin || t.seasons.forEach(se => se.matches.forEach(m => {
+    S.teams.forEach(t => (cloudCfg(t.id) || {}).admin || t.seasons.forEach(se => [...se.matches, ...(se.tours || [])].forEach(m => {
       if (!m.poll || m.phase === 'done') return;
       const pl = JSON.stringify(pollPayload(m, t, se));
       if (pl === m.poll.last) return;
@@ -3335,13 +3581,13 @@ function coachSheet(name, cur){
     d.addEventListener('click', e => { e.stopPropagation(); const b = e.target.closest('[data-r]'); if (!b && e.target !== d) return; const r = b ? b.dataset.r : 'no'; d.remove(); res(r === 'no' ? null : r); setTimeout(() => { try { flushPending(); } catch(_){} }, 0); });
   });
 }
-async function coachAnswer(m, pid){
+async function coachAnswer(m, pid, se){
   const p = player(pid); if (!p) return;
   const v = await coachSheet(pshort(p), attOf(m, pid)); if (!v) return;
-  m.att = m.att || {};
-  if (v === 'geen'){ delete m.att[pid]; if (m.phase === 'prep' && !m.present.includes(pid)) m.present.push(pid); }
+  m.att = m.att || {}; m.present = m.present || [];
+  if (v === 'geen'){ delete m.att[pid]; if ((m.phase === 'prep' || (isTourObj(m) && m.phase === 'live')) && !m.present.includes(pid)) m.present.push(pid); }
   else m.att[pid] = v;
-  applyAnswers(m, m.att); commit();
+  applyAnswers(m, m.att, se || season()); commit();
   if (m.poll && cloud.api && myUid()) cloud.api.pollAnswer(m.poll.id, pid, v === 'geen' ? '' : v).catch(e => console.error(e));
 }
 function attCard(m){
@@ -3366,15 +3612,15 @@ function viewWie(){
   const ans = d.answers || {}, me = localStorage.getItem(WIE_ME);
   const ja = (d.players || []).filter(p => ans[p.id] === 'ja').length;
   const dt = d.date ? new Date(d.date + 'T12:00').toLocaleDateString('nl-NL', {weekday:'long', day:'numeric', month:'long'}).toUpperCase() : '';
-  const title = d.home === false ? `${d.opponent || 'Tegenstander'} – ${d.club || d.teamLabel}` : `${d.club || d.teamLabel} – ${d.opponent || 'Tegenstander'}`;
+  const title = d.tour ? `🏆 ${d.tour}` : d.home === false ? `${d.opponent || 'Tegenstander'} – ${d.club || d.teamLabel}` : `${d.club || d.teamLabel} – ${d.opponent || 'Tegenstander'}`;
   return `
   <div class="wiehead">
     <div class="svhead" style="margin:0"><div class="logo ${clubKey(d.club) ? 'clublogo' : ''}">${clubLogo(d.club)}</div><div><div class="club" style="color:var(--hdr-sub)">${esc(d.club || '')}</div><div class="svteam" style="color:#fff">${esc(d.teamLabel)}</div></div></div>
     <div class="wiedate">${esc(dt)}</div>
     <div class="wietitle">${esc(title)}</div>
-    <div class="wietimes"><span class="hl"><small>AANWEZIG</small><b>${esc(hhmm(d.arrive) || '–')}</b></span><span><small>AFTRAP</small><b>${esc(hhmm(d.kickoff) || '–')}</b></span><span><small>WAAR</small><b>${d.home === false ? 'Uit' : 'Thuis'}</b></span></div>
+    <div class="wietimes"><span class="hl"><small>AANWEZIG</small><b>${esc(hhmm(d.arrive) || '–')}</b></span><span><small>${d.tour ? 'START' : 'AFTRAP'}</small><b>${esc(hhmm(d.kickoff) || '–')}</b></span><span><small>${d.tour ? 'CA. KLAAR' : 'WAAR'}</small><b>${d.tour ? (esc(hhmm(d.end)) || '–') : d.home === false ? 'Uit' : 'Thuis'}</b></span></div>
   </div>
-  ${d.home === false && d.address ? `<div class="card wieaddr"><div><small>${me && ans[me] === 'ja' ? 'JE BENT ERBIJ · ZO KOM JE ER' : 'ADRES UITWEDSTRIJD'}</small><b>${esc(d.address)}</b></div><a class="btn pri full" href="${esc(mapsUrl(d.address))}" target="_blank" rel="noopener">📍 Route in Google Maps</a></div>` : ''}
+  ${(d.home === false || d.tour) && d.address ? `<div class="card wieaddr"><div><small>${me && ans[me] === 'ja' ? 'JE BENT ERBIJ · ZO KOM JE ER' : d.tour ? 'WAAR IS HET' : 'ADRES UITWEDSTRIJD'}</small><b>${esc(d.address)}</b></div><a class="btn pri full" href="${esc(mapsUrl(d.address))}" target="_blank" rel="noopener">📍 Route in Google Maps</a></div>` : ''}
   <div class="atthead" style="margin:14px 2px 8px"><h2 style="margin:0">Tik op je naam</h2><span class="attcount"><b>${ja}</b> aanwezig</span></div>
   ${attLegend}
   ${attButtons(d.players || [], pid => ans[pid] || '', 'wiePick').replace(`data-id="${esc(me || '-')}"`, `data-id="${esc(me || '-')}" data-me="1"`)}
@@ -3411,7 +3657,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-10.14';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-11.4';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
