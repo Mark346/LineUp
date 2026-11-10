@@ -1551,6 +1551,7 @@ function viewPlayers(){
   const others = [];
   S.teams.forEach(t => t.seasons.forEach(s => { if (s.id !== se.id && s.players.length) others.push({t, s}); }));
   return `
+  ${surveyCard(se, team())}
   <div class="card list">
     <h2>👥 Selectie ${esc(team().name)} (${se.players.length})</h2>
     ${usePos() ? `<div class="muted" style="margin-bottom:4px">🎯 Kies per speler zijn 1e, 2e en 3e voorkeurspositie (posities uit formatie ${esc(se.formation)}).</div>` : `<div class="muted" style="margin-bottom:4px">Voorkeursposities per speler staan uit. Zet ze aan bij <a href="#" data-act="stab" data-v="team">⚙️ Opstelling</a>.</div>`}
@@ -1573,8 +1574,7 @@ function viewPlayers(){
     ${others.length ? `<details style="margin-top:8px"><summary class="muted">📥 Overnemen uit ander team/seizoen</summary>
       <div class="row" style="margin-top:8px"><select id="copyFrom">${others.map(o => `<option value="${o.s.id}">${esc(o.t.name)} · ${esc(o.s.name)} (${o.s.players.length})</option>`).join('')}</select><button class="btn sm" style="flex:none" data-act="copyPlayers">Overnemen</button></div>
     </details>` : ''}
-  </div>
-  ${surveyCard(se, team())}`;
+  </div>`;
 }
 
 function viewStats(){
@@ -2118,7 +2118,6 @@ document.addEventListener('click', async e => {
 
 document.addEventListener('change', e => {
   const el = e.target, se = season(), m = match();
-  if (isViewOnly() && !el.dataset.admclub && !el.dataset.admq && !el.closest('.modal')){ toast('Je kijkt alleen mee – wijzigen kan hier niet'); render(); return; }
   if (el.dataset.admclub){ adm.club = el.value; adm.data = null; adm.view = null; render(); return; }
   if (el.dataset.admq){ adm.q = el.value; render(); return; }
     if (el.id === 'logoFile'){
@@ -2362,7 +2361,7 @@ function subDialog(m, defMin){
   });
 }
 
-/* ===================== Vraag het de spelers ===================== */
+/* ===================== Vraag het de spelers / ouders ===================== */
 const randId = n => { const a = new Uint8Array(n); crypto.getRandomValues(a); return [...a].map(x => 'abcdefghijkmnpqrstuvwxyz23456789'[x % 32]).join(''); };
 const surveyUrl = sid => location.origin + location.pathname + '?vraag=' + sid;
 async function startSurvey(se, t){
@@ -2427,19 +2426,19 @@ async function fetchSurvey(se, quiet){
 function surveyCard(se, t){
   if (!cloudAvailable()) return `
   <div class="card">
-    <h2>📣 Vraag het de spelers</h2>
+    <h2>📣 Vraag het de spelers / ouders</h2>
     <div class="muted">Laat spelers zelf hun naam en favoriete posities invullen via een link in de team-app. Hiervoor moet eerst de online opslag (Firebase) ingesteld zijn.</div>
   </div>`;
   if (!se.survey || !se.survey.key) return `
   <div class="card">
-    <h2>📣 Vraag het de spelers</h2>
+    <h2>📣 Vraag het de spelers / ouders</h2>
     <div class="muted" style="margin-bottom:12px">Plaats een link in de team-app (bijv. WhatsApp). Spelers vullen zelf hun voor- en achternaam en hun 1e, 2e en 3e favoriete positie in. Bestaat de naam al, dan worden zijn voorkeuren overschreven; anders wordt de speler toegevoegd. Andere spelers kunnen niemands naam of antwoord zien.</div>
-    <button class="btn pri full" data-act="surveyStart">📣 Vraag het de spelers <small style="font-weight:600;opacity:.8">&nbsp;(link voor de team-app)</small></button>
+    <button class="btn pri full" data-act="surveyStart">📣 Vraag het de spelers / ouders <small style="font-weight:600;opacity:.8">&nbsp;(link voor de team-app)</small></button>
   </div>`;
   const done = se.players.filter(p => se.survey.answered[p.id]), todo = se.players.filter(p => !se.survey.answered[p.id]);
   return `
   <div class="card">
-    <h2>📣 Vraag het de spelers</h2>
+    <h2>📣 Vraag het de spelers / ouders</h2>
     <div class="muted" style="margin-bottom:10px">Link gemaakt op ${new Date(se.survey.created).toLocaleDateString('nl-NL', {day:'numeric', month:'long'})}. <b style="color:var(--txt)">${done.length} van ${se.players.length}</b> ingevuld.</div>
     <div class="bar" style="height:10px;margin-bottom:12px"><i style="width:${se.players.length ? Math.round(done.length / se.players.length * 100) : 0}%"></i></div>
     <div class="who">
@@ -3048,10 +3047,10 @@ function attCard(m){
   return `
   <div class="card">
     <div class="atthead"><h2>👥 Wie zijn erbij?</h2><span class="attcount"><b>${ja}</b> aanwezig</span></div>
+    <button class="btn pri full" style="margin-bottom:12px" data-act="startPoll">📣 ${m.poll ? 'Link opnieuw delen in de team-app' : 'Vraag het in de team-app (link delen)'}</button>
     ${attLegend}
     ${attButtons(list, pid => attOf(m, pid), 'coachAtt')}
     <div class="muted" style="margin:8px 0 10px;font-size:12px">Tik op een naam om het zelf aan te passen. "Kan niet" haalt de speler uit de opstelling.</div>
-    <button class="btn pri full" data-act="startPoll">📣 ${m.poll ? 'Link opnieuw delen in de team-app' : 'Vraag het in de team-app (link delen)'}</button>
   </div>`;
 }
 
@@ -3109,7 +3108,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-10.3';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-10.4';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
@@ -3917,7 +3916,7 @@ function onbSteps(t = team(), se = season()){
   const L = cloud.links[t.id];
   return [
     {k:'team', t:'Team aanmaken', s:t.name === PLACEHOLDER ? 'Geef je team een naam, bv. JO9-2' : teamLabel(t), done:t.name !== PLACEHOLDER},
-    {k:'players', t:'Spelers toevoegen', s:se.players.length ? `${se.players.length} spelers` : se.survey ? 'Link gedeeld – wacht op antwoorden' : 'Laat ze het zelf invullen of plak de namen', done:!!(se.players.length || se.survey)},
+    {k:'players', t:'Spelers toevoegen', s:se.players.length ? `${se.players.length} spelers` : se.survey ? 'Link gedeeld – wacht op antwoorden' : 'Vraag het de spelers / ouders of plak de namen', done:!!(se.players.length || se.survey)},
     {k:'match', t:'Eerste wedstrijd plannen', s:se.matches.length ? matchTitle(se.matches[0]) : 'Even de instellingen langs en klaar', done:se.matches.length > 0},
     {k:'poll', t:'Vraag wie er zijn', s:se.matches.some(m => m.poll) ? 'Link gedeeld' : 'Deel de link in de team-app', done:se.matches.some(m => m.poll)},
     {k:'coach', t:'Mede-trainer uitnodigen', s:'Optioneel', done:!!((L && Object.keys(L.members || {}).length > 1) || (t.invites || []).length)}];
@@ -3961,7 +3960,7 @@ function onbPopup(){
 async function onbStep(k){
   const se = season();
   if (k === 'players'){
-    const r = await chooseDialog('Hoe wil je de spelers toevoegen?', [{v:'self', n:'📣 Laat spelers of ouders het zelf invullen'}, {v:'paste', n:'✍️ Zelf invullen of namen plakken'}]);
+    const r = await chooseDialog('Hoe wil je de spelers toevoegen?', [{v:'self', n:'📣 Vraag het de spelers / ouders'}, {v:'paste', n:'✍️ Zelf invullen of namen plakken'}]);
     if (r === 'self') return startSurvey(se, team());
     if (r === 'paste'){ ui.sOpen = true; ui.stab = 'spelers'; go('settings'); }
     return;
@@ -4203,7 +4202,6 @@ function dropTarget(x, y){
   return null;
 }
 document.addEventListener('pointerdown', e => {
-  if (isViewOnly()) return;
   const el = e.target.closest('[data-drag]');
   if (!el || e.button > 0) return;
   if (e.pointerType === 'mouse') e.preventDefault();
