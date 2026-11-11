@@ -1483,12 +1483,14 @@ function render(){
 }
 
 /* ===================== Schermen ===================== */
+const histTitle = h => { const t = ((team().club || '') + ' ' + team().name).trim(), o = h.opponent || 'Tegenstander'; return h.home === false ? `${o} – ${t}` : `${t} – ${o}`; };
+const histScore = h => h.home === false ? `${h.ga}-${h.gf}` : `${h.gf}-${h.ga}`;
 function histRow(h){
   const n = Object.keys(h.mins || {}).length, sc = h.gf !== '' && h.gf != null && h.gf !== undefined;
   return `<div class="item match" data-act="histOpen" data-id="${h.id}">
-      <div class="grow"><div class="name">${esc(h.opponent || 'Wedstrijd')}${h.tour ? ' · ' + esc(h.tour) : ''}</div>
+      <div class="grow"><div class="name">${esc(histTitle(h))}${h.tour ? ' · ' + esc(h.tour) : ''}</div>
         <div class="muted">${fmtDate(h.date)} · ${h.home === false ? 'uit' : 'thuis'}${n ? ` · ${n} spelers` : ''} · geïmporteerd</div></div>
-      ${sc ? `<b>${h.home === false ? `${esc(h.ga)}-${esc(h.gf)}` : `${esc(h.gf)}-${esc(h.ga)}`}</b>` : ''}
+      ${sc ? `<b>${esc(histScore(h))}</b>` : ''}
       <span class="badge ok">Klaar</span></div>`;
 }
 function matchRow(m){
@@ -1724,7 +1726,7 @@ function viewMatch(){
   </div>
   <div class="card">
     <h2>⚽ Doelpuntenmakers</h2>
-    <div class="muted" style="margin-bottom:6px">Tik + bij wie er scoorde. ${scorerTotal} van ${+m.goalsFor || 0} doelpunt${(+m.goalsFor || 0) === 1 ? '' : 'en'} toegewezen.</div>
+    <div class="muted" style="margin-bottom:6px">Doelpunten van <b style="color:var(--txt)">${esc(team().name)}</b> (${m.home === false ? 'uit, rechts in de uitslag' : 'thuis, links in de uitslag'}). Tik + bij wie er scoorde. ${scorerTotal} van ${+m.goalsFor || 0} doelpunt${(+m.goalsFor || 0) === 1 ? '' : 'en'} toegewezen.</div>
     ${played.map(id => `<div class="set"><div class="lbl">${esc(pname(id))} ${'⚽'.repeat(Math.min(goals[id] || 0, 6))}</div><div class="step"><button data-act="goal" data-id="${id}" data-d="-1">−</button><b>${goals[id] || 0}</b><button data-act="goal" data-id="${id}" data-d="1">+</button></div></div>`).join('')}
     ${scorerTotal !== (+m.goalsFor || 0) ? `<div class="muted" style="color:var(--red);margin-top:8px">Let op: het aantal doelpuntenmakers (${scorerTotal}) klopt niet met de eindstand (${+m.goalsFor || 0}).</div>` : ''}
   </div>
@@ -1811,13 +1813,17 @@ function scoreBar(m, cur){
   const sc = m.home === false ? `${ga} – ${gf}` : `${gf} – ${ga}`;
   return `<div class="sbar"><div class="sblive"><i></i>LIVE · ${esc(blockLabel(m, cur))}</div>
     <div class="sline"><div class="steam"><small>${L[1]}</small>${esc(L[0])}</div><div class="sscore ${ui.bump === m.id ? 'bump' : ''}">${sc}</div><div class="steam r"><small>${R[1]}</small>${esc(R[0])}</div></div>
-    <div class="sbtns"><button class="sb us" data-act="goalUs">⚽ Wij scoren</button><button class="sb them" data-act="goalThem">Tegen</button></div></div>`;
+    <div class="sbtns">${m.home === false
+      ? `<button class="sb them" data-act="goalThem">Tegen</button><button class="sb us" data-act="goalUs">⚽ Wij scoren</button>`
+      : `<button class="sb us" data-act="goalUs">⚽ Wij scoren</button><button class="sb them" data-act="goalThem">Tegen</button>`}</div></div>`;
 }
 function goalsCard(m, edit, title){
   const ev = m.events || []; let u = 0, a = 0;
   const rows = ev.map(g => { g.us ? u++ : a++; const stand = m.home === false ? `${a}–${u}` : `${u}–${a}`;
     return `<div class="goalr ${g.us ? 'us' : 'them'}"><span class="gic">${g.us ? '⚽' : '🥅'}</span><span class="grow"><b>${g.us ? (g.by ? esc(pname(g.by)) : g.og ? 'Eigen doelpunt tegenstander' : 'Doelpunt (maker onbekend)') : 'Tegendoelpunt'}</b><small>${esc(g.blkName || '')}${g.as ? ' · assist ' + esc(pname(g.as)) : ''}</small></span><span class="gst">${stand}</span>${edit ? `<button class="x" data-act="goalDel" data-id="${esc(g.id)}" aria-label="Weghalen">×</button>` : ''}</div>`; }).join('');
-  return `<div class="card"><h2>⚽ ${title || 'Doelpunten'}</h2>${rows || '<div class="muted">Nog geen doelpunten. Tik op ⚽ Wij scoren of Tegen.</div>'}</div>`;
+  return `<div class="card"><h2>⚽ ${title || 'Doelpunten'}</h2>
+    <div class="muted" style="margin:-4px 0 8px;font-size:12px">${esc(team().name)} speelt ${m.home === false ? 'uit en staat rechts' : 'thuis en staat links'} op het scorebord.</div>
+    ${rows || '<div class="muted">Nog geen doelpunten. Tik op ⚽ Wij scoren of Tegen.</div>'}</div>`;
 }
 function addGoal(m, g){
   m.events = m.events || []; m.goals = m.goals || {};
@@ -2335,9 +2341,9 @@ document.addEventListener('click', async e => {
     case 'tourNew': tourAdd(); break;
     case 'histOpen': { const h = (se.history || []).find(x => x.id === id); if (!h) break;
       const nm = o => Object.entries(o || {}).map(([pid, v]) => `${esc(pshort(player(pid)) || '?')} ${v}`).join(', ') || '–';
-      const r = await sheet(`<h3>${esc(h.opponent || 'Wedstrijd')}</h3>
+      const r = await sheet(`<h3>${esc(histTitle(h))}</h3>
         <div class="muted">${fmtDate(h.date, {weekday:'long', day:'numeric', month:'long'})} · ${h.home === false ? 'uit' : 'thuis'}${h.tour ? ' · ' + esc(h.tour) + (h.round ? ' (' + esc(roundName(h.round)) + ')' : '') : ''}</div>
-        <div class="card" style="margin:10px 0"><div><b>Uitslag</b> ${h.gf !== '' ? esc(h.gf) + '-' + esc(h.ga) : 'niet ingevuld'}</div>
+        <div class="card" style="margin:10px 0"><div><b>Uitslag</b> ${h.gf !== '' ? esc(histScore(h)) : 'niet ingevuld'}</div>
           <div style="margin-top:6px"><b>Doelpunten</b><div class="muted">${nm(h.goals)}</div></div>
           <div style="margin-top:6px"><b>Speeltijd</b><div class="muted">${nm(h.mins)}</div></div></div>
         <div class="muted">Geïmporteerde wedstrijd: er is geen opstelling bewaard.</div>
@@ -3866,7 +3872,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-11.12';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-11.14';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
