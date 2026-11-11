@@ -1132,6 +1132,10 @@ async function unzip(buf){
   }
   return out;
 }
+const xDec = t => String(t == null ? '' : t)
+  .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+  .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(+d))
+  .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&');
 const colNum = ref => { let n = 0; for (const c of (ref.match(/[A-Z]+/) || ['A'])[0]) n = n * 26 + (c.charCodeAt(0) - 64); return n - 1; };
 const xlDate = v => { const d = new Date(Date.UTC(1899, 11, 30) + Math.round(v) * 864e5); return d.toISOString().slice(0, 10); };
 async function readSheet(file){
@@ -1144,7 +1148,7 @@ async function readSheet(file){
   const sheet = Object.keys(files).find(k => /sheet1\.xml$/.test(k)); if (!sheet) throw new Error('geen tabblad gevonden');
   const shared = [];
   const ss = Object.keys(files).find(k => /sharedStrings\.xml$/.test(k));
-  if (ss) [...files[ss].matchAll(/<si>([\s\S]*?)<\/si>/g)].forEach(m => shared.push([...m[1].matchAll(/<t[^>]*>([\s\S]*?)<\/t>/g)].map(x => x[1]).join('').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")));
+  if (ss) [...files[ss].matchAll(/<si>([\s\S]*?)<\/si>/g)].forEach(m => shared.push(xDec([...m[1].matchAll(/<t[^>]*>([\s\S]*?)<\/t>/g)].map(x => x[1]).join(''))));
   const rows = [];
   [...files[sheet].matchAll(/<row[^>]*>([\s\S]*?)<\/row>/g)].forEach(r => {
     const row = [];
@@ -1153,7 +1157,7 @@ async function readSheet(file){
       const v = (c[2].match(/<v>([\s\S]*?)<\/v>/) || [])[1] ?? (c[2].match(/<t[^>]*>([\s\S]*?)<\/t>/) || [])[1] ?? '';
       let val = ty === 's' ? (shared[+v] || '') : v;
       if ((!ty || ty === 'n') && /^\d{5}(\.\d+)?$/.test(val) && +val > 20000 && +val < 80000) val = xlDate(+val);
-      row[colNum(ref)] = String(val).replace(/&amp;/g, '&').trim();
+      row[colNum(ref)] = xDec(val).trim();
     });
     rows.push([...row].map(x => x === undefined ? '' : x));
   });
@@ -1245,11 +1249,15 @@ async function importSheet(file, rid){
   const have = new Set((se.history || []).map(h => h.date + '|' + (h.opponent || '').toLowerCase()).concat((se.matches || []).map(m => (m.date || '') + '|' + (m.opponent || '').toLowerCase())));
   const dup = rows.filter(r => have.has(r.date + '|' + r.opponent.toLowerCase()));
   const nieuw = rows.filter(r => !have.has(r.date + '|' + r.opponent.toLowerCase()));
+  const noG = nieuw.filter(r => !Object.keys(r.goals).length && +r.gf > 0).length;
+  const offG = nieuw.filter(r => Object.keys(r.goals).length && Object.values(r.goals).reduce((a, b) => a + b, 0) !== +r.gf).length;
   const info = [`<b>${nieuw.length}</b> wedstrijd${nieuw.length === 1 ? '' : 'en'} voor <b>${esc(tg.label)}</b>${tg.season ? ' · seizoen ' + esc(tg.season) : ''}`,
     tg.remote ? 'Dit team staat niet in jouw app; de import gaat rechtstreeks naar de cloud.' : '',
     dup.length ? `${dup.length} staan er al in en worden overgeslagen` : '',
     skipped.length ? `${skipped.length} regel(s) overgeslagen: ${esc(skipped.slice(0, 3).join('; '))}` : '',
-    miss.length ? `Onbekende namen (speeltijd en doelpunten daarvan vervallen): ${esc(miss.slice(0, 8).join(', '))}` : ''].filter(Boolean);
+    miss.length ? `Onbekende namen (speeltijd en doelpunten daarvan vervallen): ${esc(miss.slice(0, 8).join(', '))}` : '',
+    noG ? `⚠️ Bij ${noG} wedstrijd${noG === 1 ? '' : 'en'} met doelpunten staat geen doelpuntenmaker. De kolom doelpuntenmakers is daar leeg.` : '',
+    offG ? `⚠️ Bij ${offG} wedstrijd${offG === 1 ? '' : 'en'} klopt het aantal doelpuntenmakers niet met de uitslag.` : ''].filter(Boolean);
   const first = nieuw.slice(0, 5).map(r => `<div class="item"><div class="grow"><div class="name">${esc(r.opponent)}${r.tour ? ' · ' + esc(r.tour) : ''}</div><div class="muted">${fmtDate(r.date)} · ${r.home ? 'thuis' : 'uit'}${r.gf !== '' ? ` · ${esc(r.gf)}-${esc(r.ga)}` : ''} · ${Object.keys(r.mins).length} spelers met speeltijd</div></div></div>`).join('');
   const ok = await sheet(`<h3>Importeren?</h3><div class="muted" style="margin-bottom:10px">${info.join('<br>')}</div>${first}${nieuw.length > 5 ? `<div class="muted">… en nog ${nieuw.length - 5}</div>` : ''}
     <div class="grid2" style="margin-top:12px"><button class="btn" data-r="no">Annuleren</button><button class="btn pri" data-r="ok">Importeren</button></div>`);
@@ -3872,7 +3880,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-11.14';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-11.16';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
