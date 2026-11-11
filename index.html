@@ -1201,8 +1201,9 @@ function impParse(rows, se){
     if (!date || !opp){ skipped.push(`regel ${i + 2}: ${!date ? 'datum' : 'tegenstander'} ontbreekt`); return; }
     const home = !/^(n|u|nee|uit|away|false|0)$/i.test(g('thuis'));
     const mins = impPairs(se, g('speeltijd'), miss), goals = impPairs(se, g('doelpuntenmakers'), miss);
+    const tn = g('toernooi');
     out.push({id: uid(), date, opponent: opp, home, gf: g('voor'), ga: g('tegen'),
-      tour: g('toernooi'), round: (ROUNDS.find(x => x[0] === g('ronde').toLowerCase().slice(0, 5)) || [])[0] || '',
+      tour: /^\d+([.,]\d+)?$/.test(tn) ? '' : tn, round: (ROUNDS.find(x => x[0] === g('ronde').toLowerCase().slice(0, 5)) || [])[0] || '',
       goals, mins, minutes: se.matchMinutes, imported: true});
   });
   return {rows: out, skipped, miss: [...miss]};
@@ -1214,18 +1215,23 @@ async function importTarget(rid){
   if (pair){
     const t = S.teams.find(x => x.id === pair[0]);
     if (t){ const se = pickSeason(t);
-      return {se, label: teamLabel(t), season: se.name || '', write: rows => { se.history = (se.history || []).concat(rows); save(); cloudPushTeam(t.id, true); render(); }};
+      const push = () => { save(); cloudPushTeam(t.id, true); render(); };
+      return {se, label: teamLabel(t), season: se.name || '',
+        write: rows => { se.history = (se.history || []).concat(rows); push(); },
+        wipe: () => { se.history = []; push(); }};
     }
   }
   const r = await cloud.api.teamGet(rid); if (!r) throw new Error('dat team is niet te openen');
   const td = teamFromRemote(r, null); if (!td || !td.seasons || !td.seasons.length) throw new Error('de gegevens van dat team zijn niet te lezen');
   const se = pickSeason(td);
+  const tx = fn => cloud.api.teamPushTx(rid, cur => {
+    const d2 = JSON.parse(cur.data), s2 = d2.seasons.find(x => x.id === se.id) || pickSeason(d2);
+    fn(s2);
+    return {data: JSON.stringify(d2), updated: Date.now(), by: 'import'};
+  });
   return {se, label: teamLabel(td) + (td.club ? ' · ' + td.club : ''), season: se.name || '', remote: true,
-    write: rows => cloud.api.teamPushTx(rid, cur => {
-      const d2 = JSON.parse(cur.data), s2 = d2.seasons.find(x => x.id === se.id) || pickSeason(d2);
-      s2.history = (s2.history || []).concat(rows);
-      return {data: JSON.stringify(d2), updated: Date.now(), by: 'import'};
-    })};
+    write: rows => tx(s2 => { s2.history = (s2.history || []).concat(rows); }),
+    wipe: () => tx(s2 => { s2.history = []; })};
 }
 async function importSheet(file, rid){
   let tg;
@@ -3340,7 +3346,7 @@ function admTeamView(id){
     <div class="card"><div class="ahead"><h2>Wedstrijden</h2></div>
       ${t.matches.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '')).map(m => {
         const ph = {prep: 'Voorbereiding', live: 'Bezig', post: 'Na wedstrijd', done: 'Gespeeld'}[m.phase] || '';
-        const sc = m.phase === 'done' || m.phase === 'post' ? `${m.goalsFor || 0}–${m.goalsAgainst || 0}` : '';
+        const sc = m.phase === 'done' || m.phase === 'post' ? (m.home === false ? `${m.goalsAgainst || 0}–${m.goalsFor || 0}` : `${m.goalsFor || 0}–${m.goalsAgainst || 0}`) : '';
         const nm = m.home === false ? `${m.opponent || 'Tegenstander'} – ${t.clubName || 'wij'}` : `${t.clubName || 'Wij'} – ${m.opponent || 'tegenstander'}`;
         return arow(sc || ph.charAt(0), esc(nm), `${m.date ? fmtD(Date.parse(m.date + 'T12:00')) + ' · ' : ''}${ph}${sc ? ' · ' + sc : ''}`, '');
       }).join('') || '<div class="muted">Nog geen wedstrijden.</div>'}</div>
@@ -3860,7 +3866,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-11.9';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-11.12';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
