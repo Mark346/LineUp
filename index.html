@@ -1152,7 +1152,8 @@ async function readSheet(file){
   const rows = [];
   [...files[sheet].matchAll(/<row[^>]*>([\s\S]*?)<\/row>/g)].forEach(r => {
     const row = [];
-    [...r[1].matchAll(/<c([^>]*)>([\s\S]*?)<\/c>/g)].forEach(c => {
+    // lege cellen schrijft Excel als <c .../>; die eerst weghalen, anders schuiven de kolommen op
+    [...r[1].replace(/<c[^>]*\/>/g, '').matchAll(/<c([^>]*)>([\s\S]*?)<\/c>/g)].forEach(c => {
       const at = c[1], ref = (at.match(/r="([A-Z]+\d+)"/) || [])[1] || 'A1', ty = (at.match(/t="(\w+)"/) || [])[1];
       const v = (c[2].match(/<v>([\s\S]*?)<\/v>/) || [])[1] ?? (c[2].match(/<t[^>]*>([\s\S]*?)<\/t>/) || [])[1] ?? '';
       let val = ty === 's' ? (shared[+v] || '') : v;
@@ -3880,7 +3881,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-11.16';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-11.17';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
