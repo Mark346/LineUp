@@ -860,7 +860,7 @@ function lastInitial(l){ const all = String(l || '').trim().split(/\s+/).filter(
 function initName(full){ const w = String(full || '').trim().split(/\s+/).filter(Boolean); if (!w.length) return ''; const li = lastInitial(w.slice(1).join(' ')); return li ? w[0] + ' ' + li : w[0]; }
 const pid = () => 'p' + Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4);
 function normalize(){
-  (S.teams || []).forEach(t => (t.seasons || []).forEach(se => { se.tours = se.tours || []; se.rules = se.rules || []; }));
+  (S.teams || []).forEach(t => (t.seasons || []).forEach(se => { se.tours = se.tours || []; se.rules = se.rules || []; se.history = se.history || []; }));
   // elke speler: naam = voornaam + eerste letter achternaam, en een uniek speler-ID waar statistieken en speeltijd aan hangen
   (S.teams || []).forEach(t => (t.seasons || []).forEach(se => { const seen = new Set(); (se.players || []).forEach(p => { p.name = initName(p.name); if (!p.id || seen.has(p.id)) p.id = pid(); seen.add(p.id); }); }));
   S.active = S.active || {team:null, season:{}};
@@ -1099,6 +1099,150 @@ async function tourFinishDialog(t){
   return true;
 }
 
+
+/* ===================== Import gespeelde wedstrijden (eigenaar) ===================== */
+const IMP_COLS = ['datum', 'tegenstander', 'thuis', 'voor', 'tegen', 'toernooi', 'ronde', 'doelpuntenmakers', 'speeltijd'];
+const impTemplate = () => [IMP_COLS.join(';'),
+  '2026-09-07;Nooit Gedacht;ja;3;1;;;Aad A 2, Bas B 1;Aad A 40, Bas B 40, Cees C 30',
+  '2026-09-14;OJC Rosmalen;nee;2;2;;;Cees C 2;Aad A 30, Bas B 40, Cees C 40',
+  '2026-10-05;Margriet;ja;5;0;Najaarstoernooi;poule;Aad A 3, Daan D 2;'].join('\n');
+function downloadFile(name, text, type){
+  const b = new Blob(['﻿' + text], {type: type || 'text/csv;charset=utf-8'}), u = URL.createObjectURL(b);
+  const a = document.createElement('a'); a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 1000);
+}
+async function inflateRaw(d){
+  if (typeof DecompressionStream === 'undefined') throw new Error('no-inflate');
+  const st = new Blob([d]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  return new Uint8Array(await new Response(st).arrayBuffer());
+}
+async function unzip(buf){
+  const dv = new DataView(buf), u8 = new Uint8Array(buf), out = {};
+  let eocd = -1;
+  for (let i = u8.length - 22; i >= 0 && eocd < 0; i--) if (dv.getUint32(i, true) === 0x06054b50) eocd = i;
+  if (eocd < 0) throw new Error('geen zip');
+  const n = dv.getUint16(eocd + 10, true); let off = dv.getUint32(eocd + 16, true);
+  for (let k = 0; k < n; k++){
+    const nlen = dv.getUint16(off + 28, true), xlen = dv.getUint16(off + 30, true), clen = dv.getUint16(off + 32, true);
+    const method = dv.getUint16(off + 10, true), csize = dv.getUint32(off + 20, true), lho = dv.getUint32(off + 42, true);
+    const name = new TextDecoder().decode(u8.subarray(off + 46, off + 46 + nlen));
+    const lnl = dv.getUint16(lho + 26, true), lxl = dv.getUint16(lho + 28, true), st = lho + 30 + lnl + lxl;
+    const raw = u8.subarray(st, st + csize);
+    if (/sheet1\.xml$|sharedStrings\.xml$|workbook\.xml$/.test(name)) out[name] = new TextDecoder().decode(method === 0 ? raw : await inflateRaw(raw));
+    off += 46 + nlen + xlen + clen;
+  }
+  return out;
+}
+const colNum = ref => { let n = 0; for (const c of (ref.match(/[A-Z]+/) || ['A'])[0]) n = n * 26 + (c.charCodeAt(0) - 64); return n - 1; };
+const xlDate = v => { const d = new Date(Date.UTC(1899, 11, 30) + Math.round(v) * 864e5); return d.toISOString().slice(0, 10); };
+async function readSheet(file){
+  const name = (file.name || '').toLowerCase();
+  if (!/\.xlsx$/.test(name)){
+    const txt = await file.text(), sep = (txt.split('\n')[0].match(/;/g) || []).length >= (txt.split('\n')[0].match(/,/g) || []).length ? ';' : ',';
+    return txt.split(/\r?\n/).filter(l => l.trim()).map(l => l.split(sep).map(x => x.replace(/^"|"$/g, '').trim()));
+  }
+  const files = await unzip(await file.arrayBuffer());
+  const sheet = Object.keys(files).find(k => /sheet1\.xml$/.test(k)); if (!sheet) throw new Error('geen tabblad gevonden');
+  const shared = [];
+  const ss = Object.keys(files).find(k => /sharedStrings\.xml$/.test(k));
+  if (ss) [...files[ss].matchAll(/<si>([\s\S]*?)<\/si>/g)].forEach(m => shared.push([...m[1].matchAll(/<t[^>]*>([\s\S]*?)<\/t>/g)].map(x => x[1]).join('').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")));
+  const rows = [];
+  [...files[sheet].matchAll(/<row[^>]*>([\s\S]*?)<\/row>/g)].forEach(r => {
+    const row = [];
+    [...r[1].matchAll(/<c([^>]*)>([\s\S]*?)<\/c>/g)].forEach(c => {
+      const at = c[1], ref = (at.match(/r="([A-Z]+\d+)"/) || [])[1] || 'A1', ty = (at.match(/t="(\w+)"/) || [])[1];
+      const v = (c[2].match(/<v>([\s\S]*?)<\/v>/) || [])[1] ?? (c[2].match(/<t[^>]*>([\s\S]*?)<\/t>/) || [])[1] ?? '';
+      let val = ty === 's' ? (shared[+v] || '') : v;
+      if (!ty && /^\d{5}(\.\d+)?$/.test(val) && +val > 20000 && +val < 80000) val = xlDate(+val);
+      row[colNum(ref)] = String(val).replace(/&amp;/g, '&').trim();
+    });
+    rows.push([...row].map(x => x === undefined ? '' : x));
+  });
+  return rows.filter(r => r.some(x => x));
+}
+// namen koppelen aan spelers van dat team
+function impMatchPlayer(se, raw){
+  const key = String(raw || '').trim().toLowerCase(); if (!key) return null;
+  const norm = x => String(x || '').trim().toLowerCase();
+  let p = se.players.find(x => norm(pshort(x)) === key || norm(x.name) === key);
+  if (p) return p;
+  const first = key.split(/\s+/)[0], hits = se.players.filter(x => norm(x.name).split(/\s+/)[0] === first);
+  return hits.length === 1 ? hits[0] : null;
+}
+function impPairs(se, txt, miss){
+  const out = {};
+  String(txt || '').split(/[,;\n]/).forEach(part => {
+    const t = part.trim(); if (!t) return;
+    const m = t.match(/^(.*?)[\s:]*(\d+)$/), nm = m ? m[1].trim() : t, n = m ? +m[2] : 1;
+    const p = impMatchPlayer(se, nm);
+    if (p) out[p.id] = (out[p.id] || 0) + n; else if (nm) miss.add(nm);
+  });
+  return out;
+}
+const impDate = v => {
+  const t = String(v || '').trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(t)) return t.slice(0, 10);
+  const m = t.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})$/);
+  if (m){ const y = m[3].length === 2 ? '20' + m[3] : m[3]; return `${y}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`; }
+  return '';
+};
+function impParse(rows, se){
+  const head = (rows[0] || []).map(x => String(x || '').toLowerCase().replace(/[^a-z]/g, ''));
+  const ALIAS = {datum: ['datum', 'date', 'wanneer'], tegenstander: ['tegenstander', 'tegen partij', 'opponent', 'tegenpartij'],
+    thuis: ['thuis', 'thuisuit', 'thuisofuit', 'home'], voor: ['voor', 'doelpuntenvoor', 'onsdoelpunten', 'gf', 'puntenvoor'],
+    tegen: ['tegen', 'doelpuntentegen', 'ga', 'puntentegen'], toernooi: ['toernooi', 'tournament'],
+    ronde: ['ronde', 'round', 'fase'], doelpuntenmakers: ['doelpuntenmakers', 'doelpunten', 'scorers', 'goals'],
+    speeltijd: ['speeltijd', 'minuten', 'speelminuten', 'minutes']};
+  const idx = {}; IMP_COLS.forEach(c => { idx[c] = head.findIndex(h => (ALIAS[c] || [c]).some(a => h === a.replace(/[^a-z]/g, ''))); });
+  if (idx.datum < 0 || idx.tegenstander < 0) throw new Error('De eerste regel moet de kolomnamen bevatten, met minstens datum en tegenstander.');
+  const miss = new Set(), out = [], skipped = [];
+  rows.slice(1).forEach((r, i) => {
+    const g = c => idx[c] >= 0 ? String(r[idx[c]] ?? '').trim() : '';
+    const date = impDate(g('datum')), opp = g('tegenstander');
+    if (!date || !opp){ skipped.push(`regel ${i + 2}: ${!date ? 'datum' : 'tegenstander'} ontbreekt`); return; }
+    const home = !/^(n|u|nee|uit|away|false|0)$/i.test(g('thuis'));
+    const mins = impPairs(se, g('speeltijd'), miss), goals = impPairs(se, g('doelpuntenmakers'), miss);
+    out.push({id: uid(), date, opponent: opp, home, gf: g('voor'), ga: g('tegen'),
+      tour: g('toernooi'), round: (ROUNDS.find(x => x[0] === g('ronde').toLowerCase().slice(0, 5)) || [])[0] || '',
+      goals, mins, minutes: se.matchMinutes, imported: true});
+  });
+  return {rows: out, skipped, miss: [...miss]};
+}
+async function importSheet(file, tid){
+  const t = S.teams.find(x => x.id === tid); if (!t) return;
+  const se = t.seasons.find(x => x.id === t.activeSeason) || t.seasons[0];
+  let parsed;
+  try { parsed = impParse(await readSheet(file), se); }
+  catch(e){ await tell('Dat bestand lukt niet: ' + (e.message || e) + '\n\nTip: sla het in Excel op als CSV (puntkomma) en probeer het opnieuw.'); return; }
+  const {rows, skipped, miss} = parsed;
+  if (!rows.length){ await tell('Geen wedstrijden gevonden.' + (skipped.length ? '\n\n' + skipped.slice(0, 6).join('\n') : '')); return; }
+  const have = new Set((se.history || []).map(h => h.date + '|' + h.opponent.toLowerCase()).concat(se.matches.map(m => (m.date || '') + '|' + (m.opponent || '').toLowerCase())));
+  const dup = rows.filter(r => have.has(r.date + '|' + r.opponent.toLowerCase()));
+  const nieuw = rows.filter(r => !have.has(r.date + '|' + r.opponent.toLowerCase()));
+  const info = [`<b>${nieuw.length}</b> wedstrijd${nieuw.length === 1 ? '' : 'en'} voor <b>${esc(teamLabel(t))}</b>`,
+    dup.length ? `${dup.length} staan er al in en worden overgeslagen` : '',
+    skipped.length ? `${skipped.length} regel(s) overgeslagen: ${esc(skipped.slice(0, 3).join('; '))}` : '',
+    miss.length ? `Onbekende namen (speeltijd en doelpunten daarvan vervallen): ${esc(miss.slice(0, 8).join(', '))}` : ''].filter(Boolean);
+  const first = nieuw.slice(0, 5).map(r => `<div class="item"><div class="grow"><div class="name">${esc(r.opponent)}${r.tour ? ' · ' + esc(r.tour) : ''}</div><div class="muted">${fmtDate(r.date)} · ${r.home ? 'thuis' : 'uit'}${r.gf !== '' ? ` · ${esc(r.gf)}-${esc(r.ga)}` : ''} · ${Object.keys(r.mins).length} spelers met speeltijd</div></div></div>`).join('');
+  const ok = await sheet(`<h3>Importeren?</h3><div class="muted" style="margin-bottom:10px">${info.join('<br>')}</div>${first}${nieuw.length > 5 ? `<div class="muted">… en nog ${nieuw.length - 5}</div>` : ''}
+    <div class="grid2" style="margin-top:12px"><button class="btn" data-r="no">Annuleren</button><button class="btn pri" data-r="ok">Importeren</button></div>`);
+  if (!ok || !nieuw.length) return;
+  se.history = (se.history || []).concat(nieuw);
+  save(); cloudPushTeam(tid, true); render();
+  toast(`${nieuw.length} wedstrijd${nieuw.length === 1 ? '' : 'en'} geïmporteerd bij ${teamLabel(t)}`);
+}
+function admImportCard(){
+  const ts = S.teams.map(t => ({id: t.id, label: `${teamLabel(t)}${t.club ? ' · ' + t.club : ''}`}));
+  return `<div class="card"><h2>📥 Gespeelde wedstrijden importeren</h2>
+    <div class="muted" style="margin-bottom:10px">Alleen voor jou als eigenaar. Kies het team, dan het bestand (Excel of CSV). Uitslagen, doelpunten en speeltijd komen in de statistieken van dat team; de opstellingen hoef je niet in te vullen.</div>
+    ${ts.length ? `<label class="f">Team<select id="impTeam">${ts.map(x => `<option value="${x.id}">${esc(x.label)}</option>`).join('')}</select></label>
+    <input type="file" id="impFile" accept=".xlsx,.csv,.txt" style="display:none">
+    <button class="btn pri full" style="margin-top:10px" data-act="admImpPick">📂 Bestand kiezen en importeren</button>
+    <button class="btn full" style="margin-top:8px" data-act="admImpTpl">📄 Voorbeeldbestand downloaden (CSV)</button>
+    <div class="muted" style="margin-top:8px;font-size:12px">Kolommen: ${IMP_COLS.join(' · ')}. Speeltijd en doelpuntenmakers als "Aad A 40, Bas B 30".</div>`
+    : '<div class="muted">Je hebt in deze app nog geen team om naar te importeren. Haak eerst aan bij een team of kijk mee met een trainer.</div>'}
+  </div>`;
+}
+
 /* ===================== Opstelling berekenen ===================== */
 function shuffled(a){ a = a.slice(); for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 function segTimes(st){
@@ -1310,6 +1454,14 @@ function render(){
 }
 
 /* ===================== Schermen ===================== */
+function histRow(h){
+  const n = Object.keys(h.mins || {}).length, sc = h.gf !== '' && h.gf != null && h.gf !== undefined;
+  return `<div class="item match" data-act="histOpen" data-id="${h.id}">
+      <div class="grow"><div class="name">${esc(h.opponent || 'Wedstrijd')}${h.tour ? ' · ' + esc(h.tour) : ''}</div>
+        <div class="muted">${fmtDate(h.date)} · ${h.home === false ? 'uit' : 'thuis'}${n ? ` · ${n} spelers` : ''} · geïmporteerd</div></div>
+      ${sc ? `<b>${h.home === false ? `${esc(h.ga)}-${esc(h.gf)}` : `${esc(h.gf)}-${esc(h.ga)}`}</b>` : ''}
+      <span class="badge ok">Klaar</span></div>`;
+}
 function matchRow(m){
   return `
       <div class="item match" data-act="openMatch" data-id="${m.id}">
@@ -1342,13 +1494,12 @@ function viewMatches(){
       <span class="mbt"><b>${esc(matchTitle(m))}</b><small>${fmtDate(m.date)} · ${m.present.length} spelers${hasScore(m) ? ' · ' + scoreLine(m) : ''}</small></span>
       <span class="mph">${phaseName(m.phase)}</span>
     </button>`).join('')}` : ''}
-  ${!se.matches.length && !(se.tours || []).length && se.players.length ? `<div class="card empty"><b>📅</b>Nog geen wedstrijden.<br>Plan je eerste wedstrijd; de app loopt even met je door de instellingen.</div>` : ''}
+  ${!se.matches.length && !(se.tours || []).length && !(se.history || []).length && se.players.length ? `<div class="card empty"><b>📅</b>Nog geen wedstrijden.<br>Plan je eerste wedstrijd; de app loopt even met je door de instellingen.</div>` : ''}
   <button class="btn pri full big" data-act="${se.matches.length ? 'newMatch' : 'firstMatch'}" ${se.players.length ? '' : 'disabled style="opacity:.5"'}>＋ ${se.matches.length ? 'Nieuwe wedstrijd' : 'Eerste wedstrijd plannen'}</button>
   <button class="btn full" style="margin:-4px 0 12px" data-act="tourNew" ${se.players.length ? '' : 'disabled style="opacity:.5"'}>🏆 Toernooi toevoegen</button>
   <div class="card list">
     <h2>✅ Gespeeld</h2>
-    ${tDone.map(tourRow).join('')}
-    ${done.length ? done.map(matchRow).join('') : (tDone.length ? '' : `<div class="empty"><b>🏁</b>Nog geen gespeelde wedstrijden dit seizoen.</div>`)}
+    ${[...tDone.map(t => ({d: t.date || '', h: tourRow(t)})), ...done.map(m => ({d: m.date || '', h: matchRow(m)})), ...(se.history || []).map(h => ({d: h.date || '', h: histRow(h)}))].sort((a, b) => b.d.localeCompare(a.d)).map(x => x.h).join('') || `<div class="empty"><b>🏁</b>Nog geen gespeelde wedstrijden dit seizoen.</div>`}
   </div>`;
 }
 
@@ -1822,16 +1973,22 @@ function viewStats(){
       scored++; gf += a; ga += b; a > b ? w++ : a === b ? d++ : l++;
     }
   });
+  (se.history || []).forEach(h => {
+    const mins = h.mins || {}, who = Object.keys(mins).length ? Object.keys(mins) : Object.keys(h.goals || {});
+    who.forEach(id => { const r = rows[id]; if (!r) return; r.matches++; r.mins += +mins[id] || 0; r.possible += +h.minutes || se.matchMinutes; });
+    Object.entries(h.goals || {}).forEach(([id, g]) => { const r = rows[id]; if (r) r.goals += +g || 0; });
+    if (h.gf !== '' && h.gf != null){ const a = +h.gf, b = +h.ga; if (!isNaN(a) && !isNaN(b)){ scored++; gf += a; ga += b; a > b ? w++ : a === b ? d++ : l++; } }
+  });
   const list = Object.values(rows).sort((a, b) => b.mins - a.mins);
   const maxMin = Math.max(1, ...list.map(r => r.mins));
   const keepers = list.filter(r => r.kmins > 0).sort((a, b) => b.kmins - a.kmins);
   const pct = r => r.possible ? Math.round(r.mins / r.possible * 100) : 0;
   const avgPct = (() => { const a = list.filter(r => r.possible); return a.length ? Math.round(a.reduce((s, r) => s + pct(r), 0) / a.length) : 0; })();
 
-  if (!done.length) return `<div class="card empty"><b>📊</b>Nog geen statistieken voor ${esc(t.name)} ${esc(se.name)}.<br>Statistieken tellen mee zodra een wedstrijd is opgeslagen als ✅ gespeeld.</div>`;
+  if (!done.length && !(se.history || []).length) return `<div class="card empty"><b>📊</b>Nog geen statistieken voor ${esc(t.name)} ${esc(se.name)}.<br>Statistieken tellen mee zodra een wedstrijd is opgeslagen als ✅ gespeeld.</div>`;
   return `
   <div class="tiles">
-    <div class="tile"><b>${done.length}</b><span>wedstrijden</span></div>
+    <div class="tile"><b>${done.length + (se.history || []).length}</b><span>wedstrijden</span></div>
     <div class="tile"><b>${scored ? `${w}-${d}-${l}` : '–'}</b><span>W-G-V</span></div>
     <div class="tile"><b>${scored ? `${gf}:${ga}` : '–'}</b><span>doelpunten</span></div>
   </div>
@@ -2147,6 +2304,17 @@ document.addEventListener('click', async e => {
     }
     case 'newMatch': newMatch(); break;
     case 'tourNew': tourAdd(); break;
+    case 'histOpen': { const h = (se.history || []).find(x => x.id === id); if (!h) break;
+      const nm = o => Object.entries(o || {}).map(([pid, v]) => `${esc(pshort(player(pid)) || '?')} ${v}`).join(', ') || '–';
+      const r = await sheet(`<h3>${esc(h.opponent || 'Wedstrijd')}</h3>
+        <div class="muted">${fmtDate(h.date, {weekday:'long', day:'numeric', month:'long'})} · ${h.home === false ? 'uit' : 'thuis'}${h.tour ? ' · ' + esc(h.tour) + (h.round ? ' (' + esc(roundName(h.round)) + ')' : '') : ''}</div>
+        <div class="card" style="margin:10px 0"><div><b>Uitslag</b> ${h.gf !== '' ? esc(h.gf) + '-' + esc(h.ga) : 'niet ingevuld'}</div>
+          <div style="margin-top:6px"><b>Doelpunten</b><div class="muted">${nm(h.goals)}</div></div>
+          <div style="margin-top:6px"><b>Speeltijd</b><div class="muted">${nm(h.mins)}</div></div></div>
+        <div class="muted">Geïmporteerde wedstrijd: er is geen opstelling bewaard.</div>
+        <div class="grid2" style="margin-top:12px"><button class="btn" data-r="no">Sluiten</button><button class="btn red" data-r="ok">🗑️ Verwijderen</button></div>`);
+      if (r && await ask('Deze geïmporteerde wedstrijd verwijderen?', 'Verwijderen')){ se.history = se.history.filter(x => x.id !== id); commit(); toast('Verwijderd'); }
+      break; }
     case 'tourOpen': ui.tourId = id; ui.matchId = null; render(); window.scrollTo(0, 0); break;
     case 'tourBack': ui.tourId = null; render(); window.scrollTo(0, 0); break;
     case 'tourPres': { const t = tour(); const i = (t.present || []).indexOf(id); if (i >= 0) t.present.splice(i, 1); else (t.present = t.present || []).push(id);
@@ -3087,7 +3255,7 @@ function admOverview(){
   if (adm.owner && d.requests.length) req = `<div class="card"><div class="ahead"><h2>Aanvragen clubbeheer</h2>${achip(d.requests.length + ' nieuw', 1)}</div>
     ${d.requests.map(r => `${arow(r.name, esc(r.name || r.email), `wil beheerder worden van ${esc(r.clubName)}${r.func ? ' · ' + esc(r.func) : ''} · ${esc(r.email || '')}`)}<div class="grid2" style="margin:4px 0 10px"><button class="btn pri" data-act="reqOk" data-id="${esc(r.id)}">Goedkeuren</button><button class="btn" data-act="reqNo" data-id="${esc(r.id)}">Afwijzen</button></div>`).join('')}</div>`;
   const recent = d.teams.slice().sort((a, b) => b.updated - a.updated).slice(0, 5);
-  return `<div class="atiles">${tiles.join('')}</div>${req}${admEventsCard()}
+  return `<div class="atiles">${tiles.join('')}</div>${req}${admEventsCard()}${adm.owner ? admImportCard() : ''}
     ${adm.owner ? admClubsList(true) : admTeamsCard(d.teams)}
     ${adm.owner ? '' : admMyClubCard()}
     ${adm.owner ? '' : admLinkCard(adm.club)}
@@ -3231,6 +3399,9 @@ async function admAction(act, id){
       adm.ne = null; await helpLoad(true); toast('Bericht geplaatst'); return render();
     }
     if (act === 'admNewsDel'){ if (!await ask('Dit bericht verwijderen?', 'Verwijderen')) return; await api.newsDel(id); await helpLoad(true); return render(); }
+    if (act === 'admImpTpl'){ downloadFile('lineemup-import-voorbeeld.csv', impTemplate()); toast('Voorbeeldbestand gedownload'); return; }
+    if (act === 'admImpPick'){ const f = document.getElementById('impFile'), tid = (document.getElementById('impTeam') || {}).value;
+      if (!f || !tid) return; f.onchange = async () => { const file = f.files[0]; f.value = ''; if (file) await importSheet(file, tid); }; f.click(); return; }
     if (act === 'admEvRead'){ try { localStorage.setItem('lineup.evSeen', String(Date.now())); } catch(e){} adm.evUnseen = 0; updateAdminTab(); return render(); }
     if (act === 'admLinkNew' || act === 'admLinkShare' || act === 'admLinkOff'){
       const [a1, a2] = act === 'admLinkNew' ? [null, id] : id.split('|'), k = a2;
@@ -3666,7 +3837,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-11.5';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-11.7';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
