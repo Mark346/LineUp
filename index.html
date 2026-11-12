@@ -52,8 +52,9 @@
   .card.list .item .nm2 input{padding:5px 8px;font-size:14px}
   .card.list .item:has(.posrow) .num{width:26px;height:26px;border-radius:8px}
   .posb{position:relative;border:1px solid var(--line);background:var(--surf);border-radius:7px;padding:3px 6px;font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;min-width:32px}
-  .posb.on{background:var(--gr);border-color:var(--gr);color:#fff}
-  .posb i{position:absolute;top:-6px;right:-6px;background:var(--y);color:#163;border-radius:50%;width:16px;height:16px;font-size:10px;font-style:normal;line-height:16px;text-align:center;font-weight:700}
+  .posb.on{background:var(--g);border-color:var(--g);color:#fff}
+  .posb i{box-shadow:0 0 0 2px var(--surf)}
+  .posb i{position:absolute;top:-5px;right:-4px;background:var(--y);color:#163;border-radius:50%;width:16px;height:16px;font-size:10px;font-style:normal;line-height:16px;text-align:center;font-weight:700}
   .num.pnum{background:var(--surf2);border:1px solid var(--line);color:var(--muted);font-size:11px;font-weight:700;cursor:default}
   .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
   label.f,div.f{display:block;font-size:13px;color:var(--muted);margin-bottom:10px}div.f>span{margin-bottom:4px}
@@ -3955,7 +3956,7 @@ function linkSheet(txt, url, extra, noShare){
   d.innerHTML = iconize(`<div class="box"><p>🔗 Link klaar</p>
     ${extra ? `<div class="muted" style="margin:-4px 0 10px">${extra}</div>` : ''}
     <input value="${esc(url)}" readonly onclick="this.select()" style="font-size:14px">
-    <div class="ok2" style="margin:6px 0 12px;color:var(--gr)">Link gekopieerd ✓</div>
+    <div class="ok2" style="margin:6px 0 12px;color:var(--g)">Link gekopieerd ✓</div>
     <div class="grid2"><button class="btn" data-r="copy">📋 Kopiëren</button><button class="btn pri" data-r="wa">💬 Delen via WhatsApp</button></div>
     <button class="btn full" style="margin-top:8px" data-r="no">Sluiten</button></div>`);
   d.addEventListener('click', e => {
@@ -4263,7 +4264,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-12.16';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-12.17';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
