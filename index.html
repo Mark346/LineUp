@@ -1844,14 +1844,7 @@ function viewMatch(){
         return `<div class="benchp ${ui.sel && ui.sel.type === 'b' && ui.sel.id === id ? 'sel' : ''} ${up[id] === minUp && bench.length > 1 ? 'low' : ''}" data-act="tapBench" data-drag="b" data-id="${id}"><span class="bd">${esc(p.number || p.name.charAt(0).toUpperCase())}</span><span class="bn">${esc(pshort(p))}${prefTag(p)}</span><i>${Math.round(up[id])}'</i></div>`;
       }).join('') : '<span class="muted" style="padding:8px">Geen reserves · sleep een speler hierheen om hem eruit te halen</span>'}</div>
       <div class="hint">Sleep een reserve op een plek of speler, of tik op twee spelers om te wisselen.</div>
-      ${ph === 'live' ? liveControls(m, times, cur, last, '') + `<div class="tools" style="margin-top:10px">
-        ${ui.seg < last ? `<button class="btn sm" data-act="regenRest">🔄 Rest eerlijk verdelen${nRules ? ' (met regels)' : ''}</button>` : ''}
-        <button class="btn sm" data-act="clearSeg">🧹 Blok leegmaken</button>
-        ${ui.seg > 0 ? '<button class="btn sm" data-act="copyPrev">📋 Neem vorige over</button>' : ''}
-        ${ui.seg > 0 ? '<button class="btn sm" data-act="delSub">🗑️ Wisselmoment weg</button>' : ''}
-        ${m.posOverride && Object.keys(m.posOverride).length ? '<button class="btn sm" data-act="resetPos">↩️ Posities terug</button>' : ''}
-        ${cur > 0 ? '<button class="btn sm" data-act="restartMatch">⏮ Opnieuw beginnen</button>' : ''}
-      </div>` : `<div class="tools">
+      ${ph === 'live' ? liveControls(m, times, cur, last, '') + liveMore(m, last) : `<div class="tools">
         ${ui.seg > 0 ? `<button class="btn sm" data-act="copyPrev">📋 Neem vorige over</button>` : ''}
         ${ph === 'live' && ui.seg < last ? `<button class="btn sm" data-act="regenRest">🔄 Rest eerlijk verdelen</button>` : ''}
         <button class="btn sm" data-act="addSub">＋ Wisselmoment</button>
@@ -4211,7 +4204,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-12.6';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-12.7';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
