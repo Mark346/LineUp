@@ -51,10 +51,10 @@
   .card.list .item:has(.posrow){padding:6px 0;gap:6px}
   .card.list .item .nm2 input{padding:5px 8px;font-size:14px}
   .card.list .item:has(.posrow) .num{width:26px;height:26px;border-radius:8px}
-  .posb{position:relative;border:1px solid var(--line);background:var(--card);border-radius:7px;padding:3px 6px;font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;min-width:32px}
+  .posb{position:relative;border:1px solid var(--line);background:var(--surf);border-radius:7px;padding:3px 6px;font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;min-width:32px}
   .posb.on{background:var(--gr);border-color:var(--gr);color:#fff}
   .posb i{position:absolute;top:-6px;right:-6px;background:var(--y);color:#163;border-radius:50%;width:16px;height:16px;font-size:10px;font-style:normal;line-height:16px;text-align:center;font-weight:700}
-  .num.pnum{background:none;border:1px solid var(--line);color:var(--muted);font-size:11px;font-weight:700;cursor:default}
+  .num.pnum{background:var(--surf2);border:1px solid var(--line);color:var(--muted);font-size:11px;font-weight:700;cursor:default}
   .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
   label.f,div.f{display:block;font-size:13px;color:var(--muted);margin-bottom:10px}div.f>span{margin-bottom:4px}
   label.f>*{margin-top:5px}
@@ -200,7 +200,7 @@
   /* ===================== Tabellen & statistiek ===================== */
   .ovwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
   .ovwrap table.ov{min-width:430px}
-  .ovwrap table.ov td:first-child,.ovwrap table.ov th:first-child{position:sticky;left:0;z-index:1;background:var(--card);min-width:110px;box-shadow:1px 0 0 var(--line)}
+  .ovwrap table.ov td:first-child,.ovwrap table.ov th:first-child{position:sticky;left:0;z-index:3;background:var(--solid);min-width:110px;box-shadow:2px 0 6px rgba(0,0,0,.12)}
   table.ov{width:100%;border-collapse:collapse;font-size:13px}
   table.ov th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
   table.ov th,table.ov td{padding:7px 4px;text-align:center;border-bottom:1px solid var(--line)}
@@ -4213,7 +4213,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-12.9';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-12.10';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
