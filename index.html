@@ -73,10 +73,13 @@
   body[data-theme="neon"] .brand .app{background:linear-gradient(90deg,#fff,var(--acc));-webkit-background-clip:text;background-clip:text;color:transparent}
   .teams{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;max-width:760px;margin:0 auto;scrollbar-width:none}
   .teams::-webkit-scrollbar{display:none}
-  header .pill{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);color:var(--hdr-txt)}
+  header .pill{background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.45);color:#fff;font-weight:800}
   header .pill.on{background:#fff;color:#111;border-color:#fff}
   body[data-theme="neon"] header .pill.on{background:var(--acc);color:var(--on-acc);border-color:var(--acc);box-shadow:0 0 18px rgba(198,255,61,.45)}
-  .cloud{font-size:12px;font-weight:800;margin-left:auto;background:rgba(255,255,255,.14);padding:5px 9px;border-radius:999px;cursor:pointer;white-space:nowrap}
+  .cloud{font-size:12px;font-weight:800;margin-left:auto;background:rgba(255,255,255,.14);padding:5px 9px;border-radius:999px;cursor:pointer;white-space:nowrap;min-height:28px}
+  .cloud.err{background:var(--red);color:#fff}
+  .linkred{background:none;border:0;color:var(--red);font:inherit;font-weight:700;text-decoration:underline;cursor:pointer;padding:12px 16px;min-height:44px}
+  .tapfocus:focus-visible{outline:3px solid var(--y);outline-offset:2px}
   .cloud:empty{display:none}
 
   /* ===================== Bouwstenen ===================== */
@@ -128,8 +131,8 @@
   .segc button{flex:1;border:0;background:none;color:var(--muted);font:inherit;font-size:13px;font-weight:800;padding:10px 4px;border-radius:10px;cursor:pointer}
   .segc button.on{background:var(--acc);color:var(--on-acc)}
   .stabs{display:flex;gap:4px;background:color-mix(in srgb,var(--solid) 92%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:16px;padding:4px;margin-bottom:12px;position:sticky;top:8px;z-index:15;box-shadow:var(--shadow)}
-  .stabs button{flex:1;border:0;background:none;font:inherit;font-size:12px;font-weight:800;color:var(--muted);padding:10px 4px;line-height:1.2;border-radius:12px;cursor:pointer}
-  .stabs button.on{background:var(--acc);color:var(--on-acc)}
+  .stabs button{flex:1;border:0;background:none;font:inherit;font-size:11.5px;font-weight:700;color:var(--muted);padding:8px 3px;line-height:1.2;border-radius:12px;cursor:pointer}
+  .stabs button.on{background:none;color:var(--txt);border-radius:0;box-shadow:inset 0 -3px 0 var(--y)}
   .summary{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surf);border:1px solid var(--line);border-radius:16px;padding:11px 14px;margin-bottom:12px;font-size:13px;color:var(--muted);cursor:pointer}
   .summary b{color:var(--txt)} .summary span{color:var(--acc);font-weight:800;white-space:nowrap}
 
@@ -195,6 +198,9 @@
   .drop-hi .dot,.drop-hi.benchp,#benchZone.drop-hi{outline:3px dashed var(--acc);outline-offset:3px}
 
   /* ===================== Tabellen & statistiek ===================== */
+  .ovwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .ovwrap table.ov{min-width:430px}
+  .ovwrap table.ov td:first-child,.ovwrap table.ov th:first-child{position:sticky;left:0;z-index:1;background:var(--card);min-width:110px;box-shadow:1px 0 0 var(--line)}
   table.ov{width:100%;border-collapse:collapse;font-size:13px}
   table.ov th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
   table.ov th,table.ov td{padding:7px 4px;text-align:center;border-bottom:1px solid var(--line)}
@@ -293,7 +299,7 @@
   .mbig:active{transform:scale(.98)}
   .mbig .mbt{flex:1;min-width:0;display:flex;flex-direction:column}
   .mbig .mbt b{font-size:17px;font-weight:900;font-family:var(--disp);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .mbig .mbt small{font-size:13px;font-weight:600;opacity:.75;margin-top:2px}
+  .mbig .mbt small{font-size:13px;font-weight:600;opacity:.95;margin-top:2px}
   .mbig .mph{flex:none;background:rgba(7,9,15,.85);color:var(--acc);font-size:12px;font-weight:800;padding:6px 10px;border-radius:999px;display:inline-flex;align-items:center;gap:5px}
   .mbig.live{animation:livepulse 1.8s ease-in-out infinite}
   .mbig.live .mph{color:#fff;background:#07090f}
@@ -309,7 +315,7 @@
   /* ===================== Grasveld Licht ===================== */
   :root, body[data-theme="graslicht"]{
     --bg:#eef7f0; --bg2:none; --surf:#ffffff; --surf2:var(--surf2); --solid:#ffffff; --line:rgba(15,107,53,.14);
-    --txt:var(--ink); --muted:var(--muted); --acc:var(--y); --acc2:var(--g); --on-acc:var(--ink);
+    --txt:var(--ink); --muted:#44624f; --acc:var(--y); --acc2:var(--g); --on-acc:var(--ink);
     --hdr:var(--g); --hdr-txt:#fff; --hdr-glow:none; --pitch1:var(--g2); --pitch2:#1a9446; --pline:rgba(255,255,255,.85); --kp:var(--g);
     --ok:var(--g); --red:#d9363e; --shadow:0 4px 14px rgba(12,61,31,.07); --blur:none; --radius:16px;
     --font:"Archivo",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; --disp:"Archivo",sans-serif;
@@ -343,7 +349,8 @@
   .cloud{background:rgba(255,255,255,.16);color:#fff}
   .stabs{background:rgba(255,255,255,.96);border-color:var(--line)}
   .stabs button{color:var(--muted)}
-  .stabs button.on,.segc button.on,.segs .pill.on,.tag.on{background:var(--y);color:var(--on-y)}
+  .segc button.on,.segs .pill.on,.tag.on{background:var(--y);color:var(--on-y)}
+  .stabs button.on{background:none;color:var(--ink);box-shadow:inset 0 -3px 0 var(--y);border-radius:0}
   .phases{background:rgba(255,255,255,.97);border-bottom:1px solid var(--line)}
   .phases button{color:var(--muted)}
   .phases .pback{color:var(--txt)}
@@ -1025,7 +1032,7 @@ const tourTime = t => [t.arrive ? `aanwezig ${t.arrive}` : '', t.start ? `start 
 const tourResult = t => t.pos ? `${t.pos}${t.of ? ' van ' + t.of : ''}` : '';
 function tourBig(t){
   const ms = tourMatches(t), ph = t.phase || 'prep';
-  return `<button class="mbig ${ph === 'live' ? 'live' : 'prep'}" data-act="tourOpen" data-id="${t.id}">
+  return `<button class="mbig ${ph === 'live' ? 'live' : 'prep'}" data-act="tourOpen" data-id="${t.id}" aria-label="Open toernooi ${esc(t.name || 'toernooi')}">
     <span class="mbt"><b>🏆 ${esc(t.name || 'Toernooi')}</b><small>${fmtDate(t.date)}${tourTime(t) ? ' · ' + esc(tourTime(t)) : ''} · ${(t.present || []).length} spelers${ms.length ? ` · ${ms.length} wedstrijd${ms.length === 1 ? '' : 'en'}` : ''}</small></span>
     <span class="mph">${ph === 'live' ? 'Bezig' : 'Voorbereiding'}</span></button>`;
 }
@@ -1709,16 +1716,18 @@ function viewMatches(){
   ${t.inactive ? `<div class="card pend"><div class="arow" style="border:0;padding:0"><span class="mav">💤</span><span class="grow"><b>Dit team staat op niet actief</b><small>Het staat niet tussen je teams bovenin.</small></span><button class="btn sm" data-act="toggleInactive" data-id="${t.id}">Weer actief</button></div></div>` : ''}
   ${onbCard() || (!se.players.length ? `<div class="card empty"><b>👋</b>Begin met spelers toevoegen voor ${esc(t.name)}.<br><br><button class="btn pri" ${myUid() ? 'data-act="onbStep" data-id="players"' : 'data-act="goPlayers"'}>👥 Spelers toevoegen</button></div>` : '')}
   <div class="summary" data-act="goSettings2">
-    <div><b>${esc(teamLabel(t))}</b> · ${settingsLine(se)} · ${se.players.length} spelers</div><span>⚙️ wijzigen</span>
+    <div><b>${esc(teamLabel(t))}</b> · ${settingsLine(se)} · ${se.players.length} spelers</div><span style="padding:12px;margin:-12px">⚙️ wijzigen</span>
   </div>
   ${open.length || tOpen.length ? `<div class="sgroup" style="margin-top:6px">In voorbereiding & bezig</div>${tOpen.map(tourBig).join('')}
-    ${open.map(m => `<button class="mbig ${m.phase}" data-act="openMatch" data-id="${m.id}">
+    ${open.map(m => `<button class="mbig ${m.phase}" data-act="openMatch" data-id="${m.id}" aria-label="Open wedstrijd ${esc(matchTitle(m))}, ${esc(String(phaseName(m.phase)).replace(/[^\p{L}\s-]/gu, '').trim())}">
       <span class="mbt"><b>${esc(matchTitle(m))}</b><small>${fmtDate(m.date)} · ${m.present.length} spelers${hasScore(m) ? ' · ' + scoreLine(m) : ''}</small></span>
       <span class="mph">${phaseName(m.phase)}</span>
     </button>`).join('')}` : ''}
   ${!se.matches.length && !(se.tours || []).length && !(se.history || []).length && se.players.length ? `<div class="card empty"><b>📅</b>Nog geen wedstrijden.<br>Plan je eerste wedstrijd; de app loopt even met je door de instellingen.</div>` : ''}
-  <button class="btn pri full big" data-act="${se.matches.length ? 'newMatch' : 'firstMatch'}" ${se.players.length ? '' : 'disabled style="opacity:.5"'}>＋ ${se.matches.length ? 'Nieuwe wedstrijd' : 'Eerste wedstrijd plannen'}</button>
-  <button class="btn full" style="margin:-4px 0 12px" data-act="tourNew" ${se.players.length ? '' : 'disabled style="opacity:.5"'}>🏆 Toernooi toevoegen</button>
+  <div class="grid2" style="margin-bottom:12px">
+    <button class="btn full" data-act="${se.matches.length ? 'newMatch' : 'firstMatch'}" ${se.players.length ? '' : 'disabled style="opacity:.5"'}>＋ ${se.matches.length ? 'Nieuwe wedstrijd' : 'Eerste wedstrijd'}</button>
+    <button class="btn full" data-act="tourNew" ${se.players.length ? '' : 'disabled style="opacity:.5"'}>🏆 Toernooi toevoegen</button>
+  </div>
   <div class="card list">
     <h2>✅ Gespeeld</h2>
     ${[...tDone.map(t => ({d: t.date || '', h: tourRow(t)})), ...done.map(m => ({d: m.date || '', h: matchRow(m)})), ...(se.history || []).map(h => ({d: h.date || '', h: histRow(h)}))].sort((a, b) => b.d.localeCompare(a.d)).map(x => x.h).join('') || `<div class="empty"><b>🏁</b>Nog geen gespeelde wedstrijden dit seizoen.</div>`}
@@ -1737,7 +1746,7 @@ function pitchHTML(m, s, interactive, badges){
     ${logoSrc ? `<img class="wm" src="${logoSrc}" alt="">` : ''}
     ${pos.map((p, i) => {
       const id = lu[i], sel = interactive && ui.sel && ui.sel.type === 'f' && ui.sel.i === i;
-      return `<div class="pl ${p.line === 'K' ? 'k' : ''} ${id ? '' : 'emptyp'} ${sel ? 'sel' : ''}" style="left:${p.x}%;top:${p.y}%" ${interactive ? `data-act="tapField" data-drag="f" data-i="${i}"` : ''}>
+      return `<div class="pl ${p.line === 'K' ? 'k' : ''} ${id ? '' : 'emptyp'} ${sel ? 'sel' : ''} ${interactive ? 'tapfocus' : ''}" style="left:${p.x}%;top:${p.y}%" ${interactive ? `data-act="tapField" data-drag="f" data-i="${i}" role="button" tabindex="0" aria-label="${esc((p.line === 'K' ? 'Keeper' : (POS_NAMES[p.code] || p.code)) + ': ' + (id ? pname(id) : 'leeg'))}. Tik om te ruilen"` : ''}>
         <div class="dot">${p.line === 'K' ? '🧤' : p.code}${up && id ? `<i class="mb">${Math.round(up[id])}'</i>` : ''}</div>${id && m.goals && m.goals[id] && m.phase && m.phase !== 'prep' ? `<i class="ballb">⚽${m.goals[id] > 1 ? m.goals[id] : ''}</i>` : ''}<div class="nm">${id ? esc(pname(id)) : (interactive ? 'sleep hier' : '—')}</div></div>`;
     }).join('')}
   </div>`;
@@ -1790,7 +1799,7 @@ function viewMatch(){
   const editable = ph !== 'done';
   const cur = m.cur || 0;
 
-  const phaseBar = `<div class="phases"><button class="pback" data-act="back" aria-label="Terug">‹</button>${PHASES.map(([k, l], i) => `<button class="${k === ph ? 'on' : ''} ${PHASES.findIndex(p => p[0] === ph) > i ? 'past' : ''}" data-act="phase" data-v="${k}" aria-label="${esc(l)}">${l}</button>`).join('')}</div>`;
+  const phaseBar = `<div class="phases"><button class="pback" data-act="back" aria-label="Terug naar wedstrijden">‹</button>${PHASES.map(([k, l], i) => `<button class="${k === ph ? 'on' : ''} ${PHASES.findIndex(p => p[0] === ph) > i ? 'past' : ''}" data-act="phase" data-v="${k}" aria-label="${esc(l)}">${l}</button>`).join('')}</div>`;
 
   const header = `
   <div class="card mhead">
@@ -1841,9 +1850,9 @@ function viewMatch(){
       <div class="benchtitle">🪑 Reserves <span>minuten gespeeld t/m dit blok</span></div>
       <div class="bench" id="benchZone">${bench.length ? bench.map(id => {
         const p = player(id);
-        return `<div class="benchp ${ui.sel && ui.sel.type === 'b' && ui.sel.id === id ? 'sel' : ''} ${up[id] === minUp && bench.length > 1 ? 'low' : ''}" data-act="tapBench" data-drag="b" data-id="${id}"><span class="bd">${esc(p.number || p.name.charAt(0).toUpperCase())}</span><span class="bn">${esc(pshort(p))}${prefTag(p)}</span><i>${Math.round(up[id])}'</i></div>`;
+        return `<div class="benchp tapfocus ${ui.sel && ui.sel.type === 'b' && ui.sel.id === id ? 'sel' : ''} ${up[id] === minUp && bench.length > 1 ? 'low' : ''}" data-act="tapBench" data-drag="b" data-id="${id}" role="button" tabindex="0" aria-label="Reserve ${esc(pshort(p))}. Tik om hem in het veld te zetten"><span class="bd">${esc(p.number || p.name.charAt(0).toUpperCase())}</span><span class="bn">${esc(pshort(p))}${prefTag(p)}</span><i>${Math.round(up[id])}'</i></div>`;
       }).join('') : '<span class="muted" style="padding:8px">Geen reserves · sleep een speler hierheen om hem eruit te halen</span>'}</div>
-      <div class="hint">Sleep een reserve op een plek of speler, of tik op twee spelers om te wisselen.</div>
+      <div class="hint" role="status" aria-live="polite">${ui.sel ? 'Gekozen: ' + esc(ui.sel.type === 'b' ? pname(ui.sel.id) : (m.segments[ui.seg] || [])[ui.sel.i] ? pname(m.segments[ui.seg][ui.sel.i]) : 'lege plek') + '. Tik nu op de plek of speler om te ruilen.' : 'Sleep een reserve op een plek of speler, of tik op twee spelers om te wisselen.'}</div>
       ${ph === 'live' ? liveControls(m, times, cur, last, '') + liveMore(m, last) : `<div class="tools">
         ${ui.seg > 0 ? `<button class="btn sm" data-act="copyPrev">📋 Neem vorige over</button>` : ''}
         ${ph === 'live' && ui.seg < last ? `<button class="btn sm" data-act="regenRest">🔄 Rest eerlijk verdelen</button>` : ''}
@@ -1858,7 +1867,7 @@ function viewMatch(){
   const minutesCard = `
     <div class="card">
       <h2>⏱️ Speeltijd</h2>
-      <table class="ov">
+      <div class="ovwrap"><table class="ov">
         <tr><th>Speler</th>${times.map((t, i) => `<th class="${i === ui.seg ? 'cur' : ''}">${i + 1}</th>`).join('')}<th>${ph === 'done' || ph === 'post' ? 'Min' : 'Nu'}</th>${ph === 'done' || ph === 'post' ? '' : '<th>Tot.</th>'}</tr>
         ${Object.entries(stt).sort((a, b) => (ph === 'done' || ph === 'post') ? (b[1].mins - a[1].mins) : ((up[a[0]] - up[b[0]]) || (a[1].mins - b[1].mins))).map(([id, r]) => {
           const shown = (ph === 'done' || ph === 'post') ? r.mins : up[id];
@@ -1867,7 +1876,7 @@ function viewMatch(){
           ${r.per.map((c, i) => `<td class="${i === ui.seg ? 'cur ' : ''}${c ? (c === 'K' ? 'kp' : '') : 'w'}">${c ? c : (avail(m, id, i) ? 'W' : '–')}</td>`).join('')}
           <td><b>${Math.round(shown)}'</b></td>${ph === 'done' || ph === 'post' ? '' : `<td class="muted">${Math.round(r.mins)}'</td>`}</tr>`;
         }).join('')}
-      </table>
+      </table></div>
       <div class="muted" style="margin-top:8px">${ph === 'done' || ph === 'post' ? 'W = reserve' : `Nu = gespeeld t/m blok ${ui.seg + 1} · Tot. = met de planning erbij · W = reserve · minst gespeeld bovenaan`}</div>
     </div>`;
 
@@ -1908,7 +1917,7 @@ function viewMatch(){
     <div class="segc"><button class="${m.home !== false ? 'on' : ''}" data-act="home" data-v="1">🏠 Thuis</button><button class="${m.home === false ? 'on' : ''}" data-act="home" data-v="0">🚌 Uit</button></div>
     ${m.home === false ? `<label class="f" style="margin-top:10px">Adres van de uitwedstrijd<input data-m="address" value="${esc(m.address || '')}" placeholder="bv. Sportpark De Wei, Utrecht" autocomplete="off"></label>
     ${m.address ? `<a class="maplink" href="${esc(mapsUrl(m.address))}" target="_blank" rel="noopener">📍 Bekijk in Google Maps</a>` : ''}` : ''}
-    <div class="muted" style="margin-top:10px">⚙️ ${settingsLine(st)} · <a href="#" data-act="goSettings2">wijzigen bij Instellingen</a></div>
+    <div class="muted" style="margin-top:10px">⚙️ ${settingsLine(st)} · <a href="#" data-act="goSettings2" style="display:inline-block;padding:12px 8px;margin:-12px -8px">wijzigen bij Instellingen</a></div>
   </div>`;
 
   // ---- na de wedstrijd
@@ -1950,7 +1959,7 @@ function viewMatch(){
   const fs = ph === 'live' ? fontLevel() : 0;
   return `<div class="fsz fs${fs}${fs === 3 ? ' fs2' : ''}">
   ${phaseBar}${header}${body}
-  <button class="btn red full" data-act="delMatch">Wedstrijd verwijderen</button></div>`;
+  <div style="text-align:center;margin:28px 0 24px"><button class="linkred" data-act="delMatch" aria-label="Wedstrijd ${esc(matchTitle(m))} verwijderen">Wedstrijd verwijderen</button></div></div>`;
 }
 
 const FS_KEY = 'opstellingmaker.fs';
@@ -2238,7 +2247,7 @@ function viewStats(){
   <div class="card">
     <h2>⏱️ Speeltijd per speler</h2>
     <div class="muted" style="margin-bottom:8px">% = deel van de minuten in wedstrijden waarbij de speler aanwezig was. Gemiddeld ${avgPct}%.</div>
-    <table class="ov">
+    <div class="ovwrap"><table class="ov">
       <tr><th>Speler</th><th>Wed</th><th>Min</th><th>%</th><th>⚽ Goals</th><th>🧤 Keeper</th><th>Reserve</th></tr>
       ${list.map(r => {
         const top = Object.entries(r.pos).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([c]) => c === 'K' ? '🧤' : c).join(' · ');
@@ -2248,7 +2257,7 @@ function viewStats(){
           <td style="color:${tooLow(r) ? 'var(--red)' : 'inherit'}">${r.possible ? pct(r) + '%' : '–'}</td>
           <td><b>${r.goals || ''}</b></td><td class="kp">${r.kmins ? Math.round(r.kmins) + "'" : ''}</td><td class="w">${r.bench}×</td></tr>`;
       }).join('')}
-    </table>
+    </table></div>
     <div class="muted" style="margin-top:8px">Reserve = aantal blokken als reserve. Rood = duidelijk onder het haalbare gemiddelde van ${fairPct}%; één blok meer of minder is normaal.</div>
   </div>
   ${list.some(r => r.goals) ? `<div class="card">
@@ -4204,7 +4213,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-12.8';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-12.9';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
@@ -4354,7 +4363,13 @@ function setCloudStatus(st){
   if (st === undefined){ const L = cloud.links[S.active.team], c = cloudCfg(); st = cloud.outdated ? 'old' : L ? L.status : (c && !cloud.user && cloud.authKnown) ? 'login' : 'off'; }
   cloud.status = st;
   const el = document.getElementById('cloudDot');
-  if (el){ el.innerHTML = iconize({ok:'☁️ ✓', busy:'☁️ …', err:'☁️ ⚠️', old:'⬆️ ververs', login:'🔒 inloggen', off:''}[st] || ''); el.className = 'cloud ' + st; }
+  if (el){
+    const TXT = {ok: ['☁️ ✓', 'Opgeslagen'], busy: ['☁️ …', 'Bezig met opslaan'], err: ['⚠️ Niet opgeslagen', 'Niet opgeslagen – tik om opnieuw te proberen'],
+      old: ['⬆️ ververs', 'Nieuwe versie – tik om te verversen'], login: ['🔒 inloggen', 'Log in om online te bewaren'], off: ['', 'Alleen op deze telefoon bewaard']};
+    const [html, label] = TXT[st] || ['', ''];
+    el.innerHTML = iconize(html); el.className = 'cloud ' + st;
+    el.setAttribute('title', label); el.setAttribute('aria-label', label); el.setAttribute('role', 'button');
+  }
 }
 function teamFromRemote(r, local){
   let d; try { d = JSON.parse(r.data); } catch(e){ return null; }
