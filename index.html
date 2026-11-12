@@ -111,6 +111,7 @@
   .badge.live{background:var(--soft);color:var(--acc)}
   .empty{text-align:center;padding:26px 10px;color:var(--muted)}
   .empty b{display:block;font-size:36px;margin-bottom:6px}
+  body.hashelp .toast{bottom:calc(104px + env(safe-area-inset-bottom))}
   .toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--txt);color:var(--bg);padding:11px 18px;border-radius:999px;font-weight:700;z-index:50;box-shadow:0 10px 30px rgba(0,0,0,.35);white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis}
 
   /* ===================== Navigatie ===================== */
@@ -888,7 +889,7 @@ function normalize(){
   const flat = [];
   S.teams.forEach(t => { (t.seasons.length ? t.seasons : [defaultSeason(seasonName(), 8, '1-3-3-1', 3, 50)]).forEach((se, i) => flat.push({...t, id: i === 0 ? t.id : uid(), seasons:[se]})); });
   if (flat.length !== S.teams.length){ const cur = S.active.team, cs = S.active.season[cur]; S.teams = flat; const hit = flat.find(t => t.seasons[0].id === cs); if (hit) S.active.team = hit.id; }
-  S.teams.forEach(t => { if (t.club === undefined) t.club = 'Maliskamp'; });
+  S.teams.forEach(t => { if (t.club === undefined) t.club = ''; });
   if (!S.pal1){ const old = ['#c8102e', '#1b1b1f', '#9e0b23', '#2563eb', '#1f9d55', '#f5c518', '#ff7a1a']; const pal = ['#c6ff3d', '#22d3ee', '#ff8a1f', '#8b5cf6', '#ff4d8d', '#34f5a4']; S.teams.forEach((t, i) => { if (!t.color || old.includes(t.color)) t.color = pal[i % pal.length]; }); S.pal1 = true; }
   S.teams.forEach(t => { if (!t.color || ['#f5c518', '#ff7a1a'].includes(t.color)) t.color = '#c8102e'; });
   S.teams.forEach(t => t.seasons.forEach(se => se.matches.forEach(m => {
@@ -1084,8 +1085,8 @@ function viewTour(){
     ${attLegend}
     <button class="btn full" style="margin-bottom:12px" data-act="tourAttAll">✅ Iedereen erbij</button>
     ${attLegend}
-    ${attButtons(list, pid => attOf(t, pid), 'tourAttTap')}
-    <div class="muted" style="margin:8px 0 10px;font-size:12px">Eén tik wisselt: erbij → kan niet → nog niet gekozen. Lang indrukken opent het keuzevenster.</div>
+    ${attButtons(list, pid => attOf(t, pid), 'tourAtt', t)}
+    <div class="muted" style="margin:8px 0 10px;font-size:12px">Tik op een naam en kies "Ik ben erbij" of "Ik kan niet", net als op de pagina van de ouders.</div>
   </div>`;
   const mrow = m => `<div class="item match">
       <span class="badge" style="flex:none">${esc(roundName(m.round))}</span>
@@ -1829,6 +1830,12 @@ function viewMatch(){
     <button class="btn full" style="margin-top:8px" data-act="${ph === 'live' ? 'regenRest' : 'autoAll'}">⚡ ${ph === 'live' ? 'Rest opnieuw verdelen met deze regels' : 'Opnieuw verdelen met deze regels'}</button>
     </details></div>` : '';
   const tourCard = tourOf(m) ? `<div class="summary" data-act="tourOpen" data-id="${m.tourId}"><div>🏆 <b>${esc(tourOf(m).name || 'Toernooi')}</b> · ${esc(roundName(m.round))}</div><span>terug</span></div>` : '';
+  const need = m.settings.fieldPlayers, haveN = (m.present || []).filter(id => player(id)).length;
+  const noAns = Object.keys(m.att || {}).length ? se.players.filter(p => !(m.att || {})[p.id]).length : 0;
+  const attWarn = ph === 'prep' ? `
+    ${haveN < need ? `<div class="card pend"><b>⚠️ Je hebt ${haveN} van de ${need} spelers.</b><div>Voeg een invaller toe of zet iemand op erbij. De plekken die overblijven blijven leeg.</div></div>` : ''}
+    ${noAns ? `<div class="card pend"><div>${noAns} speler${noAns === 1 ? '' : 's'} ${noAns === 1 ? 'heeft' : 'hebben'} nog niet gereageerd. Zij staan niet in de opstelling.</div>
+      <button class="btn full" style="margin-top:8px" data-act="startPoll">📣 Link opnieuw delen</button></div>` : ''}` : '';
   const lineupCard = `
     <div class="card">
       <h2>${ph === 'live' ? '▶️ Live opstelling' : ph === 'prep' ? '📋 Opstelling maken' : '📋 Opstelling'}</h2>
@@ -1947,7 +1954,7 @@ function viewMatch(){
   </div>`;
 
   let body;
-  if (ph === 'prep') body = `${tourCard}${knvbCard}${infoCard}${attCard(m)}${guestCard}${rulesCard}${lineupCard}${minutesCard}
+  if (ph === 'prep') body = `${tourCard}${knvbCard}${infoCard}${attCard(m)}${guestCard}${rulesCard}${attWarn}${lineupCard}${minutesCard}
     <button class="btn pri full big" data-act="phase" data-v="live">▶️ Start wedstrijd</button>
     <div class="grid2" style="margin-bottom:12px"><button class="btn" data-act="share">📤 Delen</button><button class="btn" data-act="print">🖨️ Printen</button></div>`;
   else if (ph === 'live') body = tourCard + scoreBar(m, cur) + rulesCard + (fontLevel() === 3 ? `${listCard(m, times, cur, last)}${minutesCard}` : `${lineupCard}${minutesCard}`);
@@ -2176,7 +2183,7 @@ function viewPlayers(){
       <div class="item" style="flex-wrap:wrap">
         <div class="num pnum">${esc(((prefsOf(p) || [])[0]) || '')}</div>
         <div class="grow nm2"><input value="${esc(splitName(p.name).first)}" data-pn="first" data-id="${p.id}" placeholder="Voornaam" aria-label="Voornaam"><input class="initIn" value="${esc(splitName(p.name).last)}" data-pn="last" data-id="${p.id}" placeholder="Letter" maxlength="3" aria-label="Eerste letter achternaam" autocapitalize="characters"></div>
-        <button class="x" data-act="delPlayer" data-id="${p.id}">×</button>
+        <button class="x" data-act="delPlayer" data-id="${p.id}" title="Verwijder ${esc(pshort(p))}" aria-label="Verwijder ${esc(pshort(p))}">×</button>
         ${usePos() ? `<div class="posrow">${posCodes(se).map(c => { const i = (prefsOf(p) || []).indexOf(c);
           return `<button class="posb ${i >= 0 ? 'on' : ''}" data-act="prefTap" data-id="${p.id}" data-c="${esc(c)}" aria-label="${esc(POS_NAMES[c] || c)} voor ${esc(pshort(p))}${i >= 0 ? `, nu ${i + 1}e keus` : ''}">${esc(c)}${i >= 0 ? `<i>${i + 1}</i>` : ''}</button>`; }).join('')}</div>` : ''}
       </div>`).join('') : `<div class="empty"><b>👥</b>Nog geen spelers. Voeg ze hieronder toe.</div>`}
@@ -2288,7 +2295,7 @@ function teamInfoCard(x){
     <datalist id="clubNames">${clubList().map(c => `<option value="${esc(c)}">`).join('')}</datalist>
     <div class="muted">${ls.players.length} spelers · ${ls.matches.length} wedstrijden · ${ls.matches.filter(m => m.phase === 'done').length} gespeeld</div>
   </div>
-  <div class="card">
+  ${!mayManage(x) ? '' : `<div class="card">
     <details data-key="tbeheer" ${ui.open.tbeheer ? 'open' : ''}><summary>🔧 Team beheren</summary>
     <div style="height:8px"></div>
     <button class="btn full" style="margin-bottom:8px" data-act="copyTeam" data-id="${x.id}">📋 Kopie maken voor nieuw seizoen</button>
@@ -2299,7 +2306,16 @@ function teamInfoCard(x){
     <button class="btn full" style="margin-bottom:8px" data-act="toggleInactive" data-id="${x.id}">${x.inactive ? '✅ Weer actief maken' : '💤 Team op niet actief zetten'}</button>
     <button class="btn red full" data-act="delTeam" data-id="${x.id}">🗑️ Team verwijderen</button>
     </details>
-  </div>`;
+  </div>`}`;
+}
+// eigenaar van het team of beheerder van de club mag ingrijpen
+function mayManage(t){
+  const x = t || team(); if (adm.owner) return true;
+  const L = cloud.links[x.id];
+  if (!L || !Object.keys(L.members || {}).length) return true;          // alleen op dit apparaat
+  if (L.members[myUid()] === 'owner') return true;
+  const k = clubSlug(x.club || '');
+  return !!k && adm.clubs.some(c => c.key === k);
 }
 
 function settingsHome(){
@@ -2603,8 +2619,7 @@ document.addEventListener('click', async e => {
     case 'tourAtt': await coachAnswer(tour(), id, se); break;
     case 'tourPoll': await startPoll(tour()); break;
     case 'tourShare': { const t = tour(); const txt = tourShareText(t);
-      if (navigator.share) navigator.share({title: t.name || 'Toernooi', text: txt}).catch(() => {});
-      else navigator.clipboard?.writeText(txt).then(() => toast('Bericht gekopieerd – plak het in de team-app'), () => tell(txt)); break; }
+      shareOrCopy(txt, t.poll ? pollUrl(t.poll.id) : '', t.name || 'Toernooi'); break; }
     case 'tourStart': { const t = tour(); if (!(t.present || []).length){ await tell('Zet eerst spelers op aanwezig.'); break; } t.phase = 'live'; commit(); break; }
     case 'tourFinish': { const t = tour(); await tourFinishDialog(t); break; }
     case 'tourReopen': { const t = tour(); const old = t.phase; t.phase = 'live'; if (!await tourFinishDialog(t)){ t.phase = old; render(); } break; }
@@ -2640,15 +2655,11 @@ document.addEventListener('click', async e => {
     case 'arriveEdit': e.preventDefault(); ui.arriveEdit = m.id; render(); break;
     case 'startPoll': await startPoll(m); break;
     case 'coachAtt': await coachAnswer(m, id); break;
-    case 'attTap': { if (el.dataset.skip){ delete el.dataset.skip; break; } const y = window.scrollY, cur = attOf(m, id), nxt = cur === 'ja' ? 'nee' : cur === 'nee' ? 'geen' : 'ja';
-      setAtt(m, id, nxt, se); requestAnimationFrame(() => window.scrollTo(0, y)); break; }
-    case 'attAll': { const y = window.scrollY; m.att = m.att || {};
-      se.players.forEach(p => { if (attOf(m, p.id) === 'geen' || !attOf(m, p.id)) m.att[p.id] = 'ja'; });
+    case 'attAll': { const y = window.scrollY; m.att = m.att || {}; m.attBy = m.attBy || {};
+      se.players.forEach(p => { if (!m.att[p.id]){ m.att[p.id] = 'ja'; m.attBy[p.id] = {by: 'trainer', at: Date.now()}; if (m.poll && cloud.api) cloud.api.pollAnswer(m.poll.id, p.id, 'ja').catch(() => {}); } });
       applyAnswers(m, m.att, se); commit(); requestAnimationFrame(() => window.scrollTo(0, y)); toast('Iedereen erbij'); break; }
-    case 'tourAttTap': { if (el.dataset.skip){ delete el.dataset.skip; break; } const t = tour(), cur = attOf(t, id), nxt = cur === 'ja' ? 'nee' : cur === 'nee' ? 'geen' : 'ja';
-      const y = window.scrollY; setAtt(t, id, nxt, se); requestAnimationFrame(() => window.scrollTo(0, y)); break; }
-    case 'tourAttAll': { const t = tour(), y = window.scrollY; t.att = t.att || {};
-      se.players.forEach(p => { if (attOf(t, p.id) === 'geen' || !attOf(t, p.id)) t.att[p.id] = 'ja'; });
+    case 'tourAttAll': { const t = tour(), y = window.scrollY; t.att = t.att || {}; t.attBy = t.attBy || {};
+      se.players.forEach(p => { if (!t.att[p.id]){ t.att[p.id] = 'ja'; t.attBy[p.id] = {by: 'trainer', at: Date.now()}; if (t.poll && cloud.api) cloud.api.pollAnswer(t.poll.id, p.id, 'ja').catch(() => {}); } });
       applyAnswers(t, t.att, se); commit(); requestAnimationFrame(() => window.scrollTo(0, y)); toast('Iedereen erbij'); break; }
     case 'gen': case 'mix':
       if (m.segments && m.edited && !await ask('Je handmatige wissels worden overschreven. Doorgaan?')) return;
@@ -3116,10 +3127,11 @@ async function startSurvey(se, t){
     pk = await crypto.subtle.exportKey('jwk', kp.publicKey); key = await crypto.subtle.exportKey('jwk', kp.privateKey);
   } catch(e){ await tell('Deze browser kan geen beveiligde link maken.'); return; }
   try {
-    await api.createSurvey(sid, {v:2, team: teamLabel(t), club: t.club || '', codes, pk: JSON.stringify({kty: pk.kty, n: pk.n, e: pk.e}), created: Date.now()});
+    await api.createSurvey(sid, {v:2, team: teamLabel(t), club: t.club || '', codes, players: se.players.map(x => ({id: x.id, n: pshort(x)})),
+      pk: JSON.stringify({kty: pk.kty, n: pk.n, e: pk.e}), created: Date.now()});
   } catch(e){ console.error(e); await tell('Het maken van de link lukt niet. Staan de nieuwe Firestore-regels erin? (zie FIREBASE.md) Melding: ' + (e.message || e)); return; }
   se.players.forEach(p => p.pos = ['', '', '']);
-  se.usePositions = true;
+  se.usePositions = true;   // delen van de link zet ze meteen aan
   se.survey = {sid, key, created: Date.now(), seen: [], answered: {}};
   commit();
   shareSurvey(se, t);
@@ -3127,8 +3139,7 @@ async function startSurvey(se, t){
 function shareSurvey(se, t){
   const url = surveyUrl(se.survey.sid);
   const txt = `⚽ ${teamLabel(t)}: vul hier je voor- en achternaam en je favoriete posities in! ${url}`;
-  if (navigator.share) navigator.share({title: 'LineMeUp – ' + teamLabel(t), text: txt}).catch(() => {});
-  else navigator.clipboard?.writeText(txt).then(() => toast('Link gekopieerd – plak hem in de team-app'), () => tell(url));
+  shareOrCopy(txt, url, 'LineMeUp – ' + teamLabel(t));
 }
 async function fetchSurvey(se, quiet){
   if (!se.survey || !se.survey.key || !myUid()) return;
@@ -3147,9 +3158,10 @@ async function fetchSurvey(se, quiet){
       catch(e){ se.survey.seen.push(r.id); continue; }
       se.survey.seen.push(r.id);
       const first = niceFirst(String(d.f || '').slice(0, 30)), last = niceLast(String(d.l || '').slice(0, 40));
-      if (!first) continue;
-      const full = initName(`${first} ${last}`.trim());
-      let p = se.players.find(x => normName(x.name) === normName(full));
+      let p = d.pid ? se.players.find(x => x.id === d.pid) : null;
+      if (!p && !first) continue;
+      const full = p ? p.name : initName(`${first} ${last}`.trim());
+      if (!p) p = se.players.find(x => normName(x.name) === normName(full));
       if (!p){ const solo = se.players.filter(x => normName(x.name) === normName(first)); if (solo.length === 1) p = solo[0]; }
       if (!p){ p = {id: pid(), name: full, number: '', pref: []}; se.players.push(p); added++; }
       else p.name = full;
@@ -3181,8 +3193,8 @@ function surveyCard(se, t){
     <div class="muted" style="margin-bottom:10px">Link gemaakt op ${new Date(se.survey.created).toLocaleDateString('nl-NL', {day:'numeric', month:'long'})}. <b style="color:var(--txt)">${done.length} van ${se.players.length}</b> ingevuld.</div>
     <div class="bar" style="height:10px;margin-bottom:12px"><i style="width:${se.players.length ? Math.round(done.length / se.players.length * 100) : 0}%"></i></div>
     <div class="who">
-      ${done.map(p => `<span class="whop on" style="cursor:default">✅ ${esc(pshort(p))}</span>`).join('')}
-      ${todo.map(p => `<span class="whop" style="cursor:default;text-decoration:none">⏱️ ${esc(pshort(p))}</span>`).join('')}
+      ${done.map(p => `<span class="whop on" style="cursor:default">✅ ${esc(pshort(p))} <small style="opacity:.8">${esc(new Date(se.survey.answered[p.id]).toLocaleString('nl-NL', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'}))}</small></span>`).join('')}
+      ${todo.map(p => `<span class="whop" style="cursor:default;text-decoration:none">❓ ${esc(pshort(p))}</span>`).join('')}
     </div>
     <div class="tools">
       <button class="btn sm" data-act="surveyFetch">🔄 Antwoorden ophalen</button>
@@ -3193,7 +3205,7 @@ function surveyCard(se, t){
 }
 
 // ---------- pagina voor de spelers (via ?vraag=...) ----------
-const SV = {sid: null, data: null, step: 'load', first: '', last: '', picks: [], err: ''};
+const SV = {sid: null, data: null, step: 'load', first: '', last: '', picks: [], err: '', pid: ''};
 function svOptions(){
   const codes = (SV.data && SV.data.codes) || [];
   return [
@@ -3210,6 +3222,13 @@ function viewSurvey(){
   applyClub(d.club);
   const head = `<div class="svhead"><div class="logo ${clubKey(d.club) ? 'clublogo' : ''}">${clubLogo(d.club)}</div><div><div class="club">${esc(d.club || '')}</div><div class="svteam">${esc(d.team)}</div></div></div>`;
   if (SV.step === 'done') return head + `<div class="card empty"><b>🎉</b><h2 style="margin:6px 0">Bedankt, ${esc(niceFirst(SV.first))}!</h2>Je trainer ziet nu je favoriete posities.<br><br><button class="btn" data-sv="again">Opnieuw invullen</button></div>`;
+  if (SV.step === 'name' && (d.players || []).length) return head + `
+  <div class="card">
+    <h2>👋 Wie ben jij?</h2>
+    <div class="muted" style="margin-bottom:10px">Tik op je naam.</div>
+    <div class="attgrid">${d.players.map(p => `<button class="attb ${SV.pid === p.id ? 'ja' : 'geen'}" data-sv="who" data-v="${esc(p.id)}"><span>${esc(p.n)}</span></button>`).join('')}</div>
+    <div class="muted" style="margin-top:10px;font-size:12px">Sta je er niet bij? Vraag je trainer om je toe te voegen.</div>
+  </div>`;
   if (SV.step === 'name') return head + `
   <div class="card">
     <h2>👋 Wie ben jij?</h2>
@@ -3245,10 +3264,18 @@ async function bootSurvey(sid){
 document.addEventListener('click', async e => {
   const el = e.target.closest('[data-sv]'); if (!el) return;
   const a = el.dataset.sv;
-  if (a === 'toPos'){
+  if (a === 'who'){
+    const p = (SV.data.players || []).find(x => x.id === el.dataset.v); if (!p) return;
+    SV.pid = p.id; SV.first = String(p.n).split(' ')[0]; SV.last = String(p.n).split(' ').slice(1).join(' ');
+    SV.step = 'pos'; renderSurvey(); window.scrollTo(0, 0);
+  }
+  else if (a === 'toPos'){
     SV.first = (document.getElementById('svFirst')?.value || '').trim().replace(/\s+/g, ' ');
     SV.last = (document.getElementById('svLast')?.value || '').trim().replace(/\s+/g, ' ');
     if (!SV.first || !SV.last){ toast('Vul je voornaam én achternaam in'); return; }
+    const lijst = SV.data.players || [], mijn = (SV.first + ' ' + SV.last).toLowerCase();
+    const lijkt = lijst.find(x => { const n = String(x.n).toLowerCase(); return n === mijn || n.split(' ')[0] === SV.first.toLowerCase(); });
+    if (lijkt && await ask(`Bedoel je ${lijkt.n}? Dan kom je niet dubbel in de lijst.`, 'Ja, dat ben ik')){ SV.pid = lijkt.id; SV.first = String(lijkt.n).split(' ')[0]; }
     SV.step = 'pos'; renderSurvey(); window.scrollTo(0, 0);
   }
   else if (a === 'pick'){
@@ -3264,7 +3291,7 @@ document.addEventListener('click', async e => {
       const api = await firebaseApi();
       const pos = SV.picks.slice(0, 3); while (pos.length < 3) pos.push('');
       const pk = await crypto.subtle.importKey('jwk', {...JSON.parse(SV.data.pk), alg:'RSA-OAEP-256', ext:true}, {name:'RSA-OAEP', hash:'SHA-256'}, false, ['encrypt']);
-      const enc = new Uint8Array(await crypto.subtle.encrypt({name:'RSA-OAEP'}, pk, new TextEncoder().encode(JSON.stringify({f: SV.first.slice(0, 30), l: SV.last.slice(0, 40), p: pos}))));
+      const enc = new Uint8Array(await crypto.subtle.encrypt({name:'RSA-OAEP'}, pk, new TextEncoder().encode(JSON.stringify({f: SV.first.slice(0, 30), l: SV.last.slice(0, 40), p: pos, pid: SV.pid || ''}))));
       await api.addResponse(SV.sid, {c: btoa(String.fromCharCode(...enc)), at: Date.now()});
       SV.step = 'done'; renderSurvey(); window.scrollTo(0, 0);
     } catch(err){ el.disabled = false; tell('Versturen lukt niet. Probeer het zo nog eens. (' + (err.message || err) + ')'); }
@@ -3836,6 +3863,7 @@ async function admAction(act, id){
       const n = await newClubSheet(names); if (!n) return;
       const k = clubSlug(n); if (!k) return;
       await api.clubAdminsSet(k, {name: n, uids: {}});
+  api.eventAdd(k, {type: 'self', uid: myUid(), name: myName() || 'Beheerder', email: (cloud.user && cloud.user.email) || '', team: '—', clubName: n, rid: '', at: Date.now()}).catch(() => {});
       adm.data = null; await loadAdmin(true); adm.view = ['club', k]; render(); window.scrollTo(0, 0); toast('Club aangemaakt'); return;
     }
     if (act === 'admNewTeam'){
@@ -3919,9 +3947,9 @@ function admInviteSheet(pre){
   });
 }
 // venster met de link: kopiëren, delen, en bij een clublink de geldigheid
-function linkSheet(txt, url, extra){
+function linkSheet(txt, url, extra, noShare){
   try { navigator.clipboard && navigator.clipboard.writeText(url); } catch(e){}
-  if (navigator.share) navigator.share({text: txt}).catch(() => {});
+  if (!noShare && navigator.share) navigator.share({text: txt}).catch(() => {});
   const d = document.createElement('div'); d.className = 'modal';
   d.innerHTML = iconize(`<div class="box"><p>🔗 Link klaar</p>
     ${extra ? `<div class="muted" style="margin:-4px 0 10px">${extra}</div>` : ''}
@@ -3937,6 +3965,14 @@ function linkSheet(txt, url, extra){
   });
   document.body.appendChild(d);
 }
+// delen; lukt dat niet (computer), dan kopiëren we en tonen we de link
+async function shareOrCopy(txt, url, title){
+  let shared = false;
+  if (navigator.share){ try { await navigator.share(title ? {title, text: txt} : {text: txt}); shared = true; } catch(e){ shared = e && e.name === 'AbortError'; } }
+  if (!shared){ try { await navigator.clipboard.writeText(txt); } catch(e){} toast('Link gekopieerd, plak hem in de team-app'); }
+  if (url) linkSheet(txt, url, '', true);
+  return shared;
+}
 function shareInviteText(txt){
   if (navigator.share) navigator.share({title: 'LineMeUp', text: txt}).catch(() => {});
   else navigator.clipboard?.writeText(txt).then(() => toast('Uitnodiging gekopieerd – plak hem in WhatsApp'), () => tell(txt));
@@ -3947,6 +3983,7 @@ async function joinNewTeam(iid, inv){
   if (inv.usedBy && inv.usedBy !== myUid()){ await tell('Deze uitnodiging is al gebruikt. Vraag om een nieuwe link.'); return; }
   if (!inv.usedBy && inv.kind !== 'clublink') await api.inviteClaim(iid, myUid(), myName());
   createTeam(inv.teamName, inv.clubName, seasonName());
+  if (inv.clubName) team().clubLocked = true;
   const t = team(); t.fromInvite = iid; save();
   await createRemoteTeam(t); pruneEmpty(); await saveUserTeams(); save(); listenTeam(t.id);
   if (inv.kind !== 'clublink') api.pendingDel(inv.club, iid).catch(() => {});
@@ -4021,11 +4058,13 @@ function timeSel(key, val, cls){
 }
 const mapsUrl = a => 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(a);
 // knoppen met namen (3 standen)
-function attButtons(list, stateOf, act){
-  const long = act === 'attTap' ? 'coachAtt' : act === 'tourAttTap' ? 'tourAtt' : '';
-  return `<div class="attgrid">${list.map(p => { const st = stateOf(p.id); return `<button class="attb ${st || 'geen'}" data-act="${act}" data-id="${esc(p.id)}" ${long ? `data-long="${long}"` : ''} aria-label="${esc(p.n)}: ${st === 'ja' ? 'erbij' : st === 'nee' ? 'kan niet' : 'nog niet gekozen'}">${st === 'ja' ? '✅' : st === 'nee' ? '❌' : '⏱️'} <span>${esc(p.n)}</span></button>`; }).join('')}</div>`;
+const hhmm2 = ts => { try { return new Date(ts).toLocaleTimeString('nl-NL', {hour: '2-digit', minute: '2-digit'}); } catch(e){ return ''; } };
+function attButtons(list, stateOf, act, m){
+  const who = id => { const w = (m && m.attBy && m.attBy[id]) || null; return w ? `<small style="display:block;font-size:10px;opacity:.8;font-weight:600">${w.by === 'link' ? 'via link' : 'door trainer'}, ${esc(hhmm2(w.at))}</small>` : ''; };
+  return `<div class="attgrid">${list.map(p => { const st = stateOf(p.id);
+    return `<button class="attb ${st || 'geen'}" data-act="${act}" data-id="${esc(p.id)}" aria-label="${esc(p.n)}: ${st === 'ja' ? 'erbij' : st === 'nee' ? 'kan niet' : 'nog niet gekozen'}. Tik om te kiezen">${st === 'ja' ? '✅' : st === 'nee' ? '❌' : '❓'} <span>${esc(p.n)}${who(p.id)}</span></button>`; }).join('')}</div>`;
 }
-const attLegend = `<div class="attleg"><span><i class="ja"></i>Erbij</span><span><i class="nee"></i>Kan niet</span><span><i class="geen"></i>Nog niet gekozen</span></div>`;
+const attLegend = `<div class="attleg"><span><i class="ja"></i>✅ Erbij</span><span><i class="nee"></i>❌ Kan niet</span><span><i class="geen"></i>❓ Nog niet gekozen</span></div>`;
 
 // ---- trainer: link maken en antwoorden binnenhalen
 const pollUrl = pid => location.origin + location.pathname + '?wie=' + pid;
@@ -4053,19 +4092,26 @@ async function startPoll(m){
     catch(e){ console.error(e); await tell('De link maken lukt niet. Staan de nieuwe Firestore-regels erin? (' + (e.message || e) + ')'); return; }
     m.poll = {id: pid, last: JSON.stringify(pl)}; commit(); watchPolls();
   }
+  if (!isTourObj(m) && !m.kickoff && !await ask('Je hebt nog geen aftraptijd ingevuld. Ouders zien dan geen tijd. Toch delen?', 'Toch delen')) return;
   sharePoll(m);
 }
 function sharePoll(m){
   if (isTourObj(m)){
     const txt = tourShareText(m) + (m.poll ? `\n\n👉 Geef door of je erbij bent: ${pollUrl(m.poll.id)}` : '');
-    if (navigator.share) navigator.share({title: m.name || 'Toernooi', text: txt}).catch(() => {});
-    else navigator.clipboard?.writeText(txt).then(() => toast('Bericht gekopieerd – plak het in de team-app'), () => tell(txt));
+    shareOrCopy(txt, m.poll ? pollUrl(m.poll.id) : '', m.name || 'Toernooi');
     return;
   }
   const at = arriveTime(m), d = m.date ? new Date(m.date + 'T12:00').toLocaleDateString('nl-NL', {weekday:'long', day:'numeric', month:'long'}) : 'de wedstrijd';
-  const txt = `⚽ ${d.charAt(0).toUpperCase() + d.slice(1)} spelen we ${m.home === false ? 'uit' : 'thuis'}${m.opponent ? ' tegen ' + m.opponent : ''}.${at ? ' Aanwezig om ' + hhmm(at) + '.' : ''}${m.kickoff ? ' Aftrap ' + hhmm(m.kickoff) + '.' : ''}${m.home === false && m.address ? ' Adres: ' + m.address + '.' : ''} Tik op je naam en laat weten of je erbij bent: ${pollUrl(m.poll.id)}`;
-  if (navigator.share) navigator.share({title: 'Wie zijn erbij?', text: txt}).catch(() => {});
-  else navigator.clipboard?.writeText(txt).then(() => toast('Bericht gekopieerd – plak het in de team-app'), () => tell(txt));
+  const txt = `⚽ ${d.charAt(0).toUpperCase() + d.slice(1)} spelen we ${m.home === false ? 'uit' : 'thuis'}${m.opponent ? ' tegen ' + m.opponent : ''}.${[m.kickoff ? 'Aftrap ' + hhmm(m.kickoff) : '', at ? 'verzamelen ' + hhmm(at) : ''].filter(Boolean).join(', ') ? ' ' + [m.kickoff ? 'Aftrap ' + hhmm(m.kickoff) : '', at ? 'verzamelen ' + hhmm(at) : ''].filter(Boolean).join(', ') + '.' : ''}${m.home === false && m.address ? ' Adres: ' + m.address + '.' : ''} Tik op je naam en laat weten of je erbij bent: ${pollUrl(m.poll.id)}`;
+  shareOrCopy(txt, m.poll ? pollUrl(m.poll.id) : '', 'Wie zijn erbij?');
+}
+// wie niet heeft gereageerd of niet kan, speelt niet mee
+function syncPresent(m, se){
+  const att = m.att || {}; if (!Object.keys(att).length) return;
+  const guests = (m.guests || []).map(g => g.id);
+  m.present = (m.present || []).filter(id => guests.includes(id) || att[id] === 'ja');
+  (se || season()).players.forEach(p => { if (att[p.id] === 'ja' && !m.present.includes(p.id)) m.present.push(p.id); });
+  (m.segments || []).forEach(lu => lu.forEach((x, i) => { if (x && !m.present.includes(x)) lu[i] = null; }));
 }
 function applyAnswers(m, answers, se){
   m.att = {...answers};
@@ -4076,7 +4122,11 @@ function applyAnswers(m, answers, se){
     if (v === 'ja' && !m.present.includes(pid)) m.present.push(pid);
     if (v === 'nee' && m.present.includes(pid)){ m.present = m.present.filter(x => x !== pid); (m.segments || []).forEach(lu => lu.forEach((x, i) => { if (x === pid) lu[i] = null; })); }
   });
-  if (isTourObj(m) && se) se.matches.filter(x => x.tourId === m.id && x.phase === 'prep').forEach(x => { x.present = m.present.slice(); x.att = {...m.att}; fitSegments(x); });
+  m.attBy = m.attBy || {};
+  Object.keys(m.att).forEach(pid => { if (!m.attBy[pid]) m.attBy[pid] = {by: 'link', at: Date.now()}; });
+  Object.keys(m.attBy).forEach(pid => { if (!m.att[pid]) delete m.attBy[pid]; });
+  if (open && !isTourObj(m)) syncPresent(m, se);
+  if (isTourObj(m) && se) se.matches.filter(x => x.tourId === m.id && x.phase === 'prep').forEach(x => { x.present = m.present.slice(); x.att = {...m.att}; x.attBy = {...m.attBy}; syncPresent(x, se); fitSegments(x); });
 }
 function watchPolls(){
   if (!cloud.api || !cloud.api.pollListen || !myUid()) return;
@@ -4128,8 +4178,9 @@ function coachSheet(name, cur){
   });
 }
 // één tik: erbij → kan niet → nog niet gekozen
-function setAtt(m, pid, v, se){
-  m.att = m.att || {}; m.present = m.present || [];
+function setAtt(m, pid, v, se, by){
+  m.att = m.att || {}; m.present = m.present || []; m.attBy = m.attBy || {};
+  if (v === 'geen') delete m.attBy[pid]; else m.attBy[pid] = {by: by || 'trainer', at: Date.now()};
   if (v === 'geen'){ delete m.att[pid]; if ((m.phase === 'prep' || (isTourObj(m) && m.phase === 'live')) && !m.present.includes(pid)) m.present.push(pid); }
   else m.att[pid] = v;
   applyAnswers(m, m.att, se || season());
@@ -4138,12 +4189,10 @@ function setAtt(m, pid, v, se){
 }
 async function coachAnswer(m, pid, se){
   const p = player(pid); if (!p) return;
+  const y = window.scrollY;
   const v = await coachSheet(pshort(p), attOf(m, pid)); if (!v) return;
-  m.att = m.att || {}; m.present = m.present || [];
-  if (v === 'geen'){ delete m.att[pid]; if ((m.phase === 'prep' || (isTourObj(m) && m.phase === 'live')) && !m.present.includes(pid)) m.present.push(pid); }
-  else m.att[pid] = v;
-  applyAnswers(m, m.att, se || season()); commit();
-  if (m.poll && cloud.api && myUid()) cloud.api.pollAnswer(m.poll.id, pid, v === 'geen' ? '' : v).catch(e => console.error(e));
+  setAtt(m, pid, v, se || season(), 'trainer');
+  requestAnimationFrame(() => window.scrollTo(0, y));
 }
 function attCard(m){
   const se = season(), list = se.players.map(p => ({id: p.id, n: pshort(p)}));
@@ -4154,8 +4203,8 @@ function attCard(m){
     <button class="btn pri full" style="margin-bottom:8px" data-act="startPoll">📣 ${m.poll ? 'Link opnieuw delen in de team-app' : 'Vraag het in de team-app (link delen)'}</button>
     <button class="btn full" style="margin-bottom:12px" data-act="attAll">✅ Iedereen erbij</button>
     ${attLegend}
-    ${attButtons(list, pid => attOf(m, pid), 'attTap')}
-    <div class="muted" style="margin:8px 0 10px;font-size:12px">Eén tik wisselt: erbij → kan niet → nog niet gekozen. Lang indrukken opent het keuzevenster.</div>
+    ${attButtons(list, pid => attOf(m, pid), 'coachAtt', m)}
+    <div class="muted" style="margin:8px 0 10px;font-size:12px">Tik op een naam en kies "Ik ben erbij" of "Ik kan niet", net als op de pagina van de ouders.</div>
   </div>`;
 }
 
@@ -4174,7 +4223,7 @@ function viewWie(){
     <div class="svhead" style="margin:0"><div class="logo ${clubKey(d.club) ? 'clublogo' : ''}">${clubLogo(d.club)}</div><div><div class="club" style="color:var(--hdr-sub)">${esc(d.club || '')}</div><div class="svteam" style="color:#fff">${esc(d.teamLabel)}</div></div></div>
     <div class="wiedate">${esc(dt)}</div>
     <div class="wietitle">${esc(title)}</div>
-    <div class="wietimes"><span class="hl"><small>AANWEZIG</small><b>${esc(hhmm(d.arrive) || '–')}</b></span><span><small>${d.tour ? 'START' : 'AFTRAP'}</small><b>${esc(hhmm(d.kickoff) || '–')}</b></span><span><small>${d.tour ? 'CA. KLAAR' : 'WAAR'}</small><b>${d.tour ? (esc(hhmm(d.end)) || '–') : d.home === false ? 'Uit' : 'Thuis'}</b></span></div>
+    <div class="wietimes"><span class="hl"><small>AANWEZIG</small><b>${esc(hhmm(d.arrive) || 'Nog niet bekend')}</b></span><span><small>${d.tour ? 'START' : 'AFTRAP'}</small><b>${esc(hhmm(d.kickoff) || 'Nog niet bekend')}</b></span><span><small>${d.tour ? 'CA. KLAAR' : 'WAAR'}</small><b>${d.tour ? (esc(hhmm(d.end)) || '–') : d.home === false ? 'Uit' : 'Thuis'}</b></span></div>
   </div>
   ${(d.home === false || d.tour) && d.address ? `<div class="card wieaddr"><div><small>${me && ans[me] === 'ja' ? 'JE BENT ERBIJ · ZO KOM JE ER' : d.tour ? 'WAAR IS HET' : 'ADRES UITWEDSTRIJD'}</small><b>${esc(d.address)}</b></div><a class="btn pri full" href="${esc(mapsUrl(d.address))}" target="_blank" rel="noopener">📍 Route in Google Maps</a></div>` : ''}
   <div class="atthead" style="margin:14px 2px 8px"><h2 style="margin:0">Tik op je naam</h2><span class="attcount"><b>${ja}</b> aanwezig</span></div>
@@ -4213,7 +4262,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-12.10';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-12.15';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
@@ -4693,7 +4742,7 @@ function loginDialog(intro, startMode){
     const d = document.createElement('div'); d.className = 'modal';
     let mode = startMode === 'up' ? 'up' : 'in';
     const draw = (msg = '', ok = false) => {
-      const email = d.querySelector('#auMail')?.value || '', name = d.querySelector('#auName')?.value || myName();
+      const email = d.querySelector('#auMail')?.value || '', name = d.querySelector('#auName')?.value || myName() || cloud.preName || '';
       d.innerHTML = iconize(`<div class="box" style="max-height:90vh;overflow:auto"><p>👤 ${mode === 'up' ? 'Nieuw account maken' : 'Inloggen bij LineMeUp'}</p>
         ${intro ? `<div class="muted" style="margin:-4px 0 12px">${esc(intro)}</div>` : ''}
         <button class="btn full gbtn" data-r="google"><svg viewBox="0 0 48 48" width="20" height="20" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.3-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.3-.4-3.5z"/></svg>Doorgaan met Google</button>
@@ -4738,7 +4787,22 @@ function loginDialog(intro, startMode){
   });
 }
 const waitFor = (fn, ms) => new Promise(res => { const t0 = Date.now(); const tick = () => fn() || Date.now() - t0 > ms ? res() : setTimeout(tick, 100); tick(); });
-async function needLogin(why, startMode){
+// uitnodiging: al ingelogd met een ander account? eerst vragen
+async function inviteOkForMe(inv){
+  if (!myUid()) return true;
+  const mail = (cloud.user && cloud.user.email || '').toLowerCase(), want = (inv.email || '').toLowerCase();
+  const naam = inv.name || '';
+  if (!want && !naam) return true;
+  if (want && want === mail) return true;
+  if (!want && naam && myName() && naam.trim().toLowerCase() === myName().trim().toLowerCase()) return true;
+  const r = await chooseDialog(`Je bent ingelogd als ${myName() || mail || 'een ander account'}. Deze uitnodiging is voor ${naam || want}.`,
+    [{v: 'go', n: 'Met dit account meedoen'}, {v: 'out', n: 'Uitloggen en een nieuw account maken'}]);
+  if (r === 'go') return true;
+  if (r === 'out'){ await cloud.api.signOut(); wipeDevice(); render(); toast('Je bent uitgelogd. Open de link opnieuw.'); }
+  return false;
+}
+async function needLogin(why, startMode, preName){
+  if (preName && !myName()) cloud.preName = preName;
   if (myUid()) return true;
   if (!cloudAvailable()){ await tell('Hiervoor moet de online opslag (Firebase) ingesteld zijn.'); return false; }
   if (!cloud.api) await cloudStart();
@@ -4760,9 +4824,16 @@ async function changeMyName(){
 // alles van het account van dit apparaat halen
 function wipeDevice(){
   clearInterval(pendTimer);
+  try { Object.keys(localStorage).forEach(k => { if (k.indexOf('lineup.') === 0 || k.indexOf('opstellingmaker.') === 0) localStorage.removeItem(k); }); } catch(e){}
   [KEY, CLOUD_MAP_KEY, ME_KEY, LAST_UID, FS_KEY, PEND_KEY, RESUME_KEY].forEach(k => { try { localStorage.removeItem(k); } catch(e){} });
   S = defaultState(); normalize();
-  adm.owner = false; adm.clubs = []; adm.data = null; adm.myReq = null; updateAdminTab();
+  cloud.links = {};
+  adm.owner = false; adm.clubs = []; adm.data = null; adm.myReq = null; adm.view = null; adm.evs = []; adm.qs = [];
+  ui.matchId = null; ui.tourId = null; ui.sOpen = false; ui.stab = 'team';
+  try { onbSeen.clear(); } catch(e){}
+  try { applyClub(''); } catch(e){}
+  document.title = 'LineMeUp';
+  updateAdminTab();
 }
 async function logout(){
   if (!await ask('Uitloggen? Alle teams worden van dit apparaat gewist. Ze staan veilig in je account en komen terug zodra je weer inlogt.', 'Uitloggen')) return;
@@ -4800,8 +4871,7 @@ async function inviteTrainer(t){
 function sendInvite(t, inv){
   const url = inviteUrl(inv.id);
   const txt = `⚽ Hoi ${inv.name}! Ik deel ${teamLabel(t)} met je in LineMeUp, dan kunnen we samen de opstellingen maken. Open deze link om mee te doen: ${url}`;
-  if (navigator.share) navigator.share({title: 'LineMeUp – ' + teamLabel(t), text: txt}).catch(() => {});
-  else navigator.clipboard?.writeText(txt).then(() => toast('Uitnodiging gekopieerd – plak hem in WhatsApp'), () => tell(url));
+  shareOrCopy(txt, url, 'LineMeUp – ' + teamLabel(t));
 }
 async function cancelInvite(t, iid){
   const inv = (t.invites || []).find(x => x.id === iid); if (!inv) return;
@@ -4881,7 +4951,7 @@ async function openInviteNow(iid, resume){
     if (!inv.expires || inv.expires < Date.now()){ setResume(null); await tell('Deze clublink is verlopen of uitgezet. Vraag de clubbeheerder om een nieuwe link.'); return; }
     if (!resume && !await inviteSheet({...inv, teamLabel: 'Trainers van ' + (inv.clubName || 'de club'), club: inv.clubName, multi: true, name: ''}, inviteUrl(iid))) return;
     setResume(iid);
-    if (!await needLogin(`Log in of maak een account om mee te doen met ${inv.clubName}.`)) return;
+    if (!await needLogin(`Maak een account om mee te doen met ${inv.clubName}.`, 'up')) return;
     const mine = new Set(Object.values(cloudMap()).map(c => c.id));
     const ch = await clubTeamsSheet({...inv, teamName: ''}, mine);
     if (!ch || ch.mode === 'cancel'){ setResume(null); return; }
@@ -4894,7 +4964,8 @@ async function openInviteNow(iid, resume){
     if (inv.usedBy && inv.usedBy !== myUid()){ setResume(null); await tell('Deze uitnodiging is al gebruikt. Vraag om een nieuwe link.'); return; }
     if (!resume && !await inviteSheet({...inv, teamLabel: 'Clubbeheerder', club: inv.clubName, multi: false}, inviteUrl(iid))) return;
     setResume(iid);
-    if (!await needLogin(`Log in of maak een account om clubbeheerder te worden van ${inv.clubName}.`)) return;
+    if (!await inviteOkForMe(inv)) return;
+    if (!await needLogin(`Maak een account om clubbeheerder te worden van ${inv.clubName}.`, 'up', inv.name)) return;
     if (inv.usedBy && inv.usedBy !== myUid()){ setResume(null); await tell('Deze uitnodiging is al gebruikt. Vraag om een nieuwe link.'); return; }
     try {
       if (!inv.usedBy) await api.inviteClaim(iid, myUid(), myName());
@@ -4910,7 +4981,9 @@ async function openInviteNow(iid, resume){
     if (inv.usedBy && inv.usedBy !== myUid()){ setResume(null); await tell('Deze uitnodiging is al gebruikt. Vraag om een nieuwe link.'); return; }
     if (!resume && !await inviteSheet({...inv, teamLabel: inv.teamName, club: inv.clubName, multi: false}, inviteUrl(iid))) return;
     setResume(iid);   // onthouden: stopt hij halverwege, dan gaat hij bij de volgende keer openen hier verder
-    if (!await needLogin(`Log in of maak een account om trainer te worden van ${inv.teamName}.`)) return;
+    if (!await inviteOkForMe(inv)) return;
+    if (!await needLogin(`Maak een account om trainer te worden van ${inv.teamName}.`, 'up', inv.name)) return;
+    if (!await inviteOkForMe(inv)) return;
     if (inv.usedBy && inv.usedBy !== myUid()){ setResume(null); await tell('Deze uitnodiging is al gebruikt. Vraag om een nieuwe link.'); return; }
     if (S.teams.some(t => t.fromInvite === iid)){ setResume(null); return; }
     const mine = new Set(Object.values(cloudMap()).map(c => c.id));
@@ -4922,13 +4995,28 @@ async function openInviteNow(iid, resume){
   }
   const have = Object.keys(cloudMap()).find(k => cloudMap()[k].id === inv.team && S.teams.some(t => t.id === k));
   if (have){ S.active.team = have; ui.tab = 'matches'; commit(); toast(`${teamLabel(team())} staat al in je app`); return; }
+  if (inv.usedBy && inv.usedBy !== myUid()){ setResume(null); await tell('Deze uitnodiging is al gebruikt. Vraag de trainer om een nieuwe link.'); return; }
   if (!await inviteSheet(inv, inviteUrl(iid))) return;
-  if (!await needLogin(`Log in of maak een account om mee te doen met ${inv.teamLabel || 'het team'}. Daarna staat het team ook op je andere telefoons zodra je daar inlogt.`)) return;
+  if (!await inviteOkForMe(inv)) return;
+  if (!await needLogin(`Maak een account om mee te doen met ${inv.teamLabel || 'het team'}. Daarna staat het team ook op je andere telefoons zodra je daar inlogt.`, 'up', inv.name)) return;
+  if (!await inviteOkForMe(inv)) return;
   try {
     const tid = await joinRemote(inv.team, iid);
     S.active.team = tid; ui.tab = 'matches'; ui.matchId = null; commit(); window.scrollTo(0, 0);
-    toast(`${teamLabel(team())} toegevoegd ☁️`);
+    toast(`Welkom! Je doet nu mee met ${teamLabel(team())}${inv.byName ? ' van ' + inv.byName : ''}.`);
+    installTipOnce();
   } catch(e){ console.error(e); await tell(e.message && !/permission/i.test(e.message) ? e.message : 'Meedoen lukt niet. Deze uitnodiging is misschien ingetrokken of verlopen. Vraag de trainer om een nieuwe link.'); }
+}
+// eenmalige tip na het meedoen
+function installTipOnce(){
+  try { if (localStorage.getItem('lineup.installTip') || isStandalone()) return; localStorage.setItem('lineup.installTip', '1'); } catch(e){}
+  setTimeout(() => { if (document.querySelector('.modal')) return;
+    const d = document.createElement('div'); d.className = 'modal';
+    d.innerHTML = iconize(`<div class="box"><p>📲 Zet LineMeUp op je beginscherm</p>
+      <div class="muted">iPhone: tik onderin op het deelicoon en kies "Zet op beginscherm". Android: tik op de drie puntjes in Chrome en kies "App installeren". Daarna opent LineMeUp als een gewone app.</div>
+      <button class="btn pri full" style="margin-top:12px" data-r="ok">Begrepen</button></div>`);
+    d.addEventListener('click', e => { e.stopPropagation(); if (e.target.closest('[data-r]') || e.target === d) d.remove(); });
+    document.body.appendChild(d); }, 900);
 }
 async function openLegacyInvite(cid){
   const api = await firebaseApi(); const r = await api.get(cid).catch(() => null);
@@ -5052,8 +5140,8 @@ function cloudCard(t = team()){
     <div class="set"><div class="lbl">Online bewaard<small>Gedeeld met je mede-trainers</small></div><b class="cloud ${st}">${{ok:'✓ Opgeslagen', busy:'… Bezig', err:'⚠️ Geen verbinding', old:'⬆️ Ververs de app', off:'—'}[st] || ''}</b></div>
     <div class="sgroup" style="margin-top:14px">Gedeeld met</div>
     <div class="mlist">
-      ${ids.map(u => { const me = u === myUid(), p = people[u] || {}; return `<div class="mrow"><span class="mav">${esc((p.name || '?').charAt(0).toUpperCase())}</span><span class="grow"><b>${esc(p.name || 'Trainer')}${me ? ' (jij)' : ''}</b><small>Trainer${p.joined ? ' · sinds ' + new Date(p.joined).toLocaleDateString('nl-NL', {day:'numeric', month:'short'}) : ''}</small></span>${!me ? `<button class="x" data-act="removeMember" data-id="${esc(u)}" aria-label="Verwijderen">×</button>` : ''}</div>`; }).join('')}
-      ${(t.invites || []).map(iv => `<div class="mrow inv"><span class="mav">${esc((iv.name || '?').charAt(0).toUpperCase())}</span><span class="grow"><b>${esc(iv.name)}</b><small>Uitgenodigd · nog niet meegedaan</small></span><button class="btn sm" data-act="reInvite" data-id="${esc(iv.id)}">📤</button><button class="x" data-act="cancelInvite" data-id="${esc(iv.id)}" aria-label="Intrekken">×</button></div>`).join('')}
+      ${ids.map(u => { const me = u === myUid(), p = people[u] || {}; return `<div class="mrow"><span class="mav">${esc((p.name || '?').charAt(0).toUpperCase())}</span><span class="grow"><b>${esc(p.name || 'Trainer')}${me ? ' (jij)' : ''}</b><small>${(L.members || {})[u] === 'owner' ? 'Eigenaar' : 'Trainer'}${p.joined ? ' · sinds ' + new Date(p.joined).toLocaleDateString('nl-NL', {day:'numeric', month:'short'}) : ''}</small></span>${!me && mayManage(t) && (L.members || {})[u] !== 'owner' ? `<button class="x" data-act="removeMember" data-id="${esc(u)}" aria-label="Verwijderen">×</button>` : ''}</div>`; }).join('')}
+      ${(t.invites || []).map(iv => `<div class="mrow inv"><span class="mav">${esc((iv.name || '?').charAt(0).toUpperCase())}</span><span class="grow"><b>${esc(iv.name)}</b><small>Uitgenodigd · nog niet meegedaan</small></span><button class="btn sm" data-act="reInvite" data-id="${esc(iv.id)}" aria-label="Uitnodiging voor ${esc(iv.name)} opnieuw delen">📤</button><button class="x" data-act="cancelInvite" data-id="${esc(iv.id)}" aria-label="Intrekken">×</button></div>`).join('')}
     </div>
     <button class="btn pri full" style="margin-top:12px" data-act="inviteTrainer">＋ Trainer uitnodigen (link via WhatsApp)</button>
     ${ids.length > 1 ? `<button class="btn full" style="margin-top:8px" data-act="leaveTeam">Dit team verlaten</button>` : ''}
@@ -5114,6 +5202,35 @@ function onbPopup(){
   });
   document.body.appendChild(d);
 }
+// nieuw team: naam, club (kiezen of nieuw) en seizoen
+async function newTeamDialog(){
+  const t = team(), clubs = clubList();
+  return new Promise(res => {
+    const d = document.createElement('div'); d.className = 'modal';
+    d.innerHTML = iconize(`<div class="box"><p>＋ Nieuw team</p>
+      <label class="f">Teamnaam<input id="ntN" placeholder="bv. JO10-2" autocomplete="off"></label>
+      <label class="f">Club<input id="ntC" list="ntClubs" value="${esc(t.clubLocked ? (t.club || '') : '')}" placeholder="Kies of typ een nieuwe club" autocomplete="off" ${t.clubLocked ? 'readonly' : ''}></label>
+      <datalist id="ntClubs">${clubs.map(c => `<option value="${esc(c)}">`).join('')}</datalist>
+      <div class="muted" style="margin:-4px 0 10px;font-size:12px">${t.clubLocked ? 'De club is vastgelegd met je uitnodiging.' : 'Staat je club er nog niet bij? Typ de naam, dan maken we hem aan.'}</div>
+      <label class="f">Seizoen<input id="ntS" value="${esc(seasonName())}"></label>
+      <div class="grid2" style="margin-top:8px"><button class="btn" data-r="no">Annuleren</button><button class="btn pri" data-r="ok">Team aanmaken</button></div></div>`);
+    const fin = ok => {
+      const n = d.querySelector('#ntN').value.trim();
+      if (ok && !n){ d.querySelector('#ntN').focus(); return; }
+      const c = d.querySelector('#ntC').value.trim(), sn = d.querySelector('#ntS').value.trim();
+      d.remove();
+      if (!ok) return res(null);
+      const place = S.teams.find(x => x.name === PLACEHOLDER && !hasContent(x));
+      if (place){ place.name = n; place.club = c; if (place.seasons[0]) place.seasons[0].name = sn || seasonName(); applyKnvb(place.seasons[0], n); S.active.team = place.id; }
+      else createTeam(n, c, sn || seasonName());
+      commit(); toast(`${n} aangemaakt`); res(n);
+    };
+    d.querySelector('#ntN').addEventListener('keydown', e => { if (e.key === 'Enter') fin(true); });
+    d.addEventListener('click', e => { e.stopPropagation(); const b = e.target.closest('[data-r]');
+      if (!b){ if (e.target === d) fin(false); return; } fin(b.dataset.r === 'ok'); });
+    document.body.appendChild(d); setTimeout(() => d.querySelector('#ntN').focus(), 60);
+  });
+}
 async function onbStep(k){
   const se = season();
   if (k === 'players'){
@@ -5122,7 +5239,7 @@ async function onbStep(k){
     if (r === 'paste'){ ui.sOpen = true; ui.stab = 'spelers'; go('settings'); }
     return;
   }
-  if (k === 'team'){ ui.sOpen = true; ui.stab = 'info'; go('settings'); return; }
+  if (k === 'team'){ await newTeamDialog(); return; }
   if (k === 'match') return firstMatchWizard();
   if (k === 'poll'){ const m = se.matches.find(x => x.phase === 'prep') || se.matches[0]; if (!m) return firstMatchWizard(); ui.matchId = m.id; render(); return startPoll(m); }
   if (k === 'coach') return inviteTrainer(team());
@@ -5316,9 +5433,11 @@ function landingHTML(){
 }
 
 function canEditClub(t){
+  const x = t || team();
   if (adm.owner) return true;
-  const k = clubSlug((t || team()).club || '');
-  return !!k && adm.clubs.some(c => c.key === k);
+  const k = clubSlug(x.club || '');
+  if (k && adm.clubs.some(c => c.key === k)) return true;
+  return !x.clubLocked;   // alleen vast als de club echt uit een uitnodiging komt
 }
 const LAST_UID = 'opstellingmaker.lastuid';
 function gateActive(){
@@ -5363,10 +5482,6 @@ function dropTarget(x, y){
 // lang indrukken op een aanwezigheidsknop opent het keuzevenster
 let longT = null;
 document.addEventListener('pointerdown', e => {
-  const lb = e.target.closest('[data-long]');
-  if (lb){ clearTimeout(longT); longT = setTimeout(() => { lb.dataset.skip = '1'; const m = match(), t = tour();
-    if (lb.dataset.long === 'coachAtt' && m) coachAnswer(m, lb.dataset.id, season());
-    else if (lb.dataset.long === 'tourAtt' && t) coachAnswer(t, lb.dataset.id, season()); }, 550); }
   const el = e.target.closest('[data-drag]');
   if (!el || e.button > 0) return;
   if (e.pointerType === 'mouse') e.preventDefault();
