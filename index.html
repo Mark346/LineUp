@@ -2178,13 +2178,13 @@ function viewPlayers(){
   ${surveyCard(se, team())}
   <div class="card list">
     <h2>👥 Selectie ${esc(team().name)} (${se.players.length})</h2>
-    ${usePos() ? `<div class="muted prefhead" style="margin-bottom:4px">🎯 Tik per speler maximaal 3 posities in volgorde van voorkeur (formatie ${esc(se.formation)}).</div>` : `<div class="muted" style="margin-bottom:4px">Voorkeursposities per speler staan uit. Zet ze aan bij <a href="#" data-act="stab" data-v="team">⚙️ Opstelling</a>.</div>`}
+    ${true ? `<div class="muted prefhead" style="margin-bottom:4px">🎯 Tik per speler maximaal 3 posities in volgorde van voorkeur (formatie ${esc(se.formation)}).${usePos() ? '' : ' <b style="color:var(--txt)">Voorkeursposities staan uit</b>, dus de app doet er nu niets mee. <button class="btn sm" data-act="togglePos">Aanzetten</button>'}</div>` : `<div class="muted" style="margin-bottom:4px">Voorkeursposities per speler staan uit. Zet ze aan bij <a href="#" data-act="stab" data-v="team">⚙️ Opstelling</a>.</div>`}
     ${se.players.length ? se.players.map(p => `
       <div class="item" style="flex-wrap:wrap">
         <div class="num pnum">${esc(((prefsOf(p) || [])[0]) || '')}</div>
         <div class="grow nm2"><input value="${esc(splitName(p.name).first)}" data-pn="first" data-id="${p.id}" placeholder="Voornaam" aria-label="Voornaam"><input class="initIn" value="${esc(splitName(p.name).last)}" data-pn="last" data-id="${p.id}" placeholder="Letter" maxlength="3" aria-label="Eerste letter achternaam" autocapitalize="characters"></div>
         <button class="x" data-act="delPlayer" data-id="${p.id}" title="Verwijder ${esc(pshort(p))}" aria-label="Verwijder ${esc(pshort(p))}">×</button>
-        ${usePos() ? `<div class="posrow">${posCodes(se).map(c => { const i = (prefsOf(p) || []).indexOf(c);
+        ${true ? `<div class="posrow">${posCodes(se).map(c => { const i = (prefsOf(p) || []).indexOf(c);
           return `<button class="posb ${i >= 0 ? 'on' : ''}" data-act="prefTap" data-id="${p.id}" data-c="${esc(c)}" aria-label="${esc(POS_NAMES[c] || c)} voor ${esc(pshort(p))}${i >= 0 ? `, nu ${i + 1}e keus` : ''}">${esc(c)}${i >= 0 ? `<i>${i + 1}</i>` : ''}</button>`; }).join('')}</div>` : ''}
       </div>`).join('') : `<div class="empty"><b>👥</b>Nog geen spelers. Voeg ze hieronder toe.</div>`}
   </div>
@@ -2519,9 +2519,10 @@ document.addEventListener('click', async e => {
     case 'teamColor': { const tt = S.teams.find(x => x.id === id); tt.color = el.dataset.c; commit(); break; }
     case 'stab': e.preventDefault(); ui.stab = el.dataset.v; render(); window.scrollTo(0, 0); break;
     case 'prefTap': { const y = window.scrollY, p = player(id), c = el.dataset.c;
-      const pr = (p.pref || []).slice(), i = pr.indexOf(c);
+      const pr = (p.pos || []).filter(Boolean), i = pr.indexOf(c);
       if (i >= 0) pr.splice(i, 1); else if (pr.length < 3) pr.push(c); else { toast('Maximaal 3 posities'); break; }
-      p.pref = pr; commit(); requestAnimationFrame(() => window.scrollTo(0, y)); break; }
+      while (pr.length < 3) pr.push('');
+      p.pos = pr; commit(); requestAnimationFrame(() => window.scrollTo(0, y)); break; }
     case 'togglePresent': {
       const pid = el.dataset.id, from = m.phase === 'live' ? (m.cur || 0) : 0;
       if (m.phase === 'prep' && season().players.some(p => p.id === pid)){ m.att = m.att || {}; m.att[pid] = isIn(m, pid) ? 'nee' : 'ja'; if (m.poll && cloud.api && myUid()) cloud.api.pollAnswer(m.poll.id, pid, m.att[pid]).catch(() => {}); }
@@ -4262,7 +4263,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-12.15';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-12.16';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
