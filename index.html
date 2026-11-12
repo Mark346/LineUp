@@ -55,11 +55,6 @@
   .posb.on{background:var(--gr);border-color:var(--gr);color:#fff}
   .posb i{position:absolute;top:-6px;right:-6px;background:var(--y);color:#163;border-radius:50%;width:16px;height:16px;font-size:10px;font-style:normal;line-height:16px;text-align:center;font-weight:700}
   .num.pnum{background:none;border:1px solid var(--line);color:var(--muted);font-size:11px;font-weight:700;cursor:default}
-  .clkbar{display:flex;align-items:center;gap:10px;margin:8px 0 2px;color:#fff}
-  .clkbar .clk{background:rgba(255,255,255,.15);border:0;border-radius:10px;padding:6px 12px;color:#fff;font-size:22px;font-variant-numeric:tabular-nums;cursor:pointer}
-  .clkbar .grow{font-size:13px;opacity:.9}
-  @keyframes subpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.03);filter:brightness(1.08)}}
-  .subbtn.pulse{animation:subpulse 1s ease-in-out infinite}
   .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
   label.f,div.f{display:block;font-size:13px;color:var(--muted);margin-bottom:10px}div.f>span{margin-bottom:4px}
   label.f>*{margin-top:5px}
@@ -1779,7 +1774,7 @@ function viewMatch(){
   const m = match();
   if (!m){ ui.matchId = null; return viewMatches(); }
   const se = season();
-  const ph = (ui.phaseView && ui.phaseView.id === m.id && PHASES.findIndex(x => x[0] === ui.phaseView.v) <= PHASES.findIndex(x => x[0] === (m.phase || 'prep'))) ? ui.phaseView.v : (m.phase || 'prep');
+  const ph = m.phase || 'prep';
   if (ph === 'prep' && !m.cutsLocked){ // in de voorbereiding volgt de wedstrijd de instellingen
     let changed = false;
     ['fieldPlayers', 'formation', 'subMoments', 'matchMinutes'].forEach(k => { if (m.settings[k] !== se[k]){ m.settings[k] = se[k]; changed = true; } });
@@ -1795,11 +1790,7 @@ function viewMatch(){
   const editable = ph !== 'done';
   const cur = m.cur || 0;
 
-  const reached = PHASES.findIndex(x => x[0] === (m.phase || 'prep'));
-  const phaseBar = `<div class="phases"><button class="pback" data-act="back" aria-label="Terug">‹</button>${PHASES.map(([k, l], i) =>
-    `<button class="${k === ph ? 'on' : ''} ${PHASES.findIndex(p => p[0] === ph) > i ? 'past' : ''}" data-act="phaseNav" data-v="${k}" ${i <= reached ? '' : 'disabled style="opacity:.45" title="Rond eerst de wedstrijd af"'} aria-label="${esc(l)}">${l}</button>`).join('')}</div>
-    ${ph !== (m.phase || 'prep') ? `<div class="card pend" style="margin-bottom:10px"><div>👁️ Je kijkt naar <b>${esc((PHASES.find(x => x[0] === ph) || [])[1])}</b>. De wedstrijd staat op <b>${esc((PHASES.find(x => x[0] === (m.phase || 'prep')) || [])[1])}</b>.</div>
-      <button class="btn full" style="margin-top:8px" data-act="phaseNav" data-v="${esc(m.phase || 'prep')}">Terug naar ${esc((PHASES.find(x => x[0] === (m.phase || 'prep')) || [])[1])}</button></div>` : ''}`;
+  const phaseBar = `<div class="phases"><button class="pback" data-act="back" aria-label="Terug">‹</button>${PHASES.map(([k, l], i) => `<button class="${k === ph ? 'on' : ''} ${PHASES.findIndex(p => p[0] === ph) > i ? 'past' : ''}" data-act="phase" data-v="${k}" aria-label="${esc(l)}">${l}</button>`).join('')}</div>`;
 
   const header = `
   <div class="card mhead">
@@ -1996,12 +1987,7 @@ function listCard(m, times, cur, last){
 }
 // knoppen tijdens de wedstrijd: bovenaan, zodat je niet hoeft te scrollen
 function liveControls(m, times, cur, last, kind){
-  const next = cur + 1;
-  return `<div class="livectl">
-    ${cur < last ? `${upcomingBox(m, cur, times)}
-      <button class="btn pri full big subbtn" data-act="doSub" data-i="${next}">🔁 Wissel naar ${esc(blockLabel(m, next))}</button>` : ''}
-    <button class="btn red full big" style="margin-top:8px" data-act="finishMatch">🏁 Wedstrijd afronden</button>
-    <div class="tools" style="margin-top:8px"><button class="btn sm" data-act="addSub">＋ Wisselmoment</button></div></div>`;
+  return `<div class="livectl"><div class="${cur === last ? 'grid2' : ''}"><button class="btn ${kind === 'hc' ? 'sm' : ''} full" data-act="addSub">＋ Wisselmoment</button>${cur === last ? `<button class="btn full" data-act="phase" data-v="post">🏁 Wedstrijd afgelopen</button>` : ''}</div></div>`;
 }
 // tijdens de wedstrijd: tik op een blok = naar dat blok (vooruit eerst de wissels bevestigen)
 async function goLiveBlock(m, to){
@@ -2026,36 +2012,6 @@ async function goLiveBlock(m, to){
   }
 }
 /* ---- stand en doelpunten tijdens de wedstrijd ---- */
-// wedstrijdklok: gebaseerd op tijdstempels, dus hij loopt door als het scherm uitgaat
-function clockStart(m){ m.clk = m.clk || {}; if (!m.clk.start){ m.clk.start = Date.now(); m.clk.off = 0; m.clk.paused = 0; } }
-function clockStop(m){ if (m.clk && m.clk.start && !m.clk.paused) m.clk.paused = Date.now(); }
-function clockSecs(m){ const c = m.clk; if (!c || !c.start) return 0;
-  const end = c.paused || Date.now();
-  return Math.max(0, Math.round((end - c.start) / 1000) + (c.off || 0)); }
-const mmss = sec => `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
-function nextSubIn(m){
-  const t = segTimes(m.settings), cur = m.cur || 0; if (cur >= m.segments.length - 1) return null;
-  return Math.ceil(t[cur + 1][0] - clockSecs(m) / 60);
-}
-function clockBar(m){
-  const c = m.clk || {}, run = c.start && !c.paused, sec = clockSecs(m), nx = nextSubIn(m);
-  return `<div class="clkbar"><button class="clk" data-act="clkEdit" aria-label="Wedstrijdtijd aanpassen"><b id="clkTxt">${mmss(sec)}</b></button>
-    <button class="btn sm" data-act="clkToggle" aria-label="${run ? 'Klok pauzeren' : 'Klok starten'}">${run ? '⏸ Pauze' : '▶️ Start'}</button>
-    <span class="grow" id="clkNext">${nx === null ? 'laatste blok' : nx > 0 ? `Volgende wissel over ${nx} min` : 'Wisselmoment bereikt'}</span></div>`;
-}
-function clockTick(){
-  try {
-    const m = match(); if (!m || m.phase !== 'live') return;
-    const el = document.getElementById('clkTxt'); if (!el) return;
-    const sec = clockSecs(m), nx = nextSubIn(m);
-    el.textContent = mmss(sec);
-    const n = document.getElementById('clkNext'); if (n) n.textContent = nx === null ? 'laatste blok' : nx > 0 ? `Volgende wissel over ${nx} min` : 'Wisselmoment bereikt';
-    const b = document.querySelector('.subbtn');
-    if (b && nx !== null && nx <= 0){ if (!b.classList.contains('pulse')){ b.classList.add('pulse'); try { navigator.vibrate && navigator.vibrate(200); } catch(e){} } }
-    else if (b) b.classList.remove('pulse');
-  } catch(e){}
-}
-setInterval(clockTick, 1000);
 // Hulp-knop wordt klein tijdens het scrollen, zodat hij niets afdekt
 let fabT = null;
 window.addEventListener('scroll', () => {
@@ -2068,7 +2024,6 @@ function scoreBar(m, cur){
   const L = m.home === false ? [op, 'THUIS'] : [me, 'THUIS'], R = m.home === false ? [me, 'UIT'] : [op, 'UIT'];
   const sc = m.home === false ? `${ga} – ${gf}` : `${gf} – ${ga}`;
   return `<div class="sbar"><div class="sblive"><i></i>LIVE · ${esc(blockLabel(m, cur))}</div>
-    ${clockBar(m)}
     <div class="sline"><div class="steam"><small>${L[1]}</small>${esc(L[0])}</div><div class="sscore ${ui.bump === m.id ? 'bump' : ''}">${sc}</div><div class="steam r"><small>${R[1]}</small>${esc(R[0])}</div></div>
     <div class="sbtns">${m.home === false
       ? `<button class="sb them" data-act="goalThem">Tegen</button><button class="sb us" data-act="goalUs">⚽ Wij scoren</button>`
@@ -2565,16 +2520,6 @@ document.addEventListener('click', async e => {
       }
       commit(); break;
     }
-    case 'phaseNav': { const v = el.dataset.v;
-      if (PHASES.findIndex(x => x[0] === v) > PHASES.findIndex(x => x[0] === (m.phase || 'prep'))){ toast('Rond eerst de wedstrijd af'); break; }
-      ui.phaseView = v === (m.phase || 'prep') ? null : {id: m.id, v};
-      if (v === 'live') ui.seg = m.cur || 0;
-      ui.sel = null; render(); window.scrollTo(0, 0); break; }
-    case 'finishMatch': {
-      const gf = +m.goalsFor || 0, ga = +m.goalsAgainst || 0, sc = m.home === false ? `${ga}–${gf}` : `${gf}–${ga}`;
-      if (!await ask(`Wedstrijd beëindigen? Stand ${sc}`, 'Afronden')) break;
-      clockStop(m); m.cutsLocked = true; if (m.goalsFor === '' || m.goalsFor == null){ m.goalsFor = 0; m.goalsAgainst = 0; }
-      m.phase = 'post'; ui.phaseView = null; ui.sel = null; commit(); window.scrollTo(0, 0); break; }
     case 'phase': {
       const v = el.dataset.v;
       if (v === 'done'){ await saveDone(m); break; }
@@ -2582,8 +2527,7 @@ document.addEventListener('click', async e => {
       if (v === 'prep'){ m.cur = 0; ui.seg = 0; }
       if (v === 'live'){ if (m.phase === 'prep') m.cur = 0; m.cur = m.cur || 0; ui.seg = m.cur; if (m.phase === 'prep') toast('Wedstrijd gestart – succes! ⚽'); }
       if (v === 'post' && (m.goalsFor === '' || m.goalsFor == null)){ m.goalsFor = 0; m.goalsAgainst = 0; }
-      if (v === 'live' && m.phase === 'prep') clockStart(m);
-      m.phase = v; ui.phaseView = null; ui.sel = null; commit(); window.scrollTo(0, 0); break;
+      m.phase = v; ui.sel = null; commit(); window.scrollTo(0, 0); break;
     }
     case 'nextSeg': {
       const n = m.segments.length;
@@ -2709,27 +2653,8 @@ document.addEventListener('click', async e => {
       m.manual = false; generate(m, act === 'mix'); ui.seg = 0; ui.sel = null; ui.open.setup = false; commit();
       if (act === 'mix') toast('Nieuwe verdeling gemaakt');
       break;
-    case 'doSub': {
-      const to = +el.dataset.i, from = m.cur || 0;
-      if (to >= m.segments.length) break;
-      if (isEmptySeg(m.segments[to])) m.segments[to] = m.segments[from].slice();
-      if (!await ask(`Wissel doorvoeren en naar ${blockLabel(m, to)}?`, 'Doorvoeren')) break;
-      m.cur = to; ui.seg = to; ui.sel = null; ui.peek = null; commit();
-      undoToast(`Wissel doorgevoerd – ${blockLabel(m, to)} loopt`, () => { m.cur = from; ui.seg = from; commit(); }, 6000);
-      break; }
-    case 'clkToggle': { m.clk = m.clk || {};
-      if (!m.clk.start) clockStart(m);
-      else if (m.clk.paused){ m.clk.start += Date.now() - m.clk.paused; m.clk.paused = 0; }
-      else m.clk.paused = Date.now();
-      commit(); break; }
-    case 'clkEdit': { const c = m.clk = m.clk || {}; if (!c.start) clockStart(m);
-      const r = await chooseDialog(`Wedstrijdtijd: ${mmss(clockSecs(m))}`, [{v: '-1', n: '− 1 minuut'}, {v: '1', n: '+ 1 minuut'}, {v: '0', n: 'Op 00:00 zetten'}]);
-      if (!r) break;
-      if (r === '0'){ c.start = Date.now(); c.off = 0; if (c.paused) c.paused = Date.now(); }
-      else c.off = Math.max(-clockSecs(m), (c.off || 0) + (+r) * 60);
-      commit(); break; }
     case 'seg': {
-      if ((m.phase || 'prep') === 'live'){ ui.seg = +el.dataset.i; ui.sel = null; ui.peek = ui.seg === (m.cur || 0) ? null : {m: m.id, i: ui.seg}; render(); break; }
+      if ((m.phase || 'prep') === 'live'){ await goLiveBlock(m, +el.dataset.i); break; }
       ui.seg = +el.dataset.i; ui.sel = null;
       if (ui.seg > 0 && isEmptySeg(m.segments[ui.seg]) && !isEmptySeg(m.segments[ui.seg - 1])){ m.segments[ui.seg] = m.segments[ui.seg - 1].slice(); save(); toast('Vorig blok overgenomen – pas de wissels aan'); }
       render(); break;
@@ -3348,7 +3273,7 @@ document.addEventListener('click', async e => {
 /* ===================== Hulp (ballon): tips, FAQ en vragen ===================== */
 const HELP_TIPS = [
   ['LineMeUp op je beginscherm', 'iPhone: open linemeup.nl in Safari, tik onderin op het deelicoon en kies "Zet op beginscherm". Android: open de site in Chrome, tik op de drie puntjes en kies "App installeren" of "Toevoegen aan startscherm". Daarna opent LineMeUp als een gewone app.'],
-  ['Naar een blok kijken', 'Tik tijdens de wedstrijd bovenin op een blok om het te bekijken. Er verandert niets; wisselen doe je met de knop "Wissel naar …" onder de opstelling.'],
+  ['Naar een blok springen', 'Tik tijdens de wedstrijd bovenin op een blok om er meteen naartoe te gaan. De app laat zien welke wissels je overslaat.'],
   ['Een invaller toevoegen', 'Een invaller komt eerst bij de reserves. Zet hem daarna zelf in de opstelling of in een wissel.'],
   ['Spelers zelf laten invullen', 'Kies bij Instellingen → Spelers "Vraag het de spelers / ouders" en deel de link in de team-app.'],
   ['Doelpunten bijhouden', 'Tik tijdens de wedstrijd op "Wij scoren" of "Tegen". Bij je eigen doelpunt kies je de maker.'],
@@ -4286,7 +4211,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-12.5';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-12.6';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
