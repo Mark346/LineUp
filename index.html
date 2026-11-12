@@ -47,6 +47,19 @@
   .row{display:flex;gap:8px;align-items:center}
   .row>*{flex:1}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .posrow{display:flex;flex-wrap:wrap;gap:3px;width:100%;margin-top:4px}
+  .card.list .item:has(.posrow){padding:6px 0;gap:6px}
+  .card.list .item .nm2 input{padding:5px 8px;font-size:14px}
+  .card.list .item:has(.posrow) .num{width:26px;height:26px;border-radius:8px}
+  .posb{position:relative;border:1px solid var(--line);background:var(--card);border-radius:7px;padding:3px 6px;font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;min-width:32px}
+  .posb.on{background:var(--gr);border-color:var(--gr);color:#fff}
+  .posb i{position:absolute;top:-6px;right:-6px;background:var(--y);color:#163;border-radius:50%;width:16px;height:16px;font-size:10px;font-style:normal;line-height:16px;text-align:center;font-weight:700}
+  .num.pnum{background:none;border:1px solid var(--line);color:var(--muted);font-size:11px;font-weight:700;cursor:default}
+  .clkbar{display:flex;align-items:center;gap:10px;margin:8px 0 2px;color:#fff}
+  .clkbar .clk{background:rgba(255,255,255,.15);border:0;border-radius:10px;padding:6px 12px;color:#fff;font-size:22px;font-variant-numeric:tabular-nums;cursor:pointer}
+  .clkbar .grow{font-size:13px;opacity:.9}
+  @keyframes subpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.03);filter:brightness(1.08)}}
+  .subbtn.pulse{animation:subpulse 1s ease-in-out infinite}
   .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
   label.f,div.f{display:block;font-size:13px;color:var(--muted);margin-bottom:10px}div.f>span{margin-bottom:4px}
   label.f>*{margin-top:5px}
@@ -610,6 +623,9 @@
   .hfab .ic{width:26px;height:26px}.hfab[hidden]{display:none}
   .hfab .hbdg{position:absolute;top:-9px;right:-3px;min-width:25px;height:25px;border-radius:999px;background:#d9363e;color:#fff;font-size:14px;font-weight:900;font-style:normal;display:flex;align-items:center;justify-content:center;padding:0 6px;box-shadow:0 0 0 2px #fff}
   .hfab.ping{animation:hping 1.4s ease-in-out infinite}@keyframes hping{50%{transform:scale(1.08)}}
+  body.hashelp #app{padding-bottom:calc(88px + env(safe-area-inset-bottom))}
+  .hfab.small span{display:none}
+  .hfab.small{padding:13px 15px}
   body.hashelp{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
   body.watching .hfab,body.gate .hfab{display:none}
   body.inadm #teams,body.inadm nav#nav{display:none!important}
@@ -1064,8 +1080,10 @@ function viewTour(){
     <div class="atthead"><h2>👥 Wie zijn erbij?</h2><span class="attcount"><b>${ja || pres.size}</b> aanwezig</span></div>
     <button class="btn pri full" style="margin-bottom:12px" data-act="tourPoll">📣 ${t.poll ? 'Link opnieuw delen in de team-app' : 'Vraag het de spelers / ouders (link delen)'}</button>
     ${attLegend}
-    ${attButtons(list, pid => attOf(t, pid), 'tourAtt')}
-    <div class="muted" style="margin:8px 0 10px;font-size:12px">Tik op een naam om het zelf aan te passen. "Kan niet" haalt de speler uit de wedstrijden van dit toernooi.</div>
+    <button class="btn full" style="margin-bottom:12px" data-act="tourAttAll">✅ Iedereen erbij</button>
+    ${attLegend}
+    ${attButtons(list, pid => attOf(t, pid), 'tourAttTap')}
+    <div class="muted" style="margin:8px 0 10px;font-size:12px">Eén tik wisselt: erbij → kan niet → nog niet gekozen. Lang indrukken opent het keuzevenster.</div>
   </div>`;
   const mrow = m => `<div class="item match">
       <span class="badge" style="flex:none">${esc(roundName(m.round))}</span>
@@ -1298,8 +1316,8 @@ function autoSheet(m){
     const draw = () => {
       const se = season(), rules = se.rules || [], ty = ui.ruleType || 'samen';
       d.innerHTML = iconize(`<div class="box">
-        <h3>⚡ Opstelling maken</h3>
-        <p class="muted" style="margin-top:-4px">De app verdeelt de minuten eerlijk en houdt rekening met deze regels.</p>
+        <h3>🔁 Wisselregels</h3>
+        <p class="muted" style="margin-top:-4px">Hier zet je regels voor deze wedstrijd aan of uit. De app houdt er rekening mee bij het verdelen.</p>
         ${rules.length ? rules.map(r => { const off = (m.ruleOff || []).includes(r.id), mis = !(m.present || []).includes(r.a) || (isPairRule(r.type) && !(m.present || []).includes(r.b));
           return `<div class="item"><div class="grow"><div class="name">${esc(ruleLabel(r))}</div><div class="muted">${esc(ruleKindName(r.type))}${mis ? ' · niet (allebei) aanwezig' : off ? ' · uit voor deze wedstrijd' : ''}</div></div>
             <button class="btn sm" data-x="off" data-id="${r.id}">${off ? 'Aanzetten' : 'Uitzetten'}</button>
@@ -1311,8 +1329,7 @@ function autoSheet(m){
           ${isPairRule(ty) ? `<select style="flex:1" data-f="b"><option value="">Speler 2</option>${se.players.filter(p => (m.present || []).includes(p.id)).map(p => `<option value="${p.id}">${esc(pshort(p))}</option>`).join('')}</select>` : ''}
           <button class="btn sm" style="flex:none" data-x="add">＋ Regel</button></div>
         <div class="muted" style="margin:8px 0 12px;font-size:12px">Een nieuwe regel geldt voor alle wedstrijden van dit team. Uitzetten geldt alleen voor deze wedstrijd.</div>
-        <button class="btn pri full big" data-x="fair">⚡ Eerlijk verdelen</button>
-        <div class="grid2" style="margin-top:8px"><button class="btn" data-x="no">Annuleren</button><button class="btn" data-x="mix">🔀 Andere verdeling</button></div>
+        <button class="btn pri full" data-x="no">Klaar</button>
       </div>`);
     };
     d.addEventListener('change', e => { e.stopPropagation(); const sel = e.target.closest('[data-x=ty]'); if (sel){ ui.ruleType = sel.value; draw(); } });
@@ -1398,6 +1415,23 @@ function softDelete(key, msg, run){
   const t = setTimeout(async () => { done = true; try { await run(); } catch(e){ console.error(e); toast('Verwijderen lukt niet'); }
     adm.hide = (adm.hide || []).filter(x => x !== key); adm.data = null; loadAdmin(true); }, 6000);
   undoToast(msg, () => { if (done) return; clearTimeout(t); adm.hide = (adm.hide || []).filter(x => x !== key); render(); }, 6000);
+}
+// iets zwaars verwijderen: naam overtypen
+function typeToDelete(name, msg){
+  return new Promise(res => {
+    const d = document.createElement('div'); d.className = 'modal';
+    d.innerHTML = iconize(`<div class="box"><p>🗑️ ${esc(msg)}</p>
+      <label class="f" style="margin-top:10px">Typ de naam over<input id="tdName" placeholder="${esc(name)}" autocomplete="off" autocapitalize="none"></label>
+      <div class="grid2" style="margin-top:8px"><button class="btn" data-r="no">Annuleren</button><button class="btn red" data-r="ok" id="tdGo" disabled style="opacity:.5">Definitief verwijderen</button></div></div>`);
+    const inp = d.querySelector('#tdName'), go = d.querySelector('#tdGo');
+    const check = () => { const ok = inp.value.trim().toLowerCase() === String(name).trim().toLowerCase(); go.disabled = !ok; go.style.opacity = ok ? '1' : '.5'; return ok; };
+    inp.addEventListener('input', check);
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter' && check()){ d.remove(); res(true); } });
+    d.addEventListener('click', e => { e.stopPropagation(); const b = e.target.closest('[data-r]');
+      if (!b){ if (e.target === d){ d.remove(); res(false); } return; }
+      if (b.dataset.r === 'ok'){ if (!check()) return; d.remove(); res(true); } else { d.remove(); res(false); } });
+    document.body.appendChild(d); setTimeout(() => inp.focus(), 60);
+  });
 }
 function clubDeleteSheet(name, nTeams, nInv){
   return new Promise(res => {
@@ -1575,7 +1609,7 @@ function stats(m){
     const len = times[s][1] - times[s][0];
     Object.keys(res).forEach(id => {
       const i = lu.indexOf(id);
-      res[id].per.push(i >= 0 ? pos[i].code : null);
+      res[id].per.push(i >= 0 ? (pos[i].line === 'K' ? 'K' : (pos[i].code || 'K')) : null);
       if (i >= 0) res[id].mins += len;
     });
   });
@@ -1732,7 +1766,8 @@ function abbr(name){
   return ((w[0] || name || '???').slice(0, 3)).toUpperCase();
 }
 function scoreBug(m){
-  const t = team(), me = abbr(t.club || t.name), op = abbr(m.opponent || 'TEG');
+  const short = x => { const v = String(x || '').trim(); return v.length > 18 ? v.slice(0, 17) + '…' : v; };
+  const t = team(), me = short(((t.club || '') + ' ' + t.name).trim() || t.name), op = short(m.opponent || 'Tegenstander');
   const gf = hasScore(m) ? +m.goalsFor : null, ga = hasScore(m) ? +m.goalsAgainst : null;
   const left = m.home === false ? op : me, right = m.home === false ? me : op;
   const sc = gf === null ? 'VS' : (m.home === false ? `${ga} – ${gf}` : `${gf} – ${ga}`);
@@ -1743,7 +1778,8 @@ function scoreBug(m){
 function viewMatch(){
   const m = match();
   if (!m){ ui.matchId = null; return viewMatches(); }
-  const se = season(), ph = m.phase || 'prep';
+  const se = season();
+  const ph = (ui.phaseView && ui.phaseView.id === m.id && PHASES.findIndex(x => x[0] === ui.phaseView.v) <= PHASES.findIndex(x => x[0] === (m.phase || 'prep'))) ? ui.phaseView.v : (m.phase || 'prep');
   if (ph === 'prep' && !m.cutsLocked){ // in de voorbereiding volgt de wedstrijd de instellingen
     let changed = false;
     ['fieldPlayers', 'formation', 'subMoments', 'matchMinutes'].forEach(k => { if (m.settings[k] !== se[k]){ m.settings[k] = se[k]; changed = true; } });
@@ -1759,7 +1795,11 @@ function viewMatch(){
   const editable = ph !== 'done';
   const cur = m.cur || 0;
 
-  const phaseBar = `<div class="phases"><button class="pback" data-act="back" aria-label="Terug">‹</button>${PHASES.map(([k, l], i) => `<button class="${k === ph ? 'on' : ''} ${PHASES.findIndex(p => p[0] === ph) > i ? 'past' : ''}" data-act="phase" data-v="${k}">${l}</button>`).join('')}</div>`;
+  const reached = PHASES.findIndex(x => x[0] === (m.phase || 'prep'));
+  const phaseBar = `<div class="phases"><button class="pback" data-act="back" aria-label="Terug">‹</button>${PHASES.map(([k, l], i) =>
+    `<button class="${k === ph ? 'on' : ''} ${PHASES.findIndex(p => p[0] === ph) > i ? 'past' : ''}" data-act="phaseNav" data-v="${k}" ${i <= reached ? '' : 'disabled style="opacity:.45" title="Rond eerst de wedstrijd af"'} aria-label="${esc(l)}">${l}</button>`).join('')}</div>
+    ${ph !== (m.phase || 'prep') ? `<div class="card pend" style="margin-bottom:10px"><div>👁️ Je kijkt naar <b>${esc((PHASES.find(x => x[0] === ph) || [])[1])}</b>. De wedstrijd staat op <b>${esc((PHASES.find(x => x[0] === (m.phase || 'prep')) || [])[1])}</b>.</div>
+      <button class="btn full" style="margin-top:8px" data-act="phaseNav" data-v="${esc(m.phase || 'prep')}">Terug naar ${esc((PHASES.find(x => x[0] === (m.phase || 'prep')) || [])[1])}</button></div>` : ''}`;
 
   const header = `
   <div class="card mhead">
@@ -1794,7 +1834,8 @@ function viewMatch(){
       <h2>${ph === 'live' ? '▶️ Live opstelling' : ph === 'prep' ? '📋 Opstelling maken' : '📋 Opstelling'}</h2>
       ${ph === 'prep' ? (true
         ? `<div class="muted" style="margin-bottom:10px">Laat de app alle blokken en wissels invullen${usePos() ? ' op basis van de voorkeursposities en eerlijke speeltijd' : ' met een eerlijke speeltijd voor iedereen'}${nRules ? ' en met je ' + nRules + ' wisselregel' + (nRules === 1 ? '' : 's') : ''}, of sleep zelf.</div>
-           <button class="btn pri full big" style="margin-bottom:12px" data-act="autoAll">⚡ Alles automatisch</button>
+           <div class="grid2" style="margin-bottom:6px"><button class="btn pri" data-act="autoAll">⚡ Alles automatisch</button><button class="btn" data-act="autoMix">🔀 Andere verdeling</button></div>
+           <button class="btn sm full" style="margin-bottom:12px" data-act="rulesSheet">${nRules ? `${nRules} wisselregel${nRules === 1 ? '' : 's'} actief · aanpassen` : 'Geen wisselregels · instellen'}</button>
            ${usePos() ? '' : '<div class="muted" style="margin:-6px 0 12px;font-size:12px">Tip: zet bij Instellingen de voorkeursposities aan, dan kiest de app ook de plekken.</div>'}`
         : `<div class="muted" style="margin-bottom:10px">Zet per blok je spelers neer: eerst de start, dan de volgende wissels. Bij een nieuw blok wordt het vorige overgenomen. Tip: zet bij Instellingen de voorkeursposities aan, dan kan de app alles automatisch opstellen.</div>`) : ''}
       <div class="segs">${times.map((t, i) => `<button class="pill ${i === ui.seg ? 'on' : ''}" data-act="seg" data-i="${i}"><span>${blockLabel(m, i)}</span><span>${t[0]}'–${t[1]}'</span></button>${ph === 'live' && !ui.peek && i === cur && cur < last ? upcomingBox(m, cur, times) : ''}`).join('')}</div>
@@ -1839,7 +1880,7 @@ function viewMatch(){
           const shown = (ph === 'done' || ph === 'post') ? r.mins : up[id];
           return `<tr>
           <td>${esc(pname(id))}${isIn(m, id) ? '' : ' <span class="muted">(weg)</span>'}<div class="bar"><i style="width:${Math.round(shown / st.matchMinutes * 100)}%"></i></div></td>
-          ${r.per.map((c, i) => `<td class="${i === ui.seg ? 'cur ' : ''}${c ? (c === 'K' ? 'kp' : '') : 'w'}">${c ? (c === 'K' ? '🧤' : c) : (avail(m, id, i) ? 'W' : '–')}</td>`).join('')}
+          ${r.per.map((c, i) => `<td class="${i === ui.seg ? 'cur ' : ''}${c ? (c === 'K' ? 'kp' : '') : 'w'}">${c ? c : (avail(m, id, i) ? 'W' : '–')}</td>`).join('')}
           <td><b>${Math.round(shown)}'</b></td>${ph === 'done' || ph === 'post' ? '' : `<td class="muted">${Math.round(r.mins)}'</td>`}</tr>`;
         }).join('')}
       </table>
@@ -1865,9 +1906,14 @@ function viewMatch(){
     <h2>🧤 Invallers</h2>
     <div class="row"><input id="guestName" placeholder="Invaller (naam)" list="otherNames" style="flex:3"><button class="btn sm" style="flex:none" data-act="addGuest">＋ Invaller</button></div>
     <datalist id="otherNames">${S.teams.flatMap(t => t.id === team().id ? [] : t.seasons[t.seasons.length - 1].players.map(p => `<option value="${esc(p.name)}">`)).join('')}</datalist>
-    ${(m.guests || []).length ? `<div class="attgrid" style="margin-top:10px">${m.guests.map(g => { const on = isIn(m, g.id); return `<button class="attb ${on ? 'ja' : 'nee'}" data-act="togglePresent" data-id="${g.id}">${on ? '✅' : '❌'} <span>${esc(pshort(g))}</span></button>`; }).join('')}</div><div class="muted" style="margin-top:6px">${m.guests.map(g => `${esc(pshort(g))} <button class="x" style="font-size:16px" data-act="delGuest" data-id="${g.id}">×</button>`).join(' ')}</div>` : '<div class="muted" style="margin-top:6px">Speler van een ander team die meedoet.</div>'}
+    ${(m.guests || []).length ? `<div class="achips" style="margin-top:10px">${m.guests.map(g => `<span class="achip">${esc(pshort(g))} <button class="x" style="font-size:16px;min-width:28px;min-height:28px;padding:0 2px" data-act="delGuest" data-id="${g.id}" aria-label="Invaller ${esc(pshort(g))} verwijderen">×</button></span>`).join('')}</div>` : '<div class="muted" style="margin-top:6px">Speler van een ander team die meedoet.</div>'}
   </div>`;
 
+  const kn = knvbFor(team().name), knOk = m.settings.fieldPlayers === kn.fp && m.settings.matchMinutes === kn.min;
+  const knvbCard = (!knOk && !ui.knvbHide && ph === 'prep') ? `<div class="card pend" style="display:flex;gap:10px;align-items:flex-start">
+    <span class="grow">KNVB adviseert voor ${esc(kn.label)}: ${esc(kn.t || kn.fp + ' tegen ' + kn.fp)}
+      <button class="btn sm" style="margin-left:6px" data-act="knvbFix">Aanpassen</button></span>
+    <button class="x" data-act="knvbHide" aria-label="Melding sluiten">×</button></div>` : '';
   const infoCard = `
   <div class="card">
     <div class="grid2">
@@ -1908,7 +1954,7 @@ function viewMatch(){
   </div>`;
 
   let body;
-  if (ph === 'prep') body = `${tourCard}${infoCard}${attCard(m)}${guestCard}${rulesCard}${lineupCard}${minutesCard}
+  if (ph === 'prep') body = `${tourCard}${knvbCard}${infoCard}${attCard(m)}${guestCard}${rulesCard}${lineupCard}${minutesCard}
     <button class="btn pri full big" data-act="phase" data-v="live">▶️ Start wedstrijd</button>
     <div class="grid2" style="margin-bottom:12px"><button class="btn" data-act="share">📤 Delen</button><button class="btn" data-act="print">🖨️ Printen</button></div>`;
   else if (ph === 'live') body = tourCard + scoreBar(m, cur) + rulesCard + (fontLevel() === 3 ? `${listCard(m, times, cur, last)}${minutesCard}` : `${lineupCard}${minutesCard}`);
@@ -1950,7 +1996,12 @@ function listCard(m, times, cur, last){
 }
 // knoppen tijdens de wedstrijd: bovenaan, zodat je niet hoeft te scrollen
 function liveControls(m, times, cur, last, kind){
-  return `<div class="livectl"><div class="${cur === last ? 'grid2' : ''}"><button class="btn ${kind === 'hc' ? 'sm' : ''} full" data-act="addSub">＋ Wisselmoment</button>${cur === last ? `<button class="btn full" data-act="phase" data-v="post">🏁 Wedstrijd afgelopen</button>` : ''}</div></div>`;
+  const next = cur + 1;
+  return `<div class="livectl">
+    ${cur < last ? `${upcomingBox(m, cur, times)}
+      <button class="btn pri full big subbtn" data-act="doSub" data-i="${next}">🔁 Wissel naar ${esc(blockLabel(m, next))}</button>` : ''}
+    <button class="btn red full big" style="margin-top:8px" data-act="finishMatch">🏁 Wedstrijd afronden</button>
+    <div class="tools" style="margin-top:8px"><button class="btn sm" data-act="addSub">＋ Wisselmoment</button></div></div>`;
 }
 // tijdens de wedstrijd: tik op een blok = naar dat blok (vooruit eerst de wissels bevestigen)
 async function goLiveBlock(m, to){
@@ -1975,12 +2026,49 @@ async function goLiveBlock(m, to){
   }
 }
 /* ---- stand en doelpunten tijdens de wedstrijd ---- */
+// wedstrijdklok: gebaseerd op tijdstempels, dus hij loopt door als het scherm uitgaat
+function clockStart(m){ m.clk = m.clk || {}; if (!m.clk.start){ m.clk.start = Date.now(); m.clk.off = 0; m.clk.paused = 0; } }
+function clockStop(m){ if (m.clk && m.clk.start && !m.clk.paused) m.clk.paused = Date.now(); }
+function clockSecs(m){ const c = m.clk; if (!c || !c.start) return 0;
+  const end = c.paused || Date.now();
+  return Math.max(0, Math.round((end - c.start) / 1000) + (c.off || 0)); }
+const mmss = sec => `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
+function nextSubIn(m){
+  const t = segTimes(m.settings), cur = m.cur || 0; if (cur >= m.segments.length - 1) return null;
+  return Math.ceil(t[cur + 1][0] - clockSecs(m) / 60);
+}
+function clockBar(m){
+  const c = m.clk || {}, run = c.start && !c.paused, sec = clockSecs(m), nx = nextSubIn(m);
+  return `<div class="clkbar"><button class="clk" data-act="clkEdit" aria-label="Wedstrijdtijd aanpassen"><b id="clkTxt">${mmss(sec)}</b></button>
+    <button class="btn sm" data-act="clkToggle" aria-label="${run ? 'Klok pauzeren' : 'Klok starten'}">${run ? '⏸ Pauze' : '▶️ Start'}</button>
+    <span class="grow" id="clkNext">${nx === null ? 'laatste blok' : nx > 0 ? `Volgende wissel over ${nx} min` : 'Wisselmoment bereikt'}</span></div>`;
+}
+function clockTick(){
+  try {
+    const m = match(); if (!m || m.phase !== 'live') return;
+    const el = document.getElementById('clkTxt'); if (!el) return;
+    const sec = clockSecs(m), nx = nextSubIn(m);
+    el.textContent = mmss(sec);
+    const n = document.getElementById('clkNext'); if (n) n.textContent = nx === null ? 'laatste blok' : nx > 0 ? `Volgende wissel over ${nx} min` : 'Wisselmoment bereikt';
+    const b = document.querySelector('.subbtn');
+    if (b && nx !== null && nx <= 0){ if (!b.classList.contains('pulse')){ b.classList.add('pulse'); try { navigator.vibrate && navigator.vibrate(200); } catch(e){} } }
+    else if (b) b.classList.remove('pulse');
+  } catch(e){}
+}
+setInterval(clockTick, 1000);
+// Hulp-knop wordt klein tijdens het scrollen, zodat hij niets afdekt
+let fabT = null;
+window.addEventListener('scroll', () => {
+  const f = document.querySelector('.hfab'); if (!f) return;
+  f.classList.add('small'); clearTimeout(fabT); fabT = setTimeout(() => f.classList.remove('small'), 900);
+}, {passive: true});
 function scoreBar(m, cur){
   const t = team(), me = t.name, op = m.opponent || 'Tegenstander';
   const gf = +m.goalsFor || 0, ga = +m.goalsAgainst || 0;
   const L = m.home === false ? [op, 'THUIS'] : [me, 'THUIS'], R = m.home === false ? [me, 'UIT'] : [op, 'UIT'];
   const sc = m.home === false ? `${ga} – ${gf}` : `${gf} – ${ga}`;
   return `<div class="sbar"><div class="sblive"><i></i>LIVE · ${esc(blockLabel(m, cur))}</div>
+    ${clockBar(m)}
     <div class="sline"><div class="steam"><small>${L[1]}</small>${esc(L[0])}</div><div class="sscore ${ui.bump === m.id ? 'bump' : ''}">${sc}</div><div class="steam r"><small>${R[1]}</small>${esc(R[0])}</div></div>
     <div class="sbtns">${m.home === false
       ? `<button class="sb them" data-act="goalThem">Tegen</button><button class="sb us" data-act="goalUs">⚽ Wij scoren</button>`
@@ -2126,18 +2214,16 @@ function viewPlayers(){
   ${surveyCard(se, team())}
   <div class="card list">
     <h2>👥 Selectie ${esc(team().name)} (${se.players.length})</h2>
-    ${usePos() ? `<div class="muted" style="margin-bottom:4px">🎯 Kies per speler zijn 1e, 2e en 3e voorkeurspositie (posities uit formatie ${esc(se.formation)}).</div>` : `<div class="muted" style="margin-bottom:4px">Voorkeursposities per speler staan uit. Zet ze aan bij <a href="#" data-act="stab" data-v="team">⚙️ Opstelling</a>.</div>`}
+    ${usePos() ? `<div class="muted prefhead" style="margin-bottom:4px">🎯 Tik per speler maximaal 3 posities in volgorde van voorkeur (formatie ${esc(se.formation)}).</div>` : `<div class="muted" style="margin-bottom:4px">Voorkeursposities per speler staan uit. Zet ze aan bij <a href="#" data-act="stab" data-v="team">⚙️ Opstelling</a>.</div>`}
     ${se.players.length ? se.players.map(p => `
       <div class="item" style="flex-wrap:wrap">
-        <div class="num">${esc(p.number || '•')}</div>
+        <div class="num pnum">${esc(((prefsOf(p) || [])[0]) || '')}</div>
         <div class="grow nm2"><input value="${esc(splitName(p.name).first)}" data-pn="first" data-id="${p.id}" placeholder="Voornaam" aria-label="Voornaam"><input class="initIn" value="${esc(splitName(p.name).last)}" data-pn="last" data-id="${p.id}" placeholder="Letter" maxlength="3" aria-label="Eerste letter achternaam" autocapitalize="characters"></div>
         <button class="x" data-act="delPlayer" data-id="${p.id}">×</button>
-        ${usePos() ? `<div class="pprow">${[0, 1, 2].map(k => `<label><span>${k + 1}e keus</span><select data-pp="${k}" data-id="${p.id}"><option value="">–</option><optgroup label="Linie">${POS_GROUPS.slice(0, 3).map(g => `<option value="${g.v}" ${(p.pos || [])[k] === g.v ? 'selected' : ''}>${g.s}</option>`).join('')}</optgroup><optgroup label="Kant van het veld">${POS_GROUPS.slice(3).map(g => `<option value="${g.v}" ${(p.pos || [])[k] === g.v ? 'selected' : ''}>${g.s}</option>`).join('')}</optgroup><optgroup label="Positie (${esc(se.formation)})">${posCodes(se).map(c => `<option value="${c}" ${(p.pos || [])[k] === c ? 'selected' : ''}>${c} · ${POS_NAMES[c]}</option>`).join('')}${(p.pos || [])[k] && !(p.pos[k] || '').startsWith('g:') && !posCodes(se).includes(p.pos[k]) ? `<option value="${esc(p.pos[k])}" selected>${esc(p.pos[k])} (andere formatie)</option>` : ''}</optgroup></select></label>`).join('')}</div>` : ''}
+        ${usePos() ? `<div class="posrow">${posCodes(se).map(c => { const i = (prefsOf(p) || []).indexOf(c);
+          return `<button class="posb ${i >= 0 ? 'on' : ''}" data-act="prefTap" data-id="${p.id}" data-c="${esc(c)}" aria-label="${esc(POS_NAMES[c] || c)} voor ${esc(pshort(p))}${i >= 0 ? `, nu ${i + 1}e keus` : ''}">${esc(c)}${i >= 0 ? `<i>${i + 1}</i>` : ''}</button>`; }).join('')}</div>` : ''}
       </div>`).join('') : `<div class="empty"><b>👥</b>Nog geen spelers. Voeg ze hieronder toe.</div>`}
   </div>
-  ${se.players.length > 1 ? `<div class="card"><h2>🔁 Wisselregels <span class="muted" style="font-weight:400">(${(se.rules || []).length})</span></h2>
-    <div class="muted" style="margin-bottom:8px">${(se.rules || []).length ? (se.rules || []).map(r => `${esc(ruleLabel(r))}: ${esc(ruleKindName(r.type))}`).join('<br>') : 'Nog geen regels. Bijvoorbeeld twee spelers die samen wisselen, of een speler die als reserve begint.'}</div>
-    <button class="btn full" data-act="goRules">⚙️ Wisselregels instellen</button></div>` : ''}
   <div class="card">
     <h2>➕ Speler toevoegen aan ${esc(team().name)}</h2>
     <div class="row"><input id="newName" placeholder="Voornaam" style="flex:2" autocapitalize="words"><input id="newLast" placeholder="Achterletter" style="flex:1;min-width:0" maxlength="3" autocapitalize="characters" enterkeyhint="done"></div>
@@ -2188,6 +2274,11 @@ function viewStats(){
   const keepers = list.filter(r => r.kmins > 0).sort((a, b) => b.kmins - a.kmins);
   const pct = r => r.possible ? Math.round(r.mins / r.possible * 100) : 0;
   const avgPct = (() => { const a = list.filter(r => r.possible); return a.length ? Math.round(a.reduce((s, r) => s + pct(r), 0) / a.length) : 0; })();
+  // haalbaar gemiddelde: alle gespeelde minuten gedeeld door alle mogelijke minuten
+  const fairPct = (() => { const a = list.filter(r => r.possible), tm = a.reduce((x, r) => x + r.mins, 0), tp = a.reduce((x, r) => x + r.possible, 0); return tp ? Math.round(tm / tp * 100) : 0; })();
+  // één blok meer of minder is normaal; pas daaronder is het echt te weinig
+  const blockPct = 100 / Math.max(1, (se.subMoments || 3) + 1);
+  const tooLow = r => r.possible && (fairPct - pct(r)) > Math.max(10, blockPct);
 
   if (!done.length && !(se.history || []).length) return `<div class="card empty"><b>📊</b>Nog geen statistieken voor ${esc(t.name)} ${esc(se.name)}.<br>Statistieken tellen mee zodra een wedstrijd is opgeslagen als ✅ gespeeld.</div>`;
   return `
@@ -2200,17 +2291,17 @@ function viewStats(){
     <h2>⏱️ Speeltijd per speler</h2>
     <div class="muted" style="margin-bottom:8px">% = deel van de minuten in wedstrijden waarbij de speler aanwezig was. Gemiddeld ${avgPct}%.</div>
     <table class="ov">
-      <tr><th>Speler</th><th>Wed</th><th>Min</th><th>%</th><th>⚽</th><th>🧤</th><th>Reserve</th></tr>
+      <tr><th>Speler</th><th>Wed</th><th>Min</th><th>%</th><th>⚽ Goals</th><th>🧤 Keeper</th><th>Reserve</th></tr>
       ${list.map(r => {
         const top = Object.entries(r.pos).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([c]) => c === 'K' ? '🧤' : c).join(' · ');
         return `<tr>
           <td>${esc(pshort(r.p))}<div class="bar"><i style="width:${Math.round(r.mins / maxMin * 100)}%"></i></div>${top ? `<div class="muted" style="font-size:11px;margin-top:2px">${top}</div>` : ''}</td>
           <td>${r.matches}</td><td><b>${Math.round(r.mins)}'</b></td>
-          <td style="color:${pct(r) < avgPct - 10 ? 'var(--red)' : 'inherit'}">${r.possible ? pct(r) + '%' : '–'}</td>
+          <td style="color:${tooLow(r) ? 'var(--red)' : 'inherit'}">${r.possible ? pct(r) + '%' : '–'}</td>
           <td><b>${r.goals || ''}</b></td><td class="kp">${r.kmins ? Math.round(r.kmins) + "'" : ''}</td><td class="w">${r.bench}×</td></tr>`;
       }).join('')}
     </table>
-    <div class="muted" style="margin-top:8px">Reserve = aantal blokken als reserve. Rood = duidelijk minder speeltijd dan gemiddeld.</div>
+    <div class="muted" style="margin-top:8px">Reserve = aantal blokken als reserve. Rood = duidelijk onder het haalbare gemiddelde van ${fairPct}%; één blok meer of minder is normaal.</div>
   </div>
   ${list.some(r => r.goals) ? `<div class="card">
     <h2>⚽ Topscorers</h2>
@@ -2229,6 +2320,7 @@ function viewStats(){
 function teamInfoCard(x){
   const ls = x.seasons[0];
   return `
+  <div class="sgroup">Team</div>
   <div class="card">
     <h2>🛡️ Teamgegevens</h2>
     <label class="f">Teamnaam<input value="${esc(x.name)}" data-t="name" data-id="${x.id}" placeholder="bv. JO8-1"></label>
@@ -2240,7 +2332,8 @@ function teamInfoCard(x){
     <div class="muted">${ls.players.length} spelers · ${ls.matches.length} wedstrijden · ${ls.matches.filter(m => m.phase === 'done').length} gespeeld</div>
   </div>
   <div class="card">
-    <h2>🔧 Team beheren</h2>
+    <details data-key="tbeheer" ${ui.open.tbeheer ? 'open' : ''}><summary>🔧 Team beheren</summary>
+    <div style="height:8px"></div>
     <button class="btn full" style="margin-bottom:8px" data-act="copyTeam" data-id="${x.id}">📋 Kopie maken voor nieuw seizoen</button>
     <div class="muted" style="margin:-2px 0 12px">Neemt spelers en instellingen mee, zonder wedstrijden. Bijv. JO8 26/27 → JO9 27/28.</div>
     <button class="btn full" style="margin-bottom:8px" data-act="resetSeason" data-id="${x.id}">🔄 Seizoen resetten</button>
@@ -2248,6 +2341,7 @@ function teamInfoCard(x){
     ${x.inactive ? `<div class="muted" style="margin:10px 0 6px">💤 Dit team staat op <b>niet actief</b>. Het staat niet meer tussen je teams bovenin en is niet zichtbaar voor nieuwe trainers van de club.</div>` : ''}
     <button class="btn full" style="margin-bottom:8px" data-act="toggleInactive" data-id="${x.id}">${x.inactive ? '✅ Weer actief maken' : '💤 Team op niet actief zetten'}</button>
     <button class="btn red full" data-act="delTeam" data-id="${x.id}">🗑️ Team verwijderen</button>
+    </details>
   </div>`;
 }
 
@@ -2301,20 +2395,21 @@ function viewSettings(){
       <button class="btn sm" style="flex:none" data-act="ruleAdd">＋ Regel</button></div>
   </div>` : ''}
   <div class="card" style="margin-top:0">
-    <div class="muted" style="margin-top:8px">Aanpassen mag altijd met − en +. Geldt voor nieuwe wedstrijden en wedstrijden waarvan de opstelling nog niet gemaakt is.</div>
-    <div style="margin-top:12px">${pitchHTML({settings:se, segments:null}, 0, false)}</div>
+    <div style="max-width:220px;margin:0 auto;zoom:.55" aria-label="Voorbeeld van de formatie ${esc(se.formation)}">${pitchHTML({settings: se, segments: null}, 0, false)}</div>
+    <div class="muted" style="margin-top:8px;font-size:12px">Geldt voor nieuwe wedstrijden en wedstrijden waarvan de opstelling nog niet gemaakt is.</div>
   </div>
   <div class="card">
     <div class="set" style="border:0;padding:0"><div class="lbl">🎯 Voorkeursposities per speler<small>Per speler een 1e, 2e en 3e positie. Daarmee kan de app de hele wedstrijd automatisch opstellen.</small></div>
       <button class="switch ${se.usePositions ? 'on' : ''}" data-act="togglePos" aria-label="Voorkeursposities aan/uit"><i></i></button></div>
-    ${se.usePositions ? `<button class="btn sm full" style="margin-top:12px" data-act="stab" data-v="spelers">👥 Posities per speler invullen</button>` : ''}
+    ${se.usePositions ? `<button class="btn sm full" style="margin-top:12px" data-act="goPrefs">👥 Posities per speler invullen</button>` : ''}
   </div>${arriveCard(se)}
   <div class="card">
     <div class="set" style="border:0;padding:0"><div class="lbl">⚽ Ook de assist vragen<small>Tijdens de wedstrijd vraagt de app na "Wij scoren" wie de assist gaf. Overslaan kan altijd.</small></div>
       <button class="switch ${se.askAssist ? 'on' : ''}" data-act="toggleAssist" aria-label="Assist vragen aan/uit"><i></i></button></div>
   </div>`;
   else if (st === 'spelers'){ body = viewPlayers(); if (se.survey && !ui.surveyBusy && Date.now() - (ui.surveyFetched || 0) > 20000){ ui.surveyFetched = Date.now(); setTimeout(() => fetchSurvey(se, true), 50); } }
-  else body = teamInfoCard(t) + (t.onb && t.onbBy === myUid() && myUid() && !isViewOnly() && onbSteps().some(x => !x.done) ? `<button class="btn full" style="margin-bottom:12px" data-act="onbShow">👋 Welkomstappen voor nieuwe trainers tonen</button>` : '') + `<div class="sgroup">Samenwerken</div>${cloudCard()}<div class="sgroup">Account</div>${accountCard()}${installCard()}`;
+  else body = teamInfoCard(t) + (t.onb && t.onbBy === myUid() && myUid() && !isViewOnly() && onbSteps().some(x => !x.done) ? `<button class="btn full" style="margin-bottom:12px" data-act="onbShow">👋 Welkomstappen voor nieuwe trainers tonen</button>` : '') + `<div class="sgroup">Samenwerken</div>${cloudCard()}<div class="sgroup">Account</div>${accountCard()}
+    <button class="btn full" style="margin-bottom:12px" data-act="installHelp">📲 Zet LineMeUp op je beginscherm</button>`;
   return `
   <div class="stabs">${tabs.map(([k, l]) => `<button class="${k === st ? 'on' : ''}" data-act="stab" data-v="${k}">${l}</button>`).join('')}</div>${body}`;
 }
@@ -2387,7 +2482,8 @@ function newMatch(){
     segments:Array.from({length: se.subMoments + 1}, () => Array(positions(se.fieldPlayers, se.formation).length).fill(null)),
     phase:'prep', cur:0, goals:{}};
   se.matches.push(m);
-  ui.open = {}; ui.matchId = m.id; ui.seg = 0; ui.sel = null; commit(); window.scrollTo(0, 0);
+  ui.open = {}; ui.matchId = m.id; ui.seg = 0; ui.sel = null; ui.phaseView = null; commit(); window.scrollTo(0, 0);
+  setTimeout(() => { const i = document.querySelector('[data-m="opponent"]'); if (i){ i.focus(); i.scrollIntoView({block: 'center'}); } }, 80);
 }
 async function saveDone(m){
   const tot = Object.values(m.goals || {}).reduce((a, b) => a + b, 0);
@@ -2440,12 +2536,19 @@ document.addEventListener('click', async e => {
     case 'team': S.active.team = id; ui.matchId = null; ui.sel = null; ui.tab = 'matches'; commit(); window.scrollTo(0, 0); break;
     case 'goSettings': { const r = await newTeamDialog(); if (r && r.join) await pasteInvite(); else if (r) createTeam(r.name, r.club, r.season); break; }
     case 'goSettings2': e.preventDefault(); ui.sOpen = true; ui.stab = 'team'; go('settings'); break;
-    case 'goPlayers': ui.sOpen = true; ui.stab = 'spelers'; go('settings'); break;
+    case 'goPlayers': ui.sOpen = true; ui.stab = 'spelers'; go('settings');
+      setTimeout(() => { const i = document.getElementById('newName'); if (i){ i.closest('.card').scrollIntoView({block: 'center'}); i.focus(); } }, 90); break;
+    case 'goPrefs': ui.sOpen = true; ui.stab = 'spelers'; go('settings');
+      setTimeout(() => { const el = document.querySelector('.prefhead') || document.querySelector('.plist'); if (el) el.scrollIntoView({block: 'start'}); }, 90); break;
     case 'goRules': ui.sOpen = true; ui.stab = 'team'; go('settings'); setTimeout(() => document.querySelector('[data-act=ruleAdd]')?.closest('.card')?.scrollIntoView({block:'center'}), 60); break;
     case 'sOpen': S.active.team = id; ui.sOpen = true; ui.stab = 'team'; ui.matchId = null; commit(); window.scrollTo(0, 0); break;
     case 'sHome': ui.sOpen = true; render(); window.scrollTo(0, 0); break;
     case 'teamColor': { const tt = S.teams.find(x => x.id === id); tt.color = el.dataset.c; commit(); break; }
-    case 'stab': e.preventDefault(); ui.stab = el.dataset.v; render(); break;
+    case 'stab': e.preventDefault(); ui.stab = el.dataset.v; render(); window.scrollTo(0, 0); break;
+    case 'prefTap': { const y = window.scrollY, p = player(id), c = el.dataset.c;
+      const pr = (p.pref || []).slice(), i = pr.indexOf(c);
+      if (i >= 0) pr.splice(i, 1); else if (pr.length < 3) pr.push(c); else { toast('Maximaal 3 posities'); break; }
+      p.pref = pr; commit(); requestAnimationFrame(() => window.scrollTo(0, y)); break; }
     case 'togglePresent': {
       const pid = el.dataset.id, from = m.phase === 'live' ? (m.cur || 0) : 0;
       if (m.phase === 'prep' && season().players.some(p => p.id === pid)){ m.att = m.att || {}; m.att[pid] = isIn(m, pid) ? 'nee' : 'ja'; if (m.poll && cloud.api && myUid()) cloud.api.pollAnswer(m.poll.id, pid, m.att[pid]).catch(() => {}); }
@@ -2462,6 +2565,16 @@ document.addEventListener('click', async e => {
       }
       commit(); break;
     }
+    case 'phaseNav': { const v = el.dataset.v;
+      if (PHASES.findIndex(x => x[0] === v) > PHASES.findIndex(x => x[0] === (m.phase || 'prep'))){ toast('Rond eerst de wedstrijd af'); break; }
+      ui.phaseView = v === (m.phase || 'prep') ? null : {id: m.id, v};
+      if (v === 'live') ui.seg = m.cur || 0;
+      ui.sel = null; render(); window.scrollTo(0, 0); break; }
+    case 'finishMatch': {
+      const gf = +m.goalsFor || 0, ga = +m.goalsAgainst || 0, sc = m.home === false ? `${ga}–${gf}` : `${gf}–${ga}`;
+      if (!await ask(`Wedstrijd beëindigen? Stand ${sc}`, 'Afronden')) break;
+      clockStop(m); m.cutsLocked = true; if (m.goalsFor === '' || m.goalsFor == null){ m.goalsFor = 0; m.goalsAgainst = 0; }
+      m.phase = 'post'; ui.phaseView = null; ui.sel = null; commit(); window.scrollTo(0, 0); break; }
     case 'phase': {
       const v = el.dataset.v;
       if (v === 'done'){ await saveDone(m); break; }
@@ -2469,7 +2582,8 @@ document.addEventListener('click', async e => {
       if (v === 'prep'){ m.cur = 0; ui.seg = 0; }
       if (v === 'live'){ if (m.phase === 'prep') m.cur = 0; m.cur = m.cur || 0; ui.seg = m.cur; if (m.phase === 'prep') toast('Wedstrijd gestart – succes! ⚽'); }
       if (v === 'post' && (m.goalsFor === '' || m.goalsFor == null)){ m.goalsFor = 0; m.goalsAgainst = 0; }
-      m.phase = v; ui.sel = null; commit(); window.scrollTo(0, 0); break;
+      if (v === 'live' && m.phase === 'prep') clockStart(m);
+      m.phase = v; ui.phaseView = null; ui.sel = null; commit(); window.scrollTo(0, 0); break;
     }
     case 'nextSeg': {
       const n = m.segments.length;
@@ -2518,6 +2632,7 @@ document.addEventListener('click', async e => {
       commit(); toast(`${n} staat bij de reserves`); break;
     }
     case 'delGuest': {
+      { const g = (m.guests || []).find(x => x.id === id); if (g && !await askRed(`Invaller ${esc(g.name)} verwijderen?`, 'Verwijderen')) break; }
       m.guests = (m.guests || []).filter(g => g.id !== id); m.present = m.present.filter(x => x !== id);
       m.segments = m.segments.map(lu => lu.map(x => x === id ? null : x)); if (m.phase === 'live') fillHoles(m, m.cur || 0);
       commit(); break;
@@ -2579,13 +2694,42 @@ document.addEventListener('click', async e => {
     case 'arriveEdit': e.preventDefault(); ui.arriveEdit = m.id; render(); break;
     case 'startPoll': await startPoll(m); break;
     case 'coachAtt': await coachAnswer(m, id); break;
+    case 'attTap': { if (el.dataset.skip){ delete el.dataset.skip; break; } const y = window.scrollY, cur = attOf(m, id), nxt = cur === 'ja' ? 'nee' : cur === 'nee' ? 'geen' : 'ja';
+      setAtt(m, id, nxt, se); requestAnimationFrame(() => window.scrollTo(0, y)); break; }
+    case 'attAll': { const y = window.scrollY; m.att = m.att || {};
+      se.players.forEach(p => { if (attOf(m, p.id) === 'geen' || !attOf(m, p.id)) m.att[p.id] = 'ja'; });
+      applyAnswers(m, m.att, se); commit(); requestAnimationFrame(() => window.scrollTo(0, y)); toast('Iedereen erbij'); break; }
+    case 'tourAttTap': { if (el.dataset.skip){ delete el.dataset.skip; break; } const t = tour(), cur = attOf(t, id), nxt = cur === 'ja' ? 'nee' : cur === 'nee' ? 'geen' : 'ja';
+      const y = window.scrollY; setAtt(t, id, nxt, se); requestAnimationFrame(() => window.scrollTo(0, y)); break; }
+    case 'tourAttAll': { const t = tour(), y = window.scrollY; t.att = t.att || {};
+      se.players.forEach(p => { if (attOf(t, p.id) === 'geen' || !attOf(t, p.id)) t.att[p.id] = 'ja'; });
+      applyAnswers(t, t.att, se); commit(); requestAnimationFrame(() => window.scrollTo(0, y)); toast('Iedereen erbij'); break; }
     case 'gen': case 'mix':
       if (m.segments && m.edited && !await ask('Je handmatige wissels worden overschreven. Doorgaan?')) return;
       m.manual = false; generate(m, act === 'mix'); ui.seg = 0; ui.sel = null; ui.open.setup = false; commit();
       if (act === 'mix') toast('Nieuwe verdeling gemaakt');
       break;
+    case 'doSub': {
+      const to = +el.dataset.i, from = m.cur || 0;
+      if (to >= m.segments.length) break;
+      if (isEmptySeg(m.segments[to])) m.segments[to] = m.segments[from].slice();
+      if (!await ask(`Wissel doorvoeren en naar ${blockLabel(m, to)}?`, 'Doorvoeren')) break;
+      m.cur = to; ui.seg = to; ui.sel = null; ui.peek = null; commit();
+      undoToast(`Wissel doorgevoerd – ${blockLabel(m, to)} loopt`, () => { m.cur = from; ui.seg = from; commit(); }, 6000);
+      break; }
+    case 'clkToggle': { m.clk = m.clk || {};
+      if (!m.clk.start) clockStart(m);
+      else if (m.clk.paused){ m.clk.start += Date.now() - m.clk.paused; m.clk.paused = 0; }
+      else m.clk.paused = Date.now();
+      commit(); break; }
+    case 'clkEdit': { const c = m.clk = m.clk || {}; if (!c.start) clockStart(m);
+      const r = await chooseDialog(`Wedstrijdtijd: ${mmss(clockSecs(m))}`, [{v: '-1', n: '− 1 minuut'}, {v: '1', n: '+ 1 minuut'}, {v: '0', n: 'Op 00:00 zetten'}]);
+      if (!r) break;
+      if (r === '0'){ c.start = Date.now(); c.off = 0; if (c.paused) c.paused = Date.now(); }
+      else c.off = Math.max(-clockSecs(m), (c.off || 0) + (+r) * 60);
+      commit(); break; }
     case 'seg': {
-      if ((m.phase || 'prep') === 'live'){ await goLiveBlock(m, +el.dataset.i); break; }
+      if ((m.phase || 'prep') === 'live'){ ui.seg = +el.dataset.i; ui.sel = null; ui.peek = ui.seg === (m.cur || 0) ? null : {m: m.id, i: ui.seg}; render(); break; }
       ui.seg = +el.dataset.i; ui.sel = null;
       if (ui.seg > 0 && isEmptySeg(m.segments[ui.seg]) && !isEmptySeg(m.segments[ui.seg - 1])){ m.segments[ui.seg] = m.segments[ui.seg - 1].slice(); save(); toast('Vorig blok overgenomen – pas de wissels aan'); }
       render(); break;
@@ -2643,7 +2787,7 @@ document.addEventListener('click', async e => {
       if (same || (ui.sel.type === 'b' && t.type === 'b')){ ui.sel = same ? null : t; render(); break; }
       swap(m, ui.sel, t); ui.sel = null; commit(); break;
     }
-    case 'delMatch': if (await ask('Deze wedstrijd verwijderen?')){ se.matches = se.matches.filter(x => x.id !== m.id); ui.matchId = null; commit(); } break;
+    case 'delMatch': if (await askRed(`Wedstrijd ${matchTitle(m)} verwijderen?`, 'Verwijderen')){ se.matches = se.matches.filter(x => x.id !== m.id); ui.matchId = null; commit(); toast('Wedstrijd verwijderd'); } break;
     case 'share': shareMatch(m); break;
     case 'print': buildPrint(m); setTimeout(() => window.print(), 50); break;
 
@@ -2668,7 +2812,7 @@ document.addEventListener('click', async e => {
     }
     case 'delPlayer': {
       const p = player(id);
-      if (!await ask(`${p.name} verwijderen?`)) return;
+      if (!await askRed(`Speler ${pshort(p)} verwijderen? Zijn of haar speeltijd en doelpunten verdwijnen uit de statistieken.`, 'Verwijderen')) return;
       se.players = se.players.filter(x => x.id !== id);
       se.matches.forEach(mm => { mm.present = mm.present.filter(x => x !== id); if (mm.segments) mm.segments = mm.segments.map(lu => lu.map(x => x === id ? null : x)); });
       commit(); break;
@@ -2695,11 +2839,15 @@ document.addEventListener('click', async e => {
       break;
     }
     case 'delTeam': {
-      const t = S.teams.find(x => x.id === id);
-      if (S.teams.length === 1){ await tell('Je hebt minstens één team nodig. Maak eerst een nieuw team aan en verwijder daarna dit team.'); return; }
-      if (!await ask(`${teamLabel(t)} met alle spelers en wedstrijden verwijderen?`, 'Verwijderen')) return;
+      const t = S.teams.find(x => x.id === id), tse = t.seasons[0] || {players: [], matches: []};
+      if (!await typeToDelete(teamLabel(t), `Team ${teamLabel(t)} met alle ${tse.players.length} spelers en ${tse.matches.length} wedstrijden verwijderen? Dit kan niet ongedaan worden gemaakt.`)) return;
       { const cm = cloudMap(); if (cm[id]){ if (!isLegacy(cm[id]) && myUid()) cloud.api.userRemoveTeam(myUid(), cm[id].id).catch(() => {}); delete cm[id]; setCloudMap(cm); unlinkLive(id); } }
-      S.teams = S.teams.filter(x => x.id !== id); if (S.active.team === id) S.active.team = sortedTeams()[0].id; commit(); break;
+      const naam = teamLabel(t);
+      S.teams = S.teams.filter(x => x.id !== id);
+      if (!S.teams.length){ S = defaultState(); }
+      else if (S.active.team === id) S.active.team = sortedTeams()[0].id;
+      ui.matchId = null; ui.tourId = null; ui.sOpen = false; ui.tab = 'matches'; ui.stab = 'team';
+      commit(); go('matches'); window.scrollTo(0, 0); toast(`Team ${naam} verwijderd`); break;
     }
     case 'copyTeam': {
       const t = S.teams.find(x => x.id === id), os = t.seasons[0];
@@ -2715,7 +2863,7 @@ document.addEventListener('click', async e => {
     }
     case 'resetSeason': {
       const t = S.teams.find(x => x.id === id), ts = t.seasons[0];
-      if (!await ask(`Seizoen van ${teamLabel(t)} resetten? Alle ${ts.matches.length} wedstrijden en statistieken worden gewist. De spelers en instellingen blijven.`, 'Resetten')) return;
+      if (!await askRed(`Seizoen van ${teamLabel(t)} resetten? Alle ${ts.matches.length} wedstrijden en statistieken worden gewist. De spelers en instellingen blijven.`, 'Resetten')) return;
       ts.matches = []; if (S.active.team === t.id) ui.matchId = null; commit(); toast(`${teamLabel(t)} is gereset`); break;
     }
     case 'export': {
@@ -2732,18 +2880,24 @@ document.addEventListener('click', async e => {
     case 'goalThem': addGoal(m, {us: false}); break;
     case 'goalDel': delGoal(m, id); break;
     case 'togglePos': se.usePositions = !se.usePositions; commit(); toast(se.usePositions ? 'Voorkeursposities aan' : 'Voorkeursposities uit'); break;
+    case 'rulesSheet': await autoSheet(m); render(); break;
     case 'autoAll': case 'autoMix': {
-      let mix = act === 'autoMix';
-      if (act === 'autoAll'){
-        const r = await autoSheet(m); if (!r || r === 'no') return;
-        mix = r === 'mix';
-        const filled = m.segments.some(lu => !isEmptySeg(lu));
-        if (filled && !await ask('Alle blokken opnieuw invullen? Wat je zelf hebt neergezet wordt vervangen.', 'Invullen')) return;
-      }
+      const mix = act === 'autoMix';
+      const filled = m.segments.some(lu => !isEmptySeg(lu));
+      if (!mix && filled && !await ask('Alle blokken opnieuw invullen? Wat je zelf hebt neergezet wordt vervangen.', 'Invullen')) return;
       generate(m, mix, 0); m.edited = true; ui.seg = 0; ui.sel = null; commit();
       const noPos = season().players.filter(p => m.present.includes(p.id) && !prefsOf(p).length).length;
       toast(noPos ? `Klaar – ${noPos} speler(s) zonder voorkeurspositie` : 'Hele wedstrijd opgesteld ⚡'); break;
     }
+    case 'installHelp': { if (installEvt){ installEvt.prompt(); break; }
+      help.open = true; help.tab = 'tips'; render();
+      setTimeout(() => { const el = [...document.querySelectorAll('.hitem,.hq,details')].find(x => /beginscherm/i.test(x.textContent || '')); if (el){ el.setAttribute('open', ''); el.scrollIntoView({block: 'center'}); } }, 120);
+      break; }
+    case 'knvbHide': ui.knvbHide = true; render(); break;
+    case 'knvbFix': { const kn = knvbFor(team().name);
+      if (!await ask(`Deze wedstrijd op ${kn.fp} tegen ${kn.fp} en ${kn.min} minuten zetten?`, 'Aanpassen')) break;
+      m.settings.fieldPlayers = kn.fp; m.settings.formation = FORMATIONS[kn.fp][0].n; m.settings.matchMinutes = kn.min;
+      fitSegments(m); commit(); toast('Aangepast aan het KNVB-advies'); break; }
     case 'knvb': { const k = applyKnvb(se, team().name); commit(); toast(`KNVB ${k.label}: ${k.t}`); break; }
     case 'surveyStart': await startSurvey(se, team()); break;
     case 'surveyShare': shareSurvey(se, team()); break;
@@ -2764,7 +2918,7 @@ document.addEventListener('click', async e => {
     case 'onbShow': try { localStorage.removeItem(ONB_KEY(team().id)); } catch(e){} onbPopup(); break;
     case 'onbHide': try { localStorage.setItem(ONB_KEY(team().id), '1'); } catch(e){} render(); break;
     case 'tour': await tourDialog(); break;
-    case 'firstMatch': await firstMatchWizard(); break;
+    case 'firstMatch': newMatch(); break;
     case 'reqAccept': await answerJoin(id, true); break;
     case 'reqDeny': await answerJoin(id, false); break;
     case 'pendCancel': await cancelPending(id); break;
@@ -3193,7 +3347,8 @@ document.addEventListener('click', async e => {
 
 /* ===================== Hulp (ballon): tips, FAQ en vragen ===================== */
 const HELP_TIPS = [
-  ['Naar een blok springen', 'Tik tijdens de wedstrijd bovenin op een blok om er meteen naartoe te gaan. De app laat zien welke wissels je overslaat.'],
+  ['LineMeUp op je beginscherm', 'iPhone: open linemeup.nl in Safari, tik onderin op het deelicoon en kies "Zet op beginscherm". Android: open de site in Chrome, tik op de drie puntjes en kies "App installeren" of "Toevoegen aan startscherm". Daarna opent LineMeUp als een gewone app.'],
+  ['Naar een blok kijken', 'Tik tijdens de wedstrijd bovenin op een blok om het te bekijken. Er verandert niets; wisselen doe je met de knop "Wissel naar …" onder de opstelling.'],
   ['Een invaller toevoegen', 'Een invaller komt eerst bij de reserves. Zet hem daarna zelf in de opstelling of in een wissel.'],
   ['Spelers zelf laten invullen', 'Kies bij Instellingen → Spelers "Vraag het de spelers / ouders" en deel de link in de team-app.'],
   ['Doelpunten bijhouden', 'Tik tijdens de wedstrijd op "Wij scoren" of "Tegen". Bij je eigen doelpunt kies je de maker.'],
@@ -3940,7 +4095,8 @@ function timeSel(key, val, cls){
 const mapsUrl = a => 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(a);
 // knoppen met namen (3 standen)
 function attButtons(list, stateOf, act){
-  return `<div class="attgrid">${list.map(p => { const st = stateOf(p.id); return `<button class="attb ${st || 'geen'}" data-act="${act}" data-id="${esc(p.id)}">${st === 'ja' ? '✅' : st === 'nee' ? '❌' : '⏱️'} <span>${esc(p.n)}</span></button>`; }).join('')}</div>`;
+  const long = act === 'attTap' ? 'coachAtt' : act === 'tourAttTap' ? 'tourAtt' : '';
+  return `<div class="attgrid">${list.map(p => { const st = stateOf(p.id); return `<button class="attb ${st || 'geen'}" data-act="${act}" data-id="${esc(p.id)}" ${long ? `data-long="${long}"` : ''} aria-label="${esc(p.n)}: ${st === 'ja' ? 'erbij' : st === 'nee' ? 'kan niet' : 'nog niet gekozen'}">${st === 'ja' ? '✅' : st === 'nee' ? '❌' : '⏱️'} <span>${esc(p.n)}</span></button>`; }).join('')}</div>`;
 }
 const attLegend = `<div class="attleg"><span><i class="ja"></i>Erbij</span><span><i class="nee"></i>Kan niet</span><span><i class="geen"></i>Nog niet gekozen</span></div>`;
 
@@ -4044,6 +4200,15 @@ function coachSheet(name, cur){
     d.addEventListener('click', e => { e.stopPropagation(); const b = e.target.closest('[data-r]'); if (!b && e.target !== d) return; const r = b ? b.dataset.r : 'no'; d.remove(); res(r === 'no' ? null : r); setTimeout(() => { try { flushPending(); } catch(_){} }, 0); });
   });
 }
+// één tik: erbij → kan niet → nog niet gekozen
+function setAtt(m, pid, v, se){
+  m.att = m.att || {}; m.present = m.present || [];
+  if (v === 'geen'){ delete m.att[pid]; if ((m.phase === 'prep' || (isTourObj(m) && m.phase === 'live')) && !m.present.includes(pid)) m.present.push(pid); }
+  else m.att[pid] = v;
+  applyAnswers(m, m.att, se || season());
+  commit();
+  if (m.poll && cloud.api && myUid()) cloud.api.pollAnswer(m.poll.id, pid, v === 'geen' ? '' : v).catch(e => console.error(e));
+}
 async function coachAnswer(m, pid, se){
   const p = player(pid); if (!p) return;
   const v = await coachSheet(pshort(p), attOf(m, pid)); if (!v) return;
@@ -4059,10 +4224,11 @@ function attCard(m){
   return `
   <div class="card">
     <div class="atthead"><h2>👥 Wie zijn erbij?</h2><span class="attcount"><b>${ja}</b> aanwezig</span></div>
-    <button class="btn pri full" style="margin-bottom:12px" data-act="startPoll">📣 ${m.poll ? 'Link opnieuw delen in de team-app' : 'Vraag het in de team-app (link delen)'}</button>
+    <button class="btn pri full" style="margin-bottom:8px" data-act="startPoll">📣 ${m.poll ? 'Link opnieuw delen in de team-app' : 'Vraag het in de team-app (link delen)'}</button>
+    <button class="btn full" style="margin-bottom:12px" data-act="attAll">✅ Iedereen erbij</button>
     ${attLegend}
-    ${attButtons(list, pid => attOf(m, pid), 'coachAtt')}
-    <div class="muted" style="margin:8px 0 10px;font-size:12px">Tik op een naam om het zelf aan te passen. "Kan niet" haalt de speler uit de opstelling.</div>
+    ${attButtons(list, pid => attOf(m, pid), 'attTap')}
+    <div class="muted" style="margin:8px 0 10px;font-size:12px">Eén tik wisselt: erbij → kan niet → nog niet gekozen. Lang indrukken opent het keuzevenster.</div>
   </div>`;
 }
 
@@ -4120,7 +4286,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-12.3';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-12.5';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
@@ -5261,14 +5427,22 @@ function dropTarget(x, y){
   }
   return null;
 }
+// lang indrukken op een aanwezigheidsknop opent het keuzevenster
+let longT = null;
 document.addEventListener('pointerdown', e => {
+  const lb = e.target.closest('[data-long]');
+  if (lb){ clearTimeout(longT); longT = setTimeout(() => { lb.dataset.skip = '1'; const m = match(), t = tour();
+    if (lb.dataset.long === 'coachAtt' && m) coachAnswer(m, lb.dataset.id, season());
+    else if (lb.dataset.long === 'tourAtt' && t) coachAnswer(t, lb.dataset.id, season()); }, 550); }
   const el = e.target.closest('[data-drag]');
   if (!el || e.button > 0) return;
   if (e.pointerType === 'mouse') e.preventDefault();
   drag.el = el; drag.sx = e.clientX; drag.sy = e.clientY; drag.active = false;
   drag.src = el.dataset.drag === 'f' ? {type:'f', i:+el.dataset.i} : {type:'b', id:el.dataset.id};
 });
-document.addEventListener('pointermove', e => {
+document.addEventListener('pointerup', () => clearTimeout(longT));
+document.addEventListener('pointercancel', () => clearTimeout(longT));
+document.addEventListener('pointermove', e => { if (longT) clearTimeout(longT);
   if (!drag.el) return;
   if (!drag.active){
     if (Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) < 8) return;
