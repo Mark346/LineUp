@@ -85,7 +85,7 @@
   .btn.full{width:100%}
   .btn.big{padding:17px;font-size:18px;margin-bottom:10px;border-radius:18px}
   .btn[disabled]{opacity:.45}
-  .x{background:none;border:0;color:var(--muted);font-size:20px;cursor:pointer;padding:2px 6px}
+  .x{background:none;border:0;color:var(--muted);font-size:20px;cursor:pointer;padding:2px 6px;min-width:44px;min-height:44px}
   .num{width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,var(--acc),var(--acc2));color:var(--on-acc);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex:none}
   .tags{display:flex;gap:4px}
   .tag{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:9px;padding:5px 8px;font-size:12px;font-weight:800;cursor:pointer}
@@ -1330,6 +1330,95 @@ function autoSheet(m){
     draw(); document.body.appendChild(d);
   });
 }
+
+// tellers per club: teams en trainers, inclusief wie nog op een trainer wacht
+function clubCounts(k){
+  const d = adm.data, ts = d.teams.filter(t => (t.club || '-') === (k || '-') && !t.inactive);
+  const pend = (d.pending || []).filter(p => p.club === k && p.kind !== 'clublink');
+  const waitTeams = ts.filter(t => !Object.keys(t.members || {}).length).length + pend.filter(p => p.kind !== 'team').length;
+  const trainers = new Set(ts.flatMap(t => Object.keys(t.members || {}))).size;
+  const n = ts.length + pend.filter(p => p.kind !== 'team').length;
+  return {teams: n, waitTeams, trainers, waitTrainers: pend.length,
+    teamsTxt: `${n} team${n === 1 ? '' : 's'}${waitTeams ? ` (${waitTeams} wachten)` : ''}`,
+    trainersTxt: `${trainers} trainer${trainers === 1 ? '' : 's'}${pend.length ? ` (${pend.length} wachten)` : ''}`,
+    players: ts.reduce((a, t) => a + t.players.length, 0)};
+}
+function newClubSheet(bestaand){
+  return new Promise(res => {
+    const d = document.createElement('div'); d.className = 'modal';
+    d.innerHTML = iconize(`<div class="box"><p>🏟️ Nieuwe club</p>
+      <label class="f">Clubnaam<input id="ncName" placeholder="bv. Maliskamp" maxlength="40" autocomplete="off"></label>
+      <div class="muted" id="ncErr" style="min-height:18px;color:var(--red)"></div>
+      <div class="grid2" style="margin-top:8px"><button class="btn" data-r="no">Annuleren</button><button class="btn pri" data-r="ok" id="ncOk" disabled style="opacity:.5">Club aanmaken</button></div></div>`);
+    const inp = d.querySelector('#ncName'), err = d.querySelector('#ncErr'), ok = d.querySelector('#ncOk');
+    const check = () => {
+      const v = inp.value.trim();
+      let e = !v ? 'Vul een clubnaam in' : (bestaand || []).some(x => (x || '').toLowerCase() === v.toLowerCase()) ? 'Er bestaat al een club met deze naam' : '';
+      err.textContent = v ? e : ''; ok.disabled = !!e || !v; ok.style.opacity = ok.disabled ? '.5' : '1';
+      return !ok.disabled;
+    };
+    inp.addEventListener('input', check);
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter' && check()){ const v = inp.value.trim(); d.remove(); res(v); } });
+    d.addEventListener('click', e => { e.stopPropagation(); const b = e.target.closest('[data-r]');
+      if (!b){ if (e.target === d){ d.remove(); res(null); } return; }
+      if (b.dataset.r === 'ok'){ if (!check()) return; const v = inp.value.trim(); d.remove(); res(v); } else { d.remove(); res(null); } });
+    document.body.appendChild(d); setTimeout(() => inp.focus(), 60);
+  });
+}
+function newTeamSheetAdm(clubName){
+  return new Promise(res => {
+    const d = document.createElement('div'); d.className = 'modal';
+    d.innerHTML = iconize(`<div class="box"><p>＋ Nieuw team</p>
+      <label class="f">Teamnaam<input id="ntName" placeholder="bv. JO13-1" maxlength="30" autocomplete="off"></label>
+      <div class="muted" style="margin:-2px 0 12px;font-size:13px">Seizoen ${esc(seasonName())} en KNVB-instellingen worden automatisch ingesteld op basis van de teamnaam. Het team komt bij ${esc(clubName || 'deze club')} en wacht nog op een trainer.</div>
+      <div class="grid2"><button class="btn" data-r="no">Annuleren</button><button class="btn pri" data-r="ok">Team aanmaken</button></div></div>`);
+    const inp = d.querySelector('#ntName');
+    const done = ok => { const v = inp.value.trim(); if (ok && !v){ inp.focus(); return; } d.remove(); res(ok ? v : null); };
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') done(true); });
+    d.addEventListener('click', e => { e.stopPropagation(); const b = e.target.closest('[data-r]');
+      if (!b){ if (e.target === d) done(false); return; } done(b.dataset.r === 'ok'); });
+    document.body.appendChild(d); setTimeout(() => inp.focus(), 60);
+  });
+}
+// beheerder maakt een team aan zonder trainer
+async function admCreateTeam(club, clubName, name){
+  const api = cloud.api, rid = randId(20), me = myUid();
+  const t = {id: uid(), name: name.trim(), club: (clubName || '').trim(), color: '#2e7d4f', seasons: [defaultSeason(seasonName(), 8, FORMATIONS[8][0].n, 3, 60)]};
+  applyKnvb(t.seasons[0], t.name);
+  await api.teamCreate(rid, {members: {[me]: 'owner'}, data: JSON.stringify(t), version: DATA_VERSION, updated: Date.now(), by: DEVICE, club: club || '', label: teamLabel(t)});
+  await api.teamPushTx(rid, cur => ({...cur, members: {}, updated: Date.now()}));
+  if (club) await api.idxSet(club, rid, {...idxInfo(t), updated: Date.now()}).catch(() => {});
+  return rid;
+}
+// verwijderen pas na 6 seconden, zodat ongedaan maken kan
+function softDelete(key, msg, run){
+  adm.hide = [...(adm.hide || []), key];
+  render();
+  let done = false;
+  const t = setTimeout(async () => { done = true; try { await run(); } catch(e){ console.error(e); toast('Verwijderen lukt niet'); }
+    adm.hide = (adm.hide || []).filter(x => x !== key); adm.data = null; loadAdmin(true); }, 6000);
+  undoToast(msg, () => { if (done) return; clearTimeout(t); adm.hide = (adm.hide || []).filter(x => x !== key); render(); }, 6000);
+}
+function clubDeleteSheet(name, nTeams, nInv){
+  return new Promise(res => {
+    const d = document.createElement('div'); d.className = 'modal';
+    const heavy = nTeams || nInv;
+    d.innerHTML = iconize(`<div class="box"><p>🗑️ Club ${esc(name)} verwijderen?</p>
+      <div class="muted">Dit kan niet ongedaan worden gemaakt.</div>
+      ${heavy ? `<div class="card pend" style="margin:10px 0"><b>Deze club heeft ${nTeams} team${nTeams === 1 ? '' : 's'} en ${nInv} uitnodiging${nInv === 1 ? '' : 'en'}. Die worden ook verwijderd.</b>
+        <label class="chk" style="display:flex;gap:8px;align-items:flex-start;margin-top:8px"><input type="checkbox" id="cdOk" style="width:22px;height:22px;flex:none"><span>Ik begrijp dat alle teams, spelers en wedstrijden van deze club worden verwijderd.</span></label></div>` : ''}
+      <label class="f" style="margin-top:10px">Typ de clubnaam over<input id="cdName" placeholder="${esc(name)}" autocomplete="off" autocapitalize="none"></label>
+      <div class="grid2" style="margin-top:8px"><button class="btn" data-r="no">Annuleren</button><button class="btn red" data-r="ok" id="cdGo" disabled style="opacity:.5">Definitief verwijderen</button></div></div>`);
+    const inp = d.querySelector('#cdName'), go = d.querySelector('#cdGo'), chk = d.querySelector('#cdOk');
+    const check = () => { const ok = inp.value.trim().toLowerCase() === String(name).trim().toLowerCase() && (!chk || chk.checked);
+      go.disabled = !ok; go.style.opacity = ok ? '1' : '.5'; return ok; };
+    inp.addEventListener('input', check); chk && chk.addEventListener('change', check);
+    d.addEventListener('click', e => { e.stopPropagation(); const b = e.target.closest('[data-r]');
+      if (!b){ if (e.target === d){ d.remove(); res(false); } return; }
+      if (b.dataset.r === 'ok'){ if (!check()) return; d.remove(); res(true); } else { d.remove(); res(false); } });
+    document.body.appendChild(d); setTimeout(() => inp.focus(), 60);
+  });
+}
 function admImportCard(){
   const mine = new Set(Object.values(cloudMap()).map(c => c.id));
   const ts = ((adm.data && adm.data.teams) || []).filter(t => !t.inactive).map(t => ({id: t.id, club: t.clubName || t.club || '', label: `${t.label}${(t.clubName || t.club) ? ' · ' + (t.clubName || t.club) : ''}${mine.has(t.id) ? ' (in jouw app)' : ''}`}))
@@ -1925,12 +2014,12 @@ function delGoal(m, gid){
   else m.goalsAgainst = Math.max(0, (+m.goalsAgainst || 0) - 1);
   commit();
 }
-function undoToast(msg, undo){
+function undoToast(msg, undo, ms){
   document.querySelectorAll('.utoast,.toast').forEach(x => x.remove());
   const d = document.createElement('div'); d.className = 'utoast';
   d.innerHTML = `<span>${esc(msg)}</span><button>Ongedaan maken</button>`;
   d.querySelector('button').onclick = () => { d.remove(); undo(); toast('Ongedaan gemaakt'); };
-  document.body.appendChild(d); setTimeout(() => d.remove(), 5000);
+  document.body.appendChild(d); setTimeout(() => d.remove(), ms || 5000);
 }
 function goalUs(m){
   const se = season(), cur = m.cur || 0, lu = m.segments[cur] || [], pos = matchPositions(m);
@@ -2245,6 +2334,7 @@ function sheet(html){
   });
 }
 const ask = (msg, ok) => sheet(`<p>${esc(msg)}</p><div class="grid2"><button class="btn" data-r="no">Annuleren</button><button class="btn pri" data-r="ok">${esc(ok || 'Ja')}</button></div>`);
+const askRed = (msg, ok) => sheet(`<p>${esc(msg)}</p><div class="grid2"><button class="btn" data-r="no">Annuleren</button><button class="btn red" data-r="ok">${esc(ok || 'Verwijderen')}</button></div>`);
 const tell = msg => sheet(`<p>${esc(msg)}</p><button class="btn pri full" data-r="ok">OK</button>`);
 const askText = (msg, val) => sheet(`<p>${esc(msg)}</p><input value="${esc(val)}" style="font-size:18px"><div class="grid2" style="margin-top:12px"><button class="btn" data-r="no">Annuleren</button><button class="btn pri" data-r="ok">OK</button></div>`);
 const askNum = (msg, val) => sheet(`<p>${esc(msg)}</p><input type="number" inputmode="numeric" value="${esc(val)}" style="font-size:22px;text-align:center"><div class="grid2" style="margin-top:12px"><button class="btn" data-r="no">Annuleren</button><button class="btn pri" data-r="ok">OK</button></div>`);
@@ -3333,7 +3423,7 @@ function adminTrainers(){
   return Object.values(map).sort((a, b) => (a.name || a.email || '').localeCompare(b.name || b.email || ''));
 }
 const tile = (v, l) => `<span class="atile"><b>${v}</b><small>${esc(l)}</small></span>`;
-const arow = (av, title, sub, right = '', act = '', id = '') => `<${act ? `button class="arow" data-act="${act}" data-id="${esc(id)}"` : 'div class="arow"'}><span class="mav">${esc(String(av || '?').charAt(0).toUpperCase())}</span><span class="grow"><b>${title}</b><small>${sub}</small></span>${right}</${act ? 'button' : 'div'}>`;
+const arow = (av, title, sub, right = '', act = '', id = '', aria = '') => `<${act ? `button class="arow" data-act="${act}" data-id="${esc(id)}" aria-label="${esc(aria || String(title).replace(/<[^>]*>/g, ''))}"` : 'div class="arow"'}><span class="mav">${esc(String(av || '?').charAt(0).toUpperCase())}</span><span class="grow"><b>${title}</b><small>${sub}</small></span>${right}</${act ? 'button' : 'div'}>`;
 const achip = (x, strong) => `<span class="achip ${strong ? 'on' : ''}">${esc(x)}</span>`;
 function viewBeheer(){
   if (!myUid()) return `<div class="card empty"><b>🔒</b>Log in om de beheeromgeving te gebruiken.</div>`;
@@ -3366,25 +3456,30 @@ function admEventsCard(){
   return `<div class="card"><div class="ahead"><h2>🔔 Meldingen</h2>${adm.evUnseen ? `<button class="btn sm" data-act="admEvRead">Alles gelezen</button>` : ''}</div>
     ${list.map(e => `<div class="hq" ${e.at > seen ? 'style="background:var(--ysoft);border-radius:10px;padding:8px 10px;margin-bottom:4px"' : ''}><div>${txt(e)}</div><small class="muted">${ago(e.at)}${adm.owner ? ' · ' + esc(clubName(e._club)) : ''}${e.email ? ' · ' + esc(e.email) : ''}</small></div>`).join('')}</div>`;
 }
-function admLinkCard(k){
+function admLinkCard(k, fold){
   const l = ((adm.data && adm.data.links) || []).filter(p => p.club === k).sort((a, b) => (b.created || 0) - (a.created || 0))[0];
   const live = l && l.expires > Date.now();
   const n = l ? new Set(adm.evs.filter(e => e.via === l.id && (e.type === 'new' || e.type === 'request')).map(e => e.uid)).size : 0;
-  return `<div class="card"><h2>🔗 Link voor alle trainers</h2>
-    <div class="muted" style="margin-bottom:10px">Zet één link in de club-WhatsApp. Elke trainer kiest zijn team of maakt een nieuw team aan. Jij krijgt een melding bij elke trainer en elk team.</div>
+  const inner = `<div class="muted" style="margin-bottom:10px">Zet één link in de club-WhatsApp. Elke trainer kiest zijn team of maakt een nieuw team aan. Jij krijgt een melding bij elke trainer en elk team.</div>
     ${live ? `<div class="hans" style="margin:0 0 10px"><small>Link actief tot ${fmtD(l.expires)}</small>${n} trainer${n === 1 ? '' : 's'} via deze link</div>
       <button class="btn pri full" data-act="admLinkShare" data-id="${esc(l.id + '|' + k)}">📤 Link delen</button>
       <button class="btn full" style="margin-top:8px" data-act="admLinkOff" data-id="${esc(l.id + '|' + k)}">Link uitzetten</button>`
-    : `${l ? '<div class="muted" style="margin-bottom:8px">De vorige link is verlopen of uitgezet.</div>' : ''}<button class="btn pri full" data-act="admLinkNew" data-id="${esc(k)}">🔗 Link maken en delen (30 dagen)</button>`}</div>`;
+    : `${l ? '<div class="muted" style="margin-bottom:8px">De vorige link is verlopen of uitgezet.</div>' : ''}<button class="btn pri full" data-act="admLinkNew" data-id="${esc(k)}">🔗 Link maken en delen (30 dagen)</button>`}`;
+  return fold
+    ? `<div class="card"><details data-key="clLink" ${ui.open.clLink ? 'open' : ''}><summary>🔗 Link voor alle trainers · ${live ? `actief tot ${fmtD(l.expires)}` : 'geen actieve link'}</summary><div style="margin-top:8px">${inner}</div></details></div>`
+    : `<div class="card"><h2>🔗 Link voor alle trainers</h2>${inner}</div>`;
 }
 function admOverview(){
   const d = adm.data, tr = adminTrainers();
   const players = d.teams.reduce((n, t) => n + t.players.length, 0), week = d.teams.reduce((n, t) => n + t.thisWeek, 0);
   const active = adm.owner ? tr.filter(x => x.lastActive && Date.now() - x.lastActive < 7 * 864e5).length : d.teams.filter(t => Date.now() - t.updated < 7 * 864e5).length;
-  const clubsCount = new Set(d.teams.map(t => t.club).filter(Boolean)).size;
+  const clubsCount = new Set([...d.clubs.map(c => c.id), ...d.teams.map(t => t.club).filter(Boolean)]).size;
+  const openInv = (d.pending || []).filter(p => p.kind !== 'clublink');
+  const waitTeams = d.teams.filter(t => !t.inactive && !Object.keys(t.members || {}).length).length + openInv.filter(p => p.kind !== 'team').length;
+  const waitTr = openInv.length;
   const tiles = adm.owner
-    ? [tile(clubsCount, 'clubs'), tile(d.teams.filter(t => !t.inactive).length, 'actieve teams'), tile(tr.length, 'trainers'), tile(players, 'spelers'), tile(week, 'wedstrijden deze week'), tile(active, 'actief 7 dagen')]
-    : [tile(d.teams.filter(t => !t.inactive).length, 'actieve teams'), tile(tr.length, 'trainers'), tile(players, 'spelers'), tile(week, 'wedstrijden deze week'), tile(d.teams.reduce((n, t) => n + t.won, 0), 'gewonnen'), tile(d.pending.length, 'uitnodigingen open')];
+    ? [tile(clubsCount, 'clubs'), tile(d.teams.filter(t => !t.inactive).length + waitTeams, `teams${waitTeams ? ` (${waitTeams} wachten)` : ''}`), tile(tr.length, `trainers${waitTr ? ` (${waitTr} wachten)` : ''}`), tile(players, 'spelers'), tile(week, 'wedstrijden deze week'), tile(active, 'actief 7 dagen')]
+    : [tile(d.teams.filter(t => !t.inactive).length + waitTeams, `teams${waitTeams ? ` (${waitTeams} wachten)` : ''}`), tile(tr.length, `trainers${waitTr ? ` (${waitTr} wachten)` : ''}`), tile(players, 'spelers'), tile(week, 'wedstrijden deze week'), tile(d.teams.reduce((n, t) => n + t.won, 0), 'gewonnen'), tile(d.pending.length, 'uitnodigingen open')];
   let req = '';
   if (adm.owner && d.requests.length) req = `<div class="card"><div class="ahead"><h2>Aanvragen clubbeheer</h2>${achip(d.requests.length + ' nieuw', 1)}</div>
     ${d.requests.map(r => `${arow(r.name, esc(r.name || r.email), `wil beheerder worden van ${esc(r.clubName)}${r.func ? ' · ' + esc(r.func) : ''} · ${esc(r.email || '')}`)}<div class="grid2" style="margin:4px 0 10px"><button class="btn pri" data-act="reqOk" data-id="${esc(r.id)}">Goedkeuren</button><button class="btn" data-act="reqNo" data-id="${esc(r.id)}">Afwijzen</button></div>`).join('')}</div>`;
@@ -3410,17 +3505,21 @@ function admClubsList(compact){
   const rows = keys.map(k => {
     const ts = d.teams.filter(t => t.club === k), c = d.clubs.find(x => x.id === k), name = (c && c.name) || (ts[0] && ts[0].clubName) || (k || 'Zonder club');
     const admins = c && c.uids ? Object.values(c.uids).map(x => x.name || x.email).join(', ') : '';
-    const trainers = new Set(ts.flatMap(t => Object.keys(t.members))).size;
-    return arow(name, esc(name), `${ts.length} team${ts.length === 1 ? '' : 's'} · ${trainers} trainer${trainers === 1 ? '' : 's'} · beheer: ${esc(admins || 'nog niemand')}`, achip('›'), 'admClub', k || '-');
-  });
-  return `<div class="card"><div class="ahead"><h2>Clubs</h2><button class="btn sm" data-act="admNewClub">＋ Club</button></div>${rows.join('') || '<div class="muted">Nog geen clubs.</div>'}</div>`;
+    const cnt = clubCounts(k);
+    return {name, html: arow(name, esc(name), `${cnt.teamsTxt} · ${cnt.trainersTxt} · beheer: ${esc(admins || 'nog niemand')}`, achip('›'), 'admClub', k || '-', `Open club ${name}`)};
+  }).sort((a, b) => a.name.localeCompare(b.name, 'nl', {sensitivity: 'base'}));
+  return `<div class="card"><div class="ahead"><h2>Clubs</h2><button class="btn sm" data-act="admNewClub" aria-label="Nieuwe club aanmaken">＋ Club</button></div>${rows.map(r => r.html).join('') || '<div class="muted">Nog geen clubs.</div>'}</div>`;
 }
 function admTeamsCard(teams, club){
-  const pend = adm.data.pending.filter(p => !club || p.club === club);
-  return `<div class="card"><div class="ahead"><h2>Teams</h2><button class="btn sm" data-act="admInvite" data-id="${esc(club || adm.club || '')}">＋ Uitnodigen</button></div>
-    ${teams.filter(t => !t.inactive).map(t => { const names = Object.keys(t.members).map(u => (t.people[u] || {}).name || 'trainer').join(', '); return arow(t.label, esc(t.label), `${esc(names)} · ${t.players.length} spelers`, achip('›'), 'admTeam', t.id); }).join('')}
+  const pend = adm.data.pending.filter(p => (!club || p.club === club) && p.kind !== 'clublink' && !(adm.hide || []).includes(p.id));
+  const ck = club || adm.club || '';
+  return `<div class="card"><div class="ahead"><h2>Teams</h2>${ck ? `<button class="btn sm" data-act="admNewTeam" data-id="${esc(ck)}" aria-label="Nieuw team aanmaken">＋ Team</button>` : ''}</div>
+    ${teams.filter(t => !t.inactive && !(adm.hide || []).includes(t.id)).map(t => { const names = Object.keys(t.members).map(u => (t.people[u] || {}).name || 'trainer').join(', ');
+      return names
+        ? arow(t.label, esc(t.label), `${esc(names)} · ${t.players.length} spelers`, achip('›'), 'admTeam', t.id, `Open team ${t.label}`)
+        : `<div class="arowx">${arow(t.label, esc(t.label), 'nog geen trainer', achip('›'), 'admTeam', t.id, `Open team ${t.label}`)}<button class="btn sm" data-act="admInviteTeam" data-id="${esc(t.id)}">Trainer koppelen</button></div>`; }).join('')}
     ${teams.some(t => t.inactive) ? `<details class="ainact"><summary>💤 Niet actief (${teams.filter(t => t.inactive).length})</summary>${teams.filter(t => t.inactive).map(t => arow(t.label, esc(t.label), `niet actief · ${t.players.length} spelers`, achip('›'), 'admTeam', t.id)).join('')}</details>` : ''}
-    ${pend.map(p => arow(p.teamName, esc(p.teamName), `${esc(p.name)} (uitgenodigd) · nog niet begonnen`, `<span class="achip">Wacht</span><button class="x" data-act="admPendDel" data-id="${esc(p.club + '|' + p.id)}" aria-label="Uitnodiging intrekken">×</button>`)).join('')}
+    ${pend.map(p => arow(p.teamName, esc(p.teamName || 'team'), `${esc(p.name || 'trainer')} (uitgenodigd) · nog niet begonnen`, `<span class="achip">Wacht</span><button class="x" data-act="admPendDel" data-id="${esc(p.club + '|' + p.id)}" title="Uitnodiging intrekken" aria-label="Uitnodiging voor ${esc(p.teamName || 'dit team')} intrekken">×</button>`)).join('')}
     ${!teams.length && !pend.length ? '<div class="muted">Nog geen teams.</div>' : ''}
     <button class="btn pri full" style="margin-top:12px" data-act="admInvite" data-id="${esc(club || adm.club || '')}">📤 Trainer uitnodigen (link via WhatsApp)</button></div>`;
 }
@@ -3473,15 +3572,18 @@ function admTrainerView(u){
 function admClubView(k){
   const d = adm.data, c = d.clubs.find(x => x.id === k), ts = d.teams.filter(t => (t.club || '-') === k);
   const name = (c && c.name) || (ts[0] && ts[0].clubName) || (k === '-' ? 'Zonder club' : k);
-  const players = ts.reduce((n, t) => n + t.players.length, 0), trainers = new Set(ts.flatMap(t => Object.keys(t.members))).size;
-  const ck = clubKey(name);
-  return `<div class="card"><div style="display:flex;align-items:center;gap:12px">${ck ? `<span class="logo clublogo" style="box-shadow:none">${clubLogo(name)}</span>` : ''}<h2 style="margin:0;font-size:24px">${esc(name)}</h2></div>
-      <div class="atiles" style="margin-top:10px">${tile(ts.length, 'teams')}${tile(trainers, 'trainers')}${tile(players, 'spelers')}</div></div>
-    ${k !== '-' ? `<div class="card"><h2>Clubbeheerders</h2>${c && c.uids ? Object.entries(c.uids).map(([u, x]) => arow(x.name, esc(x.name || x.email), esc(x.email || ''), `<button class="btn sm" data-act="admReplaceClubAdmin" data-id="${esc(k + '|' + u)}">🔁 Overnemen</button> <button class="x" data-act="admRemoveClubAdmin" data-id="${esc(k + '|' + u)}" aria-label="Verwijderen">×</button>`)).join('') : '<div class="muted">Nog geen beheerders.</div>'}
-      <div class="row" style="margin-top:10px"><input id="admAdminMail" type="email" placeholder="E-mailadres nieuwe beheerder" style="flex:3"><button class="btn pri sm" style="flex:none" data-act="admAddClubAdmin" data-id="${esc(k)}">Toevoegen</button></div>
+  const cnt = clubCounts(k), ck = clubKey(name);
+  const admins = c && c.uids ? Object.entries(c.uids) : [];
+  const adminCard = `<div class="card"><details data-key="clAdm" ${ui.open.clAdm ? 'open' : ''}><summary>🛡️ Clubbeheerders · ${admins.length ? esc(admins.map(([, x]) => x.name || x.email).join(', ')) : 'nog niemand'}</summary>
+      <div style="margin-top:8px">${admins.map(([u, x]) => arow(x.name, esc(x.name || x.email), esc(x.email || ''), `<button class="btn sm" data-act="admReplaceClubAdmin" data-id="${esc(k + '|' + u)}">🔁 Overnemen</button> <button class="x" data-act="admRemoveClubAdmin" data-id="${esc(k + '|' + u)}" title="Clubbeheerder weghalen" aria-label="Clubbeheerder ${esc(x.name || x.email || '')} weghalen">×</button>`)).join('') || '<div class="muted">Nog geen beheerders.</div>'}
+      <div class="row" style="margin-top:10px"><input id="admAdminMail" type="email" placeholder="E-mailadres nieuwe beheerder" style="flex:3" aria-label="E-mailadres nieuwe clubbeheerder"><button class="btn pri sm" style="flex:none" data-act="admAddClubAdmin" data-id="${esc(k)}">Toevoegen</button></div>
       <div class="muted" style="margin-top:6px;font-size:12px">De persoon moet al een keer in LineMeUp hebben ingelogd.</div>
-      <button class="btn full" style="margin-top:12px" data-act="admInviteAdmin" data-id="${esc(k)}">📤 Clubbeheerder uitnodigen (link via WhatsApp)</button></div>${admLinkCard(k)}` : ''}
-    ${admTeamsCard(ts, k === '-' ? '' : k)}`;
+      <button class="btn full" style="margin-top:12px" data-act="admInviteAdmin" data-id="${esc(k)}">📤 Clubbeheerder uitnodigen (link via WhatsApp)</button></details></div>`;
+  return `<div class="card"><div style="display:flex;align-items:center;gap:12px">${ck ? `<span class="logo clublogo" style="box-shadow:none">${clubLogo(name)}</span>` : ''}<h2 style="margin:0;font-size:24px">${esc(name)}</h2></div>
+      <div class="atiles" style="margin-top:10px">${tile(cnt.teams, `teams${cnt.waitTeams ? ` (${cnt.waitTeams} wachten)` : ''}`)}${tile(cnt.trainers, `trainers${cnt.waitTrainers ? ` (${cnt.waitTrainers} wachten)` : ''}`)}${tile(cnt.players, 'spelers')}</div></div>
+    ${admTeamsCard(ts, k === '-' ? '' : k)}
+    ${k !== '-' ? adminCard + admLinkCard(k, true) : ''}
+    ${adm.owner && k !== '-' ? `<button class="btn red full" style="margin:12px 0" data-act="admDelClub" data-id="${esc(k)}">🗑️ Club verwijderen</button>` : ''}`;
 }
 // ---- meekijken (alleen lezen)
 const VO_OK = ['team', 'goSettings', 'goSettings2', 'goPlayers', 'stab', 'openMatch', 'back', 'seg', 'fontSize', 'login', 'logout', 'sHome', 'sOpen', 'print', 'share', 'export', 'pasteInvite', 'editMyName', 'verifyMail', 'voStop'];
@@ -3522,7 +3624,7 @@ async function watchUser(who, startRid){
 // ---- acties
 async function admAction(act, id){
   const api = cloud.api, d = adm.data;
-  const reload = async msg => { if (msg) toast(msg); adm.data = null; await loadAdmin(true); };
+  const reload = async msg => { const y = window.scrollY; if (msg) toast(msg); adm.data = null; await loadAdmin(true); requestAnimationFrame(() => window.scrollTo(0, y)); };
   try {
     if (act === 'admNewsNew'){ adm.ne = {}; return render(); }
     if (act === 'admNewsCancel'){ adm.ne = null; return render(); }
@@ -3548,7 +3650,9 @@ async function admAction(act, id){
         await api.pendingSet(k, iid, {kind: 'clublink', created: Date.now(), expires, by: myUid()});
         adm.data = null; loadAdmin(true);
       }
-      shareInviteText(`⚽ Hoi trainers van ${cname}! We gebruiken LineMeUp voor de opstellingen en wissels. Open deze link, log in en kies je team of maak je team aan: ${inviteUrl(iid)}`);
+      { const live = ((adm.data && adm.data.links) || []).find(x => x.id === iid);
+        linkSheet(`⚽ Hoi trainers van ${cname}! We gebruiken LineMeUp voor de opstellingen en wissels. Open deze link, log in en kies je team of maak je team aan: ${inviteUrl(iid)}`, inviteUrl(iid),
+          `Geldig tot ${fmtD((live && live.expires) || Date.now() + 30 * 864e5)}`); }
       return;
     }
     if (act === 'admInviteAdmin'){
@@ -3556,7 +3660,7 @@ async function admAction(act, id){
       const nm = await askText(`Naam van de nieuwe clubbeheerder van ${cname}`, ''); if (!nm || !nm.trim()) return;
       const iid = randId(24);
       await api.inviteCreate(iid, {kind: 'clubadmin', club: id, clubName: cname, name: nm.trim(), byName: myName(), by: myUid(), created: Date.now(), usedBy: null});
-      shareInviteText(`🛡️ Hoi ${nm.trim()}! Je bent uitgenodigd als clubbeheerder van ${cname} in LineMeUp. Open deze link, log in en je ziet bovenin de knop Beheerder: ${inviteUrl(iid)}`);
+      linkSheet(`🛡️ Hoi ${nm.trim()}! Je bent uitgenodigd als clubbeheerder van ${cname} in LineMeUp. Open deze link, log in en je ziet bovenin de knop Beheerder: ${inviteUrl(iid)}`, inviteUrl(iid));
       return;
     }
     if (act === 'admFaqMove'){
@@ -3645,13 +3749,39 @@ async function admAction(act, id){
       if (!us){ await tell('Er is nog niemand met dit e-mailadres ingelogd in LineMeUp. Vraag diegene eerst één keer in te loggen.'); return; }
       const cl = d.clubs.find(y => y.id === id);
       await api.clubAdminsSet(id, {name: (cl && cl.name) || (d.teams.find(t => t.club === id) || {}).clubName || id, uids: {[us.id]: {name: us.name || '', email: us.email || ''}}}); return reload(`${us.name || mail} is nu clubbeheerder`); }
-    if (act === 'admNewClub'){ const n = await askText('Naam van de club (bijvoorbeeld Maliskamp):', ''); if (!n || !n.trim()) return; const k = clubSlug(n);
-      if (!k) return; await api.clubAdminsSet(k, {name: n.trim(), uids: {}}); return reload(`${n.trim()} toegevoegd`); }
-    if (act === 'admPendDel'){ const [c, iid] = id.split('|'); if (!await ask('Uitnodiging intrekken?', 'Intrekken')) return;
-      await api.inviteDelete(iid).catch(() => {}); await api.pendingDel(c, iid); return reload('Uitnodiging ingetrokken'); }
+    if (act === 'admNewClub'){
+      const names = [...new Set([...d.clubs.map(c => c.name), ...d.teams.map(t => t.clubName)])].filter(Boolean);
+      const n = await newClubSheet(names); if (!n) return;
+      const k = clubSlug(n); if (!k) return;
+      await api.clubAdminsSet(k, {name: n, uids: {}});
+      adm.data = null; await loadAdmin(true); adm.view = ['club', k]; render(); window.scrollTo(0, 0); toast('Club aangemaakt'); return;
+    }
+    if (act === 'admNewTeam'){
+      const cl = d.clubs.find(x => x.id === id), cname = (cl && cl.name) || (d.teams.find(t => t.club === id) || {}).clubName || id;
+      const tn = await newTeamSheetAdm(cname); if (!tn) return;
+      await admCreateTeam(id, cname, tn);
+      return reload(`${tn} aangemaakt`);
+    }
+    if (act === 'admPendDel'){ const [c, iid] = id.split('|'), p = (d.pending || []).find(x => x.id === iid) || {};
+      if (!await askRed(`Uitnodiging voor ${p.teamName || 'dit team'} intrekken?`, 'Intrekken')) return;
+      softDelete(iid, `Uitnodiging ${p.teamName || ''} ingetrokken`, async () => { await api.inviteDelete(iid).catch(() => {}); await api.pendingDel(c, iid); });
+      return; }
     if (act === 'admDelTeam'){ const t = d.teams.find(x => x.id === id);
-      if (!await ask(`${t.label} definitief verwijderen? Alle spelers, wedstrijden en statistieken van dit team verdwijnen voor alle trainers.`, 'Verwijderen')) return;
-      await api.teamDelete(id); if (t.club) await api.idxDel(t.club, id).catch(() => {}); adm.view = null; return reload(`${t.label} verwijderd`); }
+      if (!await askRed(`Team ${t.label} verwijderen? Alle spelers, wedstrijden en statistieken van dit team verdwijnen voor alle trainers.`, 'Verwijderen')) return;
+      adm.view = t.club ? ['club', t.club] : null;
+      softDelete(id, `Team ${t.label} verwijderd`, async () => { await api.teamDelete(id); if (t.club) await api.idxDel(t.club, id).catch(() => {}); });
+      return; }
+    if (act === 'admDelClub'){
+      if (!adm.owner){ await tell('Alleen de eigenaar kan een club verwijderen.'); return; }
+      const cl = d.clubs.find(x => x.id === id), ts = d.teams.filter(t => t.club === id), pend = (d.pending || []).filter(p => p.club === id);
+      const name = (cl && cl.name) || (ts[0] && ts[0].clubName) || id;
+      if (!await clubDeleteSheet(name, ts.length, pend.length)) return;
+      for (const t of ts){ await api.teamDelete(t.id).catch(e => console.warn(e)); await api.idxDel(id, t.id).catch(() => {}); }
+      for (const p of pend){ await api.inviteDelete(p.id).catch(() => {}); await api.pendingDel(id, p.id).catch(() => {}); }
+      try { (await api.eventsClub(id)).forEach(e => api.eventDel(id, e.id).catch(() => {})); } catch(e){}
+      await api.clubAdminsDel(id);
+      adm.view = null; adm.data = null; await loadAdmin(true); render(); window.scrollTo(0, 0); toast(`Club ${name} verwijderd`); return;
+    }
     if (act === 'admWatchUser'){ return watchUser(id.split('|')[0]); }
     if (act === 'admInvite' || act === 'admInviteTeam') return admInviteSheet(act === 'admInviteTeam' ? {team: id} : {club: id});
   } catch(e){ console.error(e); tell('Dat lukt niet: ' + (e.message || e)); }
@@ -3692,19 +3822,38 @@ function admInviteSheet(pre){
           await api.inviteCreate(iid, {kind: 'newteam', club, clubName: clubName(club), teamName: tn, teamLabel: tn, name, byName: myName(), by: myUid(), created: Date.now(), usedBy: null});
           await api.pendingSet(club, iid, {name, teamName: tn, created: Date.now(), by: myUid()});
           box.remove(); res();
-          shareInviteText(`⚽ Hoi ${name}! Je bent uitgenodigd om trainer te worden van ${tn} bij ${clubName(club)} in LineMeUp. Open deze link, log in en je team staat klaar: ${inviteUrl(iid)}`);
+          linkSheet(`⚽ Hoi ${name}! Je bent uitgenodigd om trainer te worden van ${tn} bij ${clubName(club)} in LineMeUp. Open deze link, log in en je team staat klaar: ${inviteUrl(iid)}`, inviteUrl(iid));
         } else {
           const rid = box.querySelector('#ivTeamSel').value, t = d.teams.find(x => x.id === rid); if (!t) return;
           await api.inviteCreate(iid, {team: rid, name, teamLabel: t.label, club: t.clubName || '', byName: myName(), by: myUid(), created: Date.now(), usedBy: null});
           if (t.club) await api.pendingSet(t.club, iid, {kind: 'team', name, teamName: t.label, created: Date.now(), by: myUid()}).catch(e => console.warn(e));
           box.remove(); res();
-          shareInviteText(`⚽ Hoi ${name}! Ik deel ${t.label} met je in LineMeUp, dan kunnen we samen de opstellingen maken. Open deze link om mee te doen: ${inviteUrl(iid)}`);
+          linkSheet(`⚽ Hoi ${name}! Ik deel ${t.label} met je in LineMeUp, dan kunnen we samen de opstellingen maken. Open deze link om mee te doen: ${inviteUrl(iid)}`, inviteUrl(iid));
         }
         adm.data = null; loadAdmin(true);
       } catch(err){ console.error(err); tell('Uitnodiging maken lukt niet: ' + (err.message || err)); }
     });
     document.body.appendChild(box); draw();
   });
+}
+// venster met de link: kopiëren, delen, en bij een clublink de geldigheid
+function linkSheet(txt, url, extra){
+  try { navigator.clipboard && navigator.clipboard.writeText(url); } catch(e){}
+  if (navigator.share) navigator.share({text: txt}).catch(() => {});
+  const d = document.createElement('div'); d.className = 'modal';
+  d.innerHTML = iconize(`<div class="box"><p>🔗 Link klaar</p>
+    ${extra ? `<div class="muted" style="margin:-4px 0 10px">${extra}</div>` : ''}
+    <input value="${esc(url)}" readonly onclick="this.select()" style="font-size:14px">
+    <div class="ok2" style="margin:6px 0 12px;color:var(--gr)">Link gekopieerd ✓</div>
+    <div class="grid2"><button class="btn" data-r="copy">📋 Kopiëren</button><button class="btn pri" data-r="wa">💬 Delen via WhatsApp</button></div>
+    <button class="btn full" style="margin-top:8px" data-r="no">Sluiten</button></div>`);
+  d.addEventListener('click', e => {
+    e.stopPropagation(); const b = e.target.closest('[data-r]'); if (!b){ if (e.target === d) d.remove(); return; }
+    if (b.dataset.r === 'copy'){ try { navigator.clipboard.writeText(url); } catch(e){} toast('Link gekopieerd'); return; }
+    if (b.dataset.r === 'wa'){ window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank'); return; }
+    d.remove();
+  });
+  document.body.appendChild(d);
 }
 function shareInviteText(txt){
   if (navigator.share) navigator.share({title: 'LineMeUp', text: txt}).catch(() => {});
@@ -3971,7 +4120,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-12.2';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-12.3';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
@@ -4089,6 +4238,8 @@ function firebaseApi(){
       eventsClub: async club => (await fs.getDocs(fs.collection(db, 'clubIndex', club, 'events'))).docs.map(x => ({id: x.id, ...x.data()})),
       clubAdminJoin: async (club, via, clubName, info) => { const ref = d('clubAdmins', club), snap = await fs.getDoc(ref); const v = {uids: {[cloud.user.uid]: info}, via}; if (!snap.exists()) v.name = clubName || club; await fs.setDoc(ref, v, {merge: true}); },
       clubAdminsSet: (club, v) => fs.setDoc(d('clubAdmins', club), v, {merge: true}),
+      clubAdminsDel: club => fs.deleteDoc(d('clubAdmins', club)),
+      eventDel: (club, eid) => fs.deleteDoc(d('clubIndex', club, 'events', eid)),
       clubAdminRemove: (club, u) => fs.updateDoc(d('clubAdmins', club), {['uids.' + u]: fs.deleteField()}),
       clubAdminTransfer: (club, me, u, info) => fs.updateDoc(d('clubAdmins', club), {['uids.' + u]: info, ['uids.' + me]: fs.deleteField()}),
       reqSet: (u, v) => fs.setDoc(d('adminRequests', u), v),
