@@ -518,7 +518,7 @@
   .admsubs{display:flex;gap:6px;margin-bottom:12px}.admsubs button{flex:1;padding:10px 0;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--txt);font:inherit;font-weight:800;font-size:14px;cursor:pointer}
   .admsubs button.on{background:var(--g);color:#fff;border-color:var(--g)}
   .atiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}.card .atiles{margin-bottom:0}
-  .atile{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:2px}
+  .atile{background:var(--solid);border:1px solid var(--line);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:2px}
   .atile b{font-family:var(--disp);font-size:26px;font-weight:900;color:var(--g);line-height:1}.atile small{font-size:12px;font-weight:700;color:var(--muted);line-height:1.2}
   .ahead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}.ahead h2{margin:0}
   .arow{display:flex;align-items:center;gap:10px;padding:9px 0;border:0;border-bottom:1px solid var(--line);background:none;width:100%;text-align:left;font:inherit;color:inherit}
@@ -564,6 +564,34 @@
   .card.pend{border:2px dashed var(--ybd);background:var(--ysoft)}
   .roval{min-height:48px;box-sizing:border-box;border-radius:12px;border:1px solid var(--line);background:var(--surf2);padding:8px 12px;display:flex;flex-direction:column;justify-content:center;font-weight:800}.roval small{font-size:12px;font-weight:600;color:var(--muted)}
   .arowx{display:flex;align-items:center;gap:4px;border-bottom:1px solid var(--line)}.arowx .arow{flex:1;border-bottom:0}
+  /* ---- eigenaar-dashboard ---- */
+  .dtabs{display:flex;gap:4px;overflow-x:auto;margin-bottom:10px;-webkit-overflow-scrolling:touch;padding-bottom:2px}
+  .dtab{flex:none;border:1px solid var(--line);background:var(--surf);border-radius:999px;padding:8px 13px;font-size:13px;font-weight:800;color:var(--muted);cursor:pointer;min-height:40px;font-family:inherit}
+  .dtab.on{background:var(--g);border-color:var(--g);color:#fff}
+  .dfilt{padding:10px 12px}
+  .dflrow{display:flex;flex-wrap:wrap;gap:8px}
+  .dfl{display:flex;flex-direction:column;gap:2px;flex:1 1 140px;min-width:0;font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  .dfl select,.dfl input{width:100%}
+  .dchk{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--muted);font-weight:700;cursor:pointer;flex:1 1 auto}
+  .dchk input{width:20px;height:20px;flex:none;padding:0;margin:0}
+  .drow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .dh3{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 2px}
+  .dsort{border:0;background:none;font:inherit;color:inherit;text-transform:inherit;letter-spacing:inherit;cursor:pointer;padding:3px 2px;min-height:34px}
+  .dsort.on{color:var(--g)}
+  .dlink{border:0;background:none;font:inherit;color:var(--g);font-weight:800;cursor:pointer;text-align:left;padding:0;min-height:34px;text-decoration:underline}
+  .dsearch{width:100%;margin-bottom:8px}
+  .dwarn{border-color:var(--red)}
+  .dchart{width:100%;height:auto;display:block;margin-top:6px}
+  .dax{font-size:8px;fill:var(--muted);font-weight:700}
+  .dleg{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;font-weight:700;color:var(--muted);margin-top:2px}
+  .dleg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+  .dbars{display:flex;flex-direction:column;gap:7px;margin-top:8px}
+  .dbar{display:grid;grid-template-columns:minmax(96px,1.25fr) 1.5fr auto;align-items:center;gap:8px;font-size:12px}
+  .dbl{color:var(--muted);font-weight:700;line-height:1.25;overflow-wrap:anywhere}
+  .dbt{background:var(--surf2);border-radius:999px;height:10px;overflow:hidden}
+  .dbt i{display:block;height:100%;border-radius:999px}
+  .dbar b{font-variant-numeric:tabular-nums}
+  @media(min-width:700px){.dfl{flex:1 1 170px}}
   .ainact{margin-top:8px}.ainact summary{cursor:pointer;font-weight:800;color:var(--muted);padding:8px 0}.ainact .arow{opacity:.7}
   .peekbar{display:flex;align-items:center;gap:10px;background:#111;color:#fff;border-radius:14px;padding:10px 12px;margin:8px 0;font-size:14px}.peekbar span{flex:1}.peekbar .btn{background:#fff;color:#111;border:0;white-space:nowrap}
   .sbar{position:sticky;top:calc(var(--phh, 0px) + 6px);z-index:20;background:#151515;color:#fff;border-radius:20px;padding:10px 12px 12px;margin-bottom:12px;box-shadow:0 6px 16px rgba(0,0,0,.18)}
@@ -1116,7 +1144,7 @@ function viewTour(){
 function tourAdd(){
   const se = season();
   const t = {id: uid(), name: '', place: '', date: new Date().toISOString().slice(0, 10), arrive: '', start: '', end: '', present: se.players.map(p => p.id), phase: 'prep', pos: '', of: ''};
-  se.tours.push(t); ui.tourId = t.id; ui.matchId = null; commit(); window.scrollTo(0, 0);
+  se.tours.push(t); logMet('tour'); ui.tourId = t.id; ui.matchId = null; commit(); window.scrollTo(0, 0);
 }
 function tourNewMatch(t, round){
   const se = season();
@@ -1305,6 +1333,7 @@ async function importSheet(file, rid){
     <div class="grid2" style="margin-top:12px"><button class="btn" data-r="no">Annuleren</button><button class="btn pri" data-r="ok">Importeren</button></div>`);
   if (!ok || !nieuw.length) return;
   try { await tg.write(nieuw); } catch(e){ console.error(e); await tell('Opslaan lukt niet: ' + (e.message || e)); return; }
+  logMet('import');
   toast(`${nieuw.length} wedstrijd${nieuw.length === 1 ? '' : 'en'} geïmporteerd bij ${tg.label}`);
 }
 function addRule(se, ty, a, b){
@@ -1408,7 +1437,7 @@ async function admCreateTeam(club, clubName, name){
   const api = cloud.api, rid = randId(20), me = myUid();
   const t = {id: uid(), name: name.trim(), club: (clubName || '').trim(), color: '#2e7d4f', seasons: [defaultSeason(seasonName(), 8, FORMATIONS[8][0].n, 3, 60)]};
   applyKnvb(t.seasons[0], t.name);
-  await api.teamCreate(rid, {members: {[me]: 'owner'}, data: JSON.stringify(t), version: DATA_VERSION, updated: Date.now(), by: DEVICE, club: club || '', label: teamLabel(t)});
+  await api.teamCreate(rid, {members: {[me]: 'owner'}, data: JSON.stringify(t), version: DATA_VERSION, updated: Date.now(), created: Date.now(), by: DEVICE, club: club || '', label: teamLabel(t)});
   await api.teamPushTx(rid, cur => ({...cur, members: {}, updated: Date.now()}));
   if (club) await api.idxSet(club, rid, {...idxInfo(t), updated: Date.now()}).catch(() => {});
   return rid;
@@ -2458,7 +2487,7 @@ function newMatch(){
     segments:Array.from({length: se.subMoments + 1}, () => Array(positions(se.fieldPlayers, se.formation).length).fill(null)),
     phase:'prep', cur:0, goals:{}};
   se.matches.push(m);
-  ui.open = {}; ui.matchId = m.id; ui.seg = 0; ui.sel = null; ui.phaseView = null; commit(); window.scrollTo(0, 0);
+  ui.open = {}; ui.matchId = m.id; ui.seg = 0; ui.sel = null; ui.phaseView = null; ui.lineupAt = Date.now(); commit(); window.scrollTo(0, 0);
   setTimeout(() => { const i = document.querySelector('[data-m="opponent"]'); if (i){ i.focus(); i.scrollIntoView({block: 'center'}); } }, 80);
 }
 async function saveDone(m){
@@ -2474,6 +2503,7 @@ function swap(m, a, b){
   else if (a.type === 'bz' || b.type === 'bz'){ const f = a.type === 'f' ? a : b; if (f.type === 'f') lu[f.i] = null; }
   else { const f = a.type === 'f' ? a : b, bn = a.type === 'b' ? a : b; lu[f.i] = bn.id; }
   m.edited = true;
+  if (ui.autoAt && Date.now() - ui.autoAt < 36e5){ ui.autoAt = 0; logMet('autoEdit'); }
 }
 function fitSegments(m){
   const n = m.settings.subMoments + 1, len = positions(m.settings.fieldPlayers, m.settings.formation).length;
@@ -2499,9 +2529,9 @@ document.addEventListener('click', async e => {
   const el = e.target.closest('[data-act],[data-tab]');
   if (drag.suppress){ drag.suppress = false; if (e.target.closest('[data-drag],#livePitch,#benchZone')) return; }
   if (!el || el.tagName === 'SELECT' || (el.tagName === 'INPUT')) return;
-  if (el.dataset.tab){ if (el.dataset.tab === 'settings') ui.sOpen = true; go(el.dataset.tab === 'beheer' && ui.tab === 'beheer' ? 'matches' : el.dataset.tab); return; }
+  if (el.dataset.tab){ if (el.dataset.tab === 'stats') logMet('stats'); if (el.dataset.tab === 'settings') ui.sOpen = true; go(el.dataset.tab === 'beheer' && ui.tab === 'beheer' ? 'matches' : el.dataset.tab); return; }
   const act = el.dataset.act, id = el.dataset.id, se = season(), m = match();
-  if (/^adm|^req(Ok|No)$/.test(act)){ await admAction(act, id); return; }
+  if (/^adm|^dash|^dsort$|^dcsv$|^req(Ok|No)$/.test(act)){ await admAction(act, id); return; }
   if (/^help/.test(act)){ await helpAction(act, id, el); return; }
   if (act === 'reqSend'){ await sendRequest(); return; }
   if (act === 'reqCancel'){ await cloud.api.reqDel(myUid()).catch(() => {}); adm.myReq = null; render(); return; }
@@ -2547,6 +2577,7 @@ document.addEventListener('click', async e => {
       if (v === 'done'){ await saveDone(m); break; }
       if (v !== 'prep') m.cutsLocked = true;
       if (v === 'prep'){ m.cur = 0; ui.seg = 0; }
+      if (v === 'live' && m.phase === 'prep'){ logMet('lineupSave', ui.lineupAt ? Date.now() - ui.lineupAt : 0); ui.lineupAt = 0; }
       if (v === 'live'){ if (m.phase === 'prep') m.cur = 0; m.cur = m.cur || 0; ui.seg = m.cur; if (m.phase === 'prep') toast('Wedstrijd gestart – succes! ⚽'); }
       if (v === 'post' && (m.goalsFor === '' || m.goalsFor == null)){ m.goalsFor = 0; m.goalsAgainst = 0; }
       m.phase = v; ui.sel = null; commit(); window.scrollTo(0, 0); break;
@@ -2634,13 +2665,15 @@ document.addEventListener('click', async e => {
     case 'tourDel': { const t = tour(); const n = tourMatches(t).length;
       if (!await ask(`${t.name || 'Dit toernooi'} verwijderen?${n ? ` Ook de ${n} wedstrijd${n === 1 ? '' : 'en'} erin.` : ''}`, 'Verwijderen')) break;
       season().matches = se.matches.filter(m => m.tourId !== t.id); se.tours.splice(se.tours.indexOf(t), 1); ui.tourId = null; commit(); break; }
-    case 'ruleAdd': { const a = (document.getElementById('rlA') || {}).value, b = (document.getElementById('rlB') || {}).value, ty = (document.getElementById('rlT') || {}).value;
+    case 'ruleAdd': { logMet('rules'); const a = (document.getElementById('rlA') || {}).value, b = (document.getElementById('rlB') || {}).value, ty = (document.getElementById('rlT') || {}).value;
       const e = addRule(se, ty, a, b); if (e) await tell(e); else { commit(); toast('Regel toegevoegd'); } break; }
     case 'ruleDel': { se.rules = (se.rules || []).filter(r => r.id !== id); commit(); break; }
     case 'ruleOff': { const m = match(); if (!m) break; const off = m.ruleOff = m.ruleOff || [];
       const i = off.indexOf(id); if (i >= 0) off.splice(i, 1); else off.push(id);
       if (m.phase === 'prep') regenIfNeeded(m); commit(); break; }
-    case 'openMatch': ui.open = {}; ui.tab = 'matches'; ui.matchId = id; ui.seg = 0; ui.sel = null; render(); window.scrollTo(0, 0); break;
+    case 'openMatch': ui.open = {}; ui.tab = 'matches'; ui.matchId = id; ui.seg = 0; ui.sel = null;
+      if ((match() || {}).phase === 'prep') ui.lineupAt = Date.now();
+      render(); window.scrollTo(0, 0); break;
     case 'back': { const mm = match(); ui.tourId = mm && mm.tourId ? mm.tourId : null; } ui.matchId = null; ui.sel = null; render(); window.scrollTo(0, 0); break;
     case 'step': {
       const k = el.dataset.k, [mn, mx, stp] = LIMITS[k];
@@ -2827,7 +2860,7 @@ document.addEventListener('click', async e => {
       const mix = act === 'autoMix';
       const filled = m.segments.some(lu => !isEmptySeg(lu));
       if (!mix && filled && !await ask('Alle blokken opnieuw invullen? Wat je zelf hebt neergezet wordt vervangen.', 'Invullen')) return;
-      generate(m, mix, 0); m.edited = true; ui.seg = 0; ui.sel = null; commit();
+      generate(m, mix, 0); m.edited = true; ui.autoAt = Date.now(); ui.seg = 0; ui.sel = null; commit(); logMet('autoAll');
       const noPos = season().players.filter(p => m.present.includes(p.id) && !prefsOf(p).length).length;
       toast(noPos ? `Klaar – ${noPos} speler(s) zonder voorkeurspositie` : 'Hele wedstrijd opgesteld ⚡'); break;
     }
@@ -2872,6 +2905,8 @@ document.addEventListener('change', e => {
   const el = e.target, se = season(), m = match();
   if (el.dataset.admclub){ adm.club = el.value; adm.data = null; adm.view = null; render(); return; }
   if (el.dataset.admq){ adm.q = el.value; render(); return; }
+  if (el.dataset.dash){ const k = el.dataset.dash; dash[k] = el.type === 'checkbox' ? el.checked : el.value;
+    if (k === 'club') dash.team = ''; dash._recs = null; dash._sig = null; render(); return; }
   if (el.dataset.sel === 'ruleType'){ ui.ruleType = el.value; render(); return; }
     if (el.id === 'logoFile'){
     const f = el.files[0]; if (!f) return;
@@ -3141,7 +3176,7 @@ async function startSurvey(se, t){
   se.players.forEach(p => p.pos = ['', '', '']);
   se.usePositions = true;   // delen van de link zet ze meteen aan
   se.survey = {sid, key, created: Date.now(), seen: [], answered: {}};
-  commit();
+  logMet('survey'); commit();
   shareSurvey(se, t);
 }
 function shareSurvey(se, t){
@@ -3503,7 +3538,7 @@ function parseTeamDoc(d){
     players: se ? se.players : [], matches: se ? se.matches : [], played: se ? se.matches.filter(m => m.phase === 'done').length : 0,
     won: se ? se.matches.filter(m => m.phase === 'done' && (m.goalsFor || 0) > (m.goalsAgainst || 0)).length : 0,
     thisWeek: se ? se.matches.filter(m => { const x = m.date ? Date.parse(m.date + 'T12:00') : 0; return x > week && x < next; }).length : 0,
-    updated: d.updated || 0, invites: (t && t.invites) || [], inactive: !!(t && t.inactive)};
+    updated: d.updated || 0, created: d.created || 0, raw: t, invites: (t && t.invites) || [], inactive: !!(t && t.inactive)};
 }
 async function loadAdmin(force){
   if (adm.loading || (adm.data && !force)) return;
@@ -3542,13 +3577,458 @@ function adminTrainers(){
 const tile = (v, l) => `<span class="atile"><b>${v}</b><small>${esc(l)}</small></span>`;
 const arow = (av, title, sub, right = '', act = '', id = '', aria = '') => `<${act ? `button class="arow" data-act="${act}" data-id="${esc(id)}" aria-label="${esc(aria || String(title).replace(/<[^>]*>/g, ''))}"` : 'div class="arow"'}><span class="mav">${esc(String(av || '?').charAt(0).toUpperCase())}</span><span class="grow"><b>${title}</b><small>${sub}</small></span>${right}</${act ? 'button' : 'div'}>`;
 const achip = (x, strong) => `<span class="achip ${strong ? 'on' : ''}">${esc(x)}</span>`;
+
+/* ===================== EIGENAAR-DASHBOARD ===================== */
+const dash = {tab: 'voetbal', club: '', team: '', trainer: '', season: '', period: 'seizoen', from: '', to: '',
+  tr: null, sorts: {}, mets: null, metL: false, metErr: '', showInact: false};
+const DASH_TABS = [['voetbal', '⚽ Voetbaldata'], ['gebruik', '📈 Gebruik'], ['clubs', '🏟 Clubs'], ['trainers', '🧑‍🏫 Per trainer']];
+const FEATURES = [['lineupSave', 'Opstelling opgeslagen'], ['autoAll', 'Automatisch invullen'], ['share', 'Wedstrijdlink gedeeld'],
+  ['att', 'Aanwezigheid ingevuld'], ['stats', 'Statistieken bekeken'], ['import', 'Import van wedstrijden'],
+  ['invite', 'Uitnodiging verstuurd'], ['tour', 'Toernooi aangemaakt'], ['rules', 'Wisselregels gebruikt'], ['survey', 'Posities-enquête']];
+const dClub = k => (((adm.data && adm.data.clubs) || []).find(c => c.id === k) || {}).name
+  || (((adm.data && adm.data.teams) || []).find(t => (t.club || '') === k) || {}).clubName || k || 'Zonder club';
+const pshortOf = p => p ? shortName(p.name) : '?';
+const ageOf = l => ((String(l || '').match(/\b([JM]O\s?\d{1,2})\b/i) || [])[1] || '').toUpperCase().replace(/\s/g, '') || 'Overig';
+const wkKey = ts => { const d = new Date(ts); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.getTime(); };
+const wkLab = ts => new Date(ts).toLocaleDateString('nl-NL', {day: 'numeric', month: 'short'});
+const pct1 = (a, b) => b ? Math.round(a / b * 100) : 0;
+
+function dashPeriod(){
+  const now = Date.now(), d = new Date();
+  if (dash.period === 'week'){ const s = new Date(wkKey(now)); return [s.getTime(), now + 864e5]; }
+  if (dash.period === 'maand') return [new Date(d.getFullYear(), d.getMonth(), 1).getTime(), now + 864e5];
+  if (dash.period === 'eigen') return [dash.from ? Date.parse(dash.from + 'T00:00') : 0, dash.to ? Date.parse(dash.to + 'T23:59') : now + 864e5];
+  return [0, now + 3650 * 864e5];
+}
+const periodLab = () => ({week: 'deze week', maand: 'deze maand', seizoen: 'hele seizoen',
+  eigen: `${dash.from || '…'} t/m ${dash.to || '…'}`})[dash.period];
+
+// alle teams die door de filters komen (club/team/trainer)
+function dashTeams(){
+  return (adm.data && adm.data.teams || []).filter(t =>
+    (dash.showInact || !t.inactive)
+    && (!dash.club || (t.club || '') === dash.club)
+    && (!dash.team || t.id === dash.team)
+    && (!dash.trainer || Object.keys(t.members || {}).includes(dash.trainer)));
+}
+// één record per wedstrijd (live-data én geïmporteerde historie)
+function dashRecs(){
+  const sig = [dash.club, dash.team, dash.trainer, dash.season, dash.period, dash.from, dash.to, dash.showInact,
+    (adm.data && adm.data.teams || []).length, adm._v || 0].join('|');
+  if (dash._sig === sig && dash._recs) return dash._recs;
+  const [t0, t1] = dashPeriod(), out = [];
+  dashTeams().forEach(t => {
+    const seasons = (t.raw && t.raw.seasons) || [];
+    seasons.forEach((se, si) => {
+      const sname = se.name || ('Seizoen ' + (si + 1));
+      if (dash.season && sname !== dash.season) return;
+      const pl = {}; (se.players || []).forEach(p => pl[p.id] = p);
+      const base = {teamId: t.id, label: t.label, club: t.club || '', clubName: t.clubName || '', season: sname,
+        age: ageOf(t.label), players: pl, members: t.members || {}, rules: (se.rules || []).length, survey: !!se.survey};
+      (se.matches || []).forEach(m => {
+        const ts = m.date ? Date.parse(m.date + 'T12:00') : 0;
+        if (ts && (ts < t0 || ts > t1)) return;
+        const st = m.settings || {};
+        const r = Object.assign({}, base, {id: m.id, ts, date: m.date || '', opponent: m.opponent || '', home: m.home !== false,
+          done: m.phase === 'done', phase: m.phase, gf: m.goalsFor, ga: m.goalsAgainst,
+          minutes: +st.matchMinutes || +se.matchMinutes || 0, formation: st.formation || '', subs: +st.subMoments || 0,
+          tour: m.tourId ? (((se.tours || []).find(x => x.id === m.tourId) || {}).name || 'Toernooi') : '', round: m.round || '',
+          goals: m.goals || {}, att: m.att || {}, attBy: m.attBy || {}, time: m.time || '', present: m.present || [],
+          mins: {}, kmins: {}, start: {}, benchSeg: {}, segs: 0, pos: {}, imported: false});
+        if (m.phase === 'done' && m.segments){
+          const P = matchPositions(m), T = segTimes(st);
+          r.segs = m.segments.length;
+          r.present.forEach(id => { r.mins[id] = 0; r.kmins[id] = 0; r.benchSeg[id] = 0; r.pos[id] = {}; });
+          m.segments.forEach((lu, s) => {
+            const len = (T[s] || [0, 0])[1] - (T[s] || [0, 0])[0];
+            r.present.forEach(id => {
+              const i = lu.indexOf(id);
+              if (i >= 0){ r.mins[id] += len; const c = (P[i] || {}).code || '?'; r.pos[id][c] = (r.pos[id][c] || 0) + 1;
+                if ((P[i] || {}).line === 'K') r.kmins[id] += len; if (s === 0) r.start[id] = 1; }
+              else r.benchSeg[id]++;
+            });
+          });
+        }
+        out.push(r);
+      });
+      (se.history || []).forEach(h => {
+        const ts = h.date ? Date.parse(h.date + 'T12:00') : 0;
+        if (ts && (ts < t0 || ts > t1)) return;
+        const mins = h.mins || {};
+        out.push(Object.assign({}, base, {id: h.id, ts, date: h.date || '', opponent: h.opponent || '', home: h.home !== false,
+          done: true, phase: 'done', gf: h.gf, ga: h.ga, minutes: +h.minutes || +se.matchMinutes || 0, formation: '', subs: 0,
+          tour: h.tour || '', round: h.round || '', goals: h.goals || {}, att: {}, attBy: {}, time: '',
+          present: Object.keys(mins), mins, kmins: {}, start: {}, benchSeg: {}, segs: 0, pos: {}, imported: true}));
+      });
+    });
+  });
+  out.sort((a, b) => b.ts - a.ts);
+  dash._sig = sig; dash._recs = out; return out;
+}
+// eerlijkheidsscore: 100 - (standaardafwijking / gemiddelde * 100), 0-100
+function fairOf(shares){
+  const a = shares.filter(x => x >= 0); if (a.length < 2) return null;
+  const m = a.reduce((s, x) => s + x, 0) / a.length; if (!m) return null;
+  const sd = Math.sqrt(a.reduce((s, x) => s + (x - m) * (x - m), 0) / a.length);
+  return Math.max(0, Math.min(100, Math.round(100 - sd / m * 100)));
+}
+
+/* ---- tabel + csv ---- */
+const csvCell = v => { const s = String(v == null ? '' : v); return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+window.__dtab = {};
+function dtable(key, cols, rows, opts){
+  const o = opts || {};
+  window.__dtab[key] = {cols, rows, name: o.name || key};
+  if (!rows.length) return `<div class="muted" style="padding:8px 0">${esc(o.empty || 'Nog geen gegevens in deze selectie.')}</div>`;
+  const s = dash.sorts[key] || {k: o.sort || cols[1] && cols[1].k, d: -1};
+  const col = cols.find(c => c.k === s.k) || cols[0];
+  const rs = rows.slice().sort((a, b) => {
+    const x = a[col.k], y = b[col.k];
+    const n = typeof x === 'number' && typeof y === 'number';
+    return (n ? (x - y) : String(x == null ? '' : x).localeCompare(String(y == null ? '' : y), 'nl')) * (s.d < 0 ? -1 : 1);
+  }).slice(0, o.max || 300);
+  return `<div class="ovwrap"><table class="ov"><thead><tr>${cols.map(c =>
+    `<th><button class="dsort ${s.k === c.k ? 'on' : ''}" data-act="dsort" data-id="${esc(key + '|' + c.k)}">${esc(c.l)}${s.k === c.k ? (s.d < 0 ? ' ▾' : ' ▴') : ''}</button></th>`).join('')}</tr></thead>
+    <tbody>${rs.map(r => `<tr>${cols.map(c => `<td${c.hi && c.hi(r) ? ' style="color:var(--red);font-weight:800"' : ''}>${c.f ? c.f(r) : esc(r[c.k] == null ? '–' : r[c.k])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+    <div class="drow"><button class="btn sm" data-act="dcsv" data-id="${esc(key)}">${I('download')} CSV</button>${rows.length > (o.max || 300) ? `<span class="muted">eerste ${o.max || 300} van ${rows.length}</span>` : `<span class="muted">${rows.length} rij${rows.length === 1 ? '' : 'en'}</span>`}</div>`;
+}
+function dcsvDownload(key){
+  const t = window.__dtab[key]; if (!t) return;
+  const head = t.cols.map(c => csvCell(c.l)).join(';');
+  const body = t.rows.map(r => t.cols.map(c => csvCell(c.c ? c.c(r) : (c.f ? String(c.f(r)).replace(/<[^>]*>/g, '') : r[c.k]))).join(';'));
+  downloadFile(`linemeup-${t.name}-${new Date().toISOString().slice(0, 10)}.csv`, [head, ...body].join('\r\n'));
+  toast('CSV gedownload');
+}
+/* ---- grafiekjes (inline svg) ---- */
+function dLine(labels, series, unit){
+  const n = labels.length; if (!n) return '<div class="muted">Geen data.</div>';
+  const max = Math.max(1, ...series.flatMap(s => s.v));
+  const W = 300, H = 110, px = 26, py = 10, iw = W - px - 6, ih = H - py - 18;
+  const X = i => px + (n === 1 ? iw / 2 : i * iw / (n - 1)), Y = v => py + ih - v / max * ih;
+  const step = Math.max(1, Math.ceil(n / 5));
+  return `<svg class="dchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(series.map(s => s.n).join(', '))} per week">
+    ${(max < 3 ? [0, 1] : [0, .5, 1]).map(f => `<line x1="${px}" y1="${Y(max * f)}" x2="${W - 6}" y2="${Y(max * f)}" stroke="var(--line)"/><text x="2" y="${Y(max * f) + 3}" class="dax">${Math.round(max * f)}</text>`).join('')}
+    ${series.map(s => `<polyline fill="none" stroke="${s.c}" stroke-width="2.5" stroke-linejoin="round" points="${s.v.map((v, i) => X(i) + ',' + Y(v)).join(' ')}"/>
+      ${s.v.map((v, i) => `<circle cx="${X(i)}" cy="${Y(v)}" r="2.6" fill="${s.c}"><title>${esc(labels[i] + ': ' + v + (unit || ''))}</title></circle>`).join('')}`).join('')}
+    ${labels.map((l, i) => i % step === 0 || i === n - 1 ? `<text x="${X(i)}" y="${H - 4}" class="dax" text-anchor="middle">${esc(l)}</text>` : '').join('')}
+  </svg><div class="dleg">${series.map(s => `<span><i style="background:${s.c}"></i>${esc(s.n)}</span>`).join('')}</div>`;
+}
+function dBars(rows, unit){
+  if (!rows.length) return '<div class="muted">Geen data.</div>';
+  const max = Math.max(1, ...rows.map(r => r.v));
+  return `<div class="dbars">${rows.map(r => `<div class="dbar"><span class="dbl">${esc(r.l)}</span>
+    <span class="dbt"><i style="width:${Math.max(2, r.v / max * 100)}%;background:${r.c || 'var(--g)'}"></i></span>
+    <b>${esc(r.t != null ? r.t : r.v + (unit || ''))}</b></div>`).join('')}</div>`;
+}
+
+/* ---- filterbalk ---- */
+function dashFilters(){
+  const d = adm.data || {}, clubs = [...new Set([...(d.clubs || []).map(c => c.id), ...(d.teams || []).map(t => t.club).filter(Boolean)])].sort();
+  const teams = (d.teams || []).filter(t => !dash.club || (t.club || '') === dash.club).sort((a, b) => a.label.localeCompare(b.label));
+  const trs = adminTrainers();
+  const seasons = [...new Set((d.teams || []).flatMap(t => ((t.raw && t.raw.seasons) || []).map((s, i) => s.name || ('Seizoen ' + (i + 1)))))].sort().reverse();
+  const sel = (k, label, opts, cur) => `<label class="dfl"><span>${esc(label)}</span><select data-dash="${k}">${opts.map(o =>
+    `<option value="${esc(o[0])}" ${o[0] === cur ? 'selected' : ''}>${esc(o[1])}</option>`).join('')}</select></label>`;
+  return `<div class="card dfilt"><div class="dflrow">
+    ${sel('club', 'Club', [['', 'Alle clubs'], ...clubs.map(c => [c, dClub(c)])], dash.club)}
+    ${sel('team', 'Team', [['', 'Alle teams'], ...teams.map(t => [t.id, t.label])], dash.team)}
+    ${sel('trainer', 'Trainer', [['', 'Alle trainers'], ...trs.map(t => [t.uid, t.name || t.email || t.uid.slice(0, 6)])], dash.trainer)}
+    ${sel('season', 'Seizoen', [['', 'Alle seizoenen'], ...seasons.map(s => [s, s])], dash.season)}
+    ${sel('period', 'Periode', [['week', 'Deze week'], ['maand', 'Deze maand'], ['seizoen', 'Hele seizoen'], ['eigen', 'Eigen periode']], dash.period)}
+  </div>
+  ${dash.period === 'eigen' ? `<div class="dflrow"><label class="dfl"><span>Van</span><input type="date" data-dash="from" value="${esc(dash.from)}"></label><label class="dfl"><span>Tot en met</span><input type="date" data-dash="to" value="${esc(dash.to)}"></label></div>` : ''}
+  <div class="drow"><label class="dchk"><input type="checkbox" data-dash="showInact" ${dash.showInact ? 'checked' : ''}> Inactieve teams meetellen</label>
+    ${dash.club || dash.team || dash.trainer || dash.season || dash.period !== 'seizoen' ? `<button class="btn sm" data-act="dashReset">Filters wissen</button>` : ''}</div></div>`;
+}
+
+/* ---- hoofdweergave ---- */
+function admDash(){
+  if (!adm.owner) return `<div class="card empty"><b>🔒</b>Alleen de eigenaar ziet het dashboard.</div>`;
+  if (adm.loading) return `<div class="card empty"><b>⏳</b>Gegevens laden…</div>`;
+  if (!adm.data) return `<div class="card empty"><b>📊</b>Nog geen gegevens geladen. <button class="btn sm" data-act="admReload">Laden</button></div>`;
+  const tabs = `<div class="dtabs">${DASH_TABS.map(([k, l]) =>
+    `<button class="dtab ${dash.tab === k ? 'on' : ''}" data-act="dashTab" data-id="${k}" aria-current="${dash.tab === k ? 'page' : 'false'}">${esc(l)}</button>`).join('')}</div>`;
+  const body = dash.tab === 'gebruik' ? dashGebruik() : dash.tab === 'clubs' ? dashClubs() : dash.tab === 'trainers' ? dashTrainers() : dashVoetbal();
+  return tabs + dashFilters() + body;
+}
+
+/* ===== tab 1: voetbaldata ===== */
+function dashVoetbal(){
+  const recs = dashRecs(), done = recs.filter(r => r.done);
+  if (!recs.length) return `<div class="card empty"><b>⚽</b>Geen wedstrijden in deze selectie (${esc(periodLab())}).</div>`;
+  // speeltijd per speler
+  const P = {};
+  done.forEach(r => {
+    const ids = new Set([...Object.keys(r.mins), ...r.present]);
+    ids.forEach(id => {
+      const p = r.players[id]; if (!p) return;
+      const k = r.teamId + '|' + id;
+      const x = P[k] = P[k] || {key: k, id, naam: pshortOf(p), team: r.label, club: dClub(r.club), wed: 0, min: 0, mog: 0, basis: 0, wissel: 0, keeper: 0, doel: 0, codes: {}, pref: (prefsOf(p) || []).map(prefName).join(', ')};
+      x.wed++; x.min += +r.mins[id] || 0; x.mog += r.minutes; x.doel += +(r.goals || {})[id] || 0;
+      if (r.kmins[id]) x.keeper++;
+      if (!r.imported){ r.start[id] ? x.basis++ : x.wissel++; }
+      Object.entries(r.pos[id] || {}).forEach(([c, n]) => x.codes[c] = (x.codes[c] || 0) + n);
+    });
+  });
+  const pl = Object.values(P).map(x => Object.assign(x, {pctv: pct1(x.min, x.mog), versch: Object.keys(x.codes).length,
+    meest: Object.entries(x.codes).sort((a, b) => b[1] - a[1]).map(e => e[0])[0] || '–'}));
+  // eerlijkheid per team
+  const byTeam = {};
+  pl.forEach(x => { const t = byTeam[x.team] = byTeam[x.team] || {team: x.team, club: x.club, sh: [], namen: []}; if (x.mog){ t.sh.push(x.min / x.mog); t.namen.push(x); } });
+  const fair = Object.values(byTeam).map(t => {
+    const sc = fairOf(t.sh), lo = t.namen.slice().sort((a, b) => a.pctv - b.pctv)[0], hi = t.namen.slice().sort((a, b) => b.pctv - a.pctv)[0];
+    return {team: t.team, club: t.club, score: sc == null ? '–' : sc, spelers: t.namen.length,
+      laag: lo ? lo.pctv : '–', laagw: lo ? lo.naam : '', hoog: hi ? hi.pctv : '–', hoogw: hi ? hi.naam : ''};
+  }).filter(x => x.spelers);
+  // aanwezigheid
+  const A = {}, AP = {};
+  recs.filter(r => !r.imported).forEach(r => {
+    const t = A[r.label] = A[r.label] || {team: r.label, club: dClub(r.club), ja: 0, nee: 0, geen: 0, link: 0, laat: 0, wed: 0};
+    t.wed++;
+    const dl = r.ts + (r.time ? (+r.time.slice(0, 2) * 36e5 + +r.time.slice(3, 5) * 6e4 - 12 * 36e5) : 0);
+    Object.keys(r.players).forEach(id => {
+      const v = r.att[id], by = r.attBy[id] || {};
+      const x = AP[r.teamId + '|' + id] = AP[r.teamId + '|' + id] || {naam: pshortOf(r.players[id]), team: r.label, club: dClub(r.club), ja: 0, nee: 0, geen: 0};
+      if (v === 'ja'){ t.ja++; x.ja++; } else if (v === 'nee'){ t.nee++; x.nee++; if (by.at && dl && by.at > dl - 864e5) t.laat++; } else { t.geen++; x.geen++; }
+      if (by.by === 'link') t.link++;
+    });
+  });
+  const att = Object.values(A).map(t => Object.assign(t, {opkomst: pct1(t.ja, t.ja + t.nee + t.geen), viaLink: pct1(t.link, t.ja + t.nee || 1)}));
+  const attP = Object.values(AP).map(x => Object.assign(x, {opkomst: pct1(x.ja, x.ja + x.nee + x.geen)}));
+  // resultaten
+  const R = {};
+  done.forEach(r => {
+    if (r.gf === '' || r.gf == null || isNaN(+r.gf)) return;
+    const t = R[r.label] = R[r.label] || {team: r.label, club: dClub(r.club), w: 0, g: 0, v: 0, dv: 0, dt: 0, thuis: 0, uit: 0, toer: 0};
+    const a = +r.gf, b = +r.ga; t.dv += a; t.dt += b; a > b ? t.w++ : a === b ? t.g++ : t.v++;
+    r.home ? t.thuis++ : t.uit++; if (r.tour) t.toer++;
+  });
+  const res = Object.values(R).map(t => Object.assign(t, {wgv: `${t.w}-${t.g}-${t.v}`, saldo: t.dv - t.dt}));
+  const scorers = pl.filter(x => x.doel > 0).map(x => ({naam: x.naam, team: x.team, doel: x.doel, wed: x.wed}));
+  // opstellingen per leeftijd
+  const F = {};
+  done.filter(r => !r.imported).forEach(r => {
+    const k = r.age; const x = F[k] = F[k] || {cat: k, wed: 0, subs: 0, forms: {}};
+    x.wed++; x.subs += r.subs; if (r.formation) x.forms[r.formation] = (x.forms[r.formation] || 0) + 1;
+  });
+  const forms = Object.values(F).map(x => ({cat: x.cat, wed: x.wed, gemSubs: x.wed ? Math.round(x.subs / x.wed * 10) / 10 : 0,
+    formaties: Object.entries(x.forms).sort((a, b) => b[1] - a[1]).map(e => `${e[0]} (${e[1]})`).join(', ') || '–'}));
+  // rondes
+  const rondes = {}; done.filter(r => r.tour).forEach(r => rondes[roundName(r.round)] = (rondes[roundName(r.round)] || 0) + 1);
+
+  const tiles = [tile(done.length, 'wedstrijden gespeeld'), tile(pl.length, 'speler-teams'),
+    tile(pct1(pl.reduce((s, x) => s + x.min, 0), pl.reduce((s, x) => s + x.mog, 0)) + '%', 'gem. speeltijd'),
+    tile(fair.length ? Math.round(fair.filter(f => f.score !== '–').reduce((s, f) => s + f.score, 0) / Math.max(1, fair.filter(f => f.score !== '–').length)) : '–', 'gem. eerlijkheid'),
+    tile(att.length ? pct1(att.reduce((s, t) => s + t.ja, 0), att.reduce((s, t) => s + t.ja + t.nee + t.geen, 0)) + '%' : '–', 'opkomst'),
+    tile(res.reduce((s, t) => s + t.dv, 0), 'doelpunten voor')];
+  return `<div class="atiles">${tiles.join('')}</div>
+  <div class="card"><h2>⏱ Speeltijd per speler</h2><div class="muted">Minuten, aandeel van de mogelijke minuten, basis/wissel en keeperbeurten.</div>
+    ${dtable('speeltijd', [{k: 'naam', l: 'Speler'}, {k: 'team', l: 'Team'}, {k: 'wed', l: 'Wed'}, {k: 'min', l: 'Min'},
+      {k: 'pctv', l: '%', f: r => r.pctv + '%'}, {k: 'basis', l: 'Basis'}, {k: 'wissel', l: 'Wissel'}, {k: 'keeper', l: 'Keeper'}, {k: 'doel', l: 'Doel'}],
+      pl, {name: 'speeltijd', sort: 'min'})}</div>
+  <div class="card"><h2>⚖️ Eerlijkheid per team</h2><div class="muted">100 = iedereen speelt even veel. Score = 100 − (spreiding ÷ gemiddelde × 100).</div>
+    ${dtable('eerlijk', [{k: 'team', l: 'Team'}, {k: 'club', l: 'Club'}, {k: 'score', l: 'Score', hi: r => r.score !== '–' && r.score < 70},
+      {k: 'laag', l: 'Laagste %', f: r => r.laag === '–' ? '–' : `${r.laag}% <span class="w">${esc(r.laagw)}</span>`, c: r => r.laag},
+      {k: 'hoog', l: 'Hoogste %', f: r => r.hoog === '–' ? '–' : `${r.hoog}% <span class="w">${esc(r.hoogw)}</span>`, c: r => r.hoog},
+      {k: 'spelers', l: 'Spelers'}], fair, {name: 'eerlijkheid', sort: 'score'})}</div>
+  <div class="card"><h2>🙋 Aanwezigheid</h2><div class="muted">Opkomst per team, hoeveel er via de wedstrijdlink is beantwoord en hoeveel afmeldingen binnen 24 uur kwamen.</div>
+    ${dtable('aanwTeam', [{k: 'team', l: 'Team'}, {k: 'wed', l: 'Wed'}, {k: 'opkomst', l: 'Opkomst', f: r => r.opkomst + '%'},
+      {k: 'ja', l: 'Ja'}, {k: 'nee', l: 'Nee'}, {k: 'geen', l: 'Geen antw.'}, {k: 'viaLink', l: 'Via link', f: r => r.viaLink + '%'},
+      {k: 'laat', l: '< 24 uur', hi: r => r.laat > 0}], att, {name: 'aanwezigheid-team', sort: 'opkomst'})}
+    <details style="margin-top:10px"><summary class="muted">Per speler</summary>
+    ${dtable('aanwSp', [{k: 'naam', l: 'Speler'}, {k: 'team', l: 'Team'}, {k: 'opkomst', l: 'Opkomst', f: r => r.opkomst + '%'},
+      {k: 'ja', l: 'Ja'}, {k: 'nee', l: 'Nee'}, {k: 'geen', l: 'Geen antw.'}], attP, {name: 'aanwezigheid-speler', sort: 'opkomst'})}</details></div>
+  <div class="card"><h2>🏆 Resultaten</h2>
+    ${dtable('result', [{k: 'team', l: 'Team'}, {k: 'wgv', l: 'W-G-V', c: r => r.wgv}, {k: 'dv', l: 'DV'}, {k: 'dt', l: 'DT'},
+      {k: 'saldo', l: 'Saldo'}, {k: 'thuis', l: 'Thuis'}, {k: 'uit', l: 'Uit'}, {k: 'toer', l: 'Toernooi'}], res, {name: 'resultaten', sort: 'saldo'})}
+    ${Object.keys(rondes).length ? `<h3 class="dh3">Toernooiwedstrijden per ronde</h3>${dBars(Object.entries(rondes).map(([l, v]) => ({l, v})))}` : ''}
+    <h3 class="dh3">Topscorers</h3>
+    ${dtable('scorers', [{k: 'naam', l: 'Speler'}, {k: 'team', l: 'Team'}, {k: 'doel', l: 'Doelpunten'}, {k: 'wed', l: 'Wed'}], scorers, {name: 'topscorers', sort: 'doel', max: 50, empty: 'Nog geen doelpuntenmakers ingevuld.'})}</div>
+  <div class="card"><h2>🎯 Posities</h2><div class="muted">Opgegeven voorkeur tegenover de posities die echt gespeeld zijn.</div>
+    ${dtable('posities', [{k: 'naam', l: 'Speler'}, {k: 'team', l: 'Team'}, {k: 'pref', l: 'Voorkeur'}, {k: 'meest', l: 'Meest gespeeld'},
+      {k: 'versch', l: 'Verschillende'}], pl.filter(x => x.versch || x.pref), {name: 'posities', sort: 'versch'})}</div>
+  <div class="card"><h2>📐 Opstellingen per leeftijd</h2>
+    ${dtable('formaties', [{k: 'cat', l: 'Categorie'}, {k: 'wed', l: 'Wed'}, {k: 'gemSubs', l: 'Gem. wisselmomenten'}, {k: 'formaties', l: 'Formaties'}], forms, {name: 'formaties', sort: 'wed'})}</div>`;
+}
+
+/* ===== tab 2: gebruik ===== */
+function dashGebruik(){
+  if (dash.mets === null && !dash.metL) return `<div class="card empty"><b>📈</b>Gebruikscijfers worden apart geladen.<div class="drow" style="justify-content:center"><button class="btn pri" data-act="dashMets">Laden</button></div></div>`;
+  if (dash.metL) return `<div class="card empty"><b>⏳</b>Gebruikscijfers laden…</div>`;
+  const [t0, t1] = dashPeriod();
+  const teamOk = new Set(dashTeams().map(t => t.id));
+  const mets = (dash.mets || []).filter(m => m.at >= t0 && m.at <= t1
+    && (!dash.club || m.club === dash.club) && (!dash.team || m.team === dash.team) && (!dash.trainer || m.uid === dash.trainer));
+  const recs = dashRecs();
+  // actieve trainers en teams per week
+  const wk = {};
+  mets.forEach(m => { const k = wkKey(m.at); const x = wk[k] = wk[k] || {tr: new Set(), tm: new Set()}; if (m.uid) x.tr.add(m.uid); if (m.team) x.tm.add(m.team); });
+  recs.forEach(r => { if (!r.ts) return; const k = wkKey(r.ts); const x = wk[k] = wk[k] || {tr: new Set(), tm: new Set()}; x.tm.add(r.teamId); });
+  const wks = Object.keys(wk).map(Number).sort((a, b) => a - b).slice(-14);
+  const chart = dLine(wks.map(wkLab), [{n: 'Actieve trainers', c: 'var(--g)', v: wks.map(k => wk[k].tr.size)},
+    {n: 'Actieve teams', c: 'var(--y)', v: wks.map(k => wk[k].tm.size)}]);
+  // retentie: teams met een eerste wedstrijd, nog actief na 2/4/8 weken
+  const first = {}, last = {};
+  recs.forEach(r => { if (!r.ts) return; if (!first[r.teamId] || r.ts < first[r.teamId]) first[r.teamId] = r.ts; if (!last[r.teamId] || r.ts > last[r.teamId]) last[r.teamId] = r.ts; });
+  const ret = [2, 4, 8].map(w => {
+    const span = w * 7 * 864e5, elig = Object.keys(first).filter(id => Date.now() - first[id] >= span);
+    const keep = elig.filter(id => last[id] - first[id] >= span * .75);
+    return {l: `Na ${w} weken`, v: pct1(keep.length, elig.length), t: `${keep.length}/${elig.length} (${pct1(keep.length, elig.length)}%)`};
+  });
+  // opstelling openen -> opslaan
+  const spans = mets.filter(m => m.t === 'lineupSave' && m.ms > 0).map(m => Math.round(m.ms / 1000));
+  spans.sort((a, b) => a - b);
+  const med = spans.length ? spans[Math.floor(spans.length / 2)] : null;
+  const autoN = mets.filter(m => m.t === 'autoAll').length, editN = mets.filter(m => m.t === 'autoEdit').length;
+  // functiegebruik
+  const used = {}; mets.forEach(m => { used[m.t] = (used[m.t] || 0) + 1; });
+  const feat = FEATURES.map(([k, l]) => ({l, v: used[k] || 0, c: used[k] ? 'var(--g)' : 'var(--line)'}));
+  const nooit = feat.filter(f => !f.v).map(f => f.l);
+  // trechter
+  const inv = (adm.data.pending || []).length + (adm.data.links || []).length;
+  const acc = new Set(mets.filter(m => m.t === 'join' || m.t === 'teamCreate').map(m => m.uid)).size;
+  const teamsN = dashTeams().length, metMatch = new Set(recs.map(r => r.teamId)).size;
+  return `<div class="atiles">${[tile(mets.length, 'gelogde gebeurtenissen'), tile(new Set(mets.map(m => m.uid)).size, 'actieve trainers'),
+    tile(med == null ? '–' : med + 's', 'mediaan open→opslaan'), tile(pct1(editN, autoN || 1) + '%', 'voorstel aangepast')].join('')}</div>
+  <div class="card"><h2>📈 Actief per week</h2>${chart}
+    <div class="muted" style="margin-top:6px">De event-log loopt vanaf het moment dat deze versie live staat; oudere weken tellen alleen wedstrijden mee.</div></div>
+  <div class="card"><h2>🔁 Retentie van teams</h2><div class="muted">Teams die na hun eerste wedstrijd nog actief waren.</div>${dBars(ret)}</div>
+  <div class="card"><h2>⚡ Opstelling maken</h2>
+    ${dBars([{l: 'Automatisch voorstel gebruikt', v: autoN}, {l: 'Daarna handmatig aangepast', v: editN, c: 'var(--y)'}])}
+    <div class="muted" style="margin-top:6px">${med == null ? 'Nog geen metingen van openen tot opslaan.' : `Mediaan van openen tot opslaan: ${med} seconden (${spans.length} metingen).`}</div></div>
+  <div class="card"><h2>🧩 Functiegebruik</h2>${dBars(feat)}
+    ${nooit.length ? `<div class="muted" style="margin-top:8px"><b>Nooit gebruikt in deze periode:</b> ${esc(nooit.join(', '))}</div>` : ''}</div>
+  <div class="card"><h2>🪜 Trechter</h2>${dBars([{l: 'Uitnodiging verstuurd', v: inv}, {l: 'Geaccepteerd', v: acc},
+    {l: 'Team aangemaakt', v: teamsN}, {l: 'Eerste wedstrijd', v: metMatch}])}</div>`;
+}
+
+/* ===== tab 3: clubs ===== */
+function dashClubs(){
+  const d = adm.data, teams = dashTeams();
+  const recs = dashRecs();
+  const byClub = {};
+  [...new Set([...(d.clubs || []).map(c => c.id), ...teams.map(t => t.club || '')])].forEach(c => {
+    byClub[c] = {id: c, club: dClub(c) || 'Zonder club', teams: 0, trainers: new Set(), spelers: 0, wed: 0, laatst: 0, links: 0};
+  });
+  teams.forEach(t => { const x = byClub[t.club || '']; if (!x) return;
+    x.teams++; Object.keys(t.members || {}).forEach(u => x.trainers.add(u));
+    x.spelers += (t.players || []).length; if (t.updated > x.laatst) x.laatst = t.updated; });
+  recs.forEach(r => { const x = byClub[r.club || '']; if (x){ x.wed++; if (r.ts > x.laatst) x.laatst = r.ts; } });
+  (d.links || []).forEach(p => { const x = byClub[p.club || '']; if (x) x.links++; });
+  const seizoen = new Date().getMonth() >= 7 || new Date().getMonth() <= 4;
+  const rows = Object.values(byClub).map(x => Object.assign(x, {trainersN: x.trainers.size, laatstT: fmtD(x.laatst),
+    stil: seizoen && x.teams && (!x.laatst || Date.now() - x.laatst > 21 * 864e5)}));
+  const warn = rows.filter(x => x.stil);
+  // groei: trainers per week via de clublink
+  const wk = {};
+  (d.pending || []).concat(d.links || []).forEach(p => { if (!p.created) return; const k = wkKey(p.created); wk[k] = (wk[k] || 0) + 1; });
+  const wks = Object.keys(wk).map(Number).sort((a, b) => a - b).slice(-12);
+  return `<div class="atiles">${[tile(rows.filter(r => r.teams).length, 'clubs met teams'), tile(teams.length, 'teams'),
+    tile(new Set(teams.flatMap(t => Object.keys(t.members || {}))).size, 'trainers'), tile(recs.length, 'wedstrijden')].join('')}</div>
+  ${warn.length ? `<div class="card dwarn"><h2>⚠️ Stil geworden clubs</h2><div class="muted">Drie weken of langer geen wedstrijd terwijl het seizoen loopt.</div>
+    ${warn.map(w => arow(w.club, esc(w.club), `${w.teams} teams · laatste activiteit ${w.laatst ? ago(w.laatst) : 'onbekend'}`)).join('')}</div>` : ''}
+  <div class="card"><h2>🏟 Clubs</h2>
+    ${dtable('clubs', [{k: 'club', l: 'Club'}, {k: 'teams', l: 'Teams'}, {k: 'trainersN', l: 'Trainers'}, {k: 'spelers', l: 'Spelers'},
+      {k: 'wed', l: 'Wed'}, {k: 'links', l: 'Clublinks'}, {k: 'laatst', l: 'Laatst actief', f: r => esc(r.laatstT), c: r => r.laatstT, hi: r => r.stil}], rows, {name: 'clubs', sort: 'teams'})}</div>
+  <div class="card"><h2>📈 Nieuwe trainers per week</h2>${wks.length ? dLine(wks.map(wkLab), [{n: 'Uitnodigingen', c: 'var(--g)', v: wks.map(k => wk[k])}]) : '<div class="muted">Nog geen uitnodigingen verstuurd.</div>'}</div>
+  <div class="card"><h2>📄 Clubrapport</h2><div class="muted">Printbare samenvatting voor het clubbestuur, met de nu ingestelde periode (${esc(periodLab())}).</div>
+    <div class="dflrow" style="margin-top:8px">${rows.filter(r => r.teams).map(r => `<button class="btn sm" data-act="dashReport" data-id="${esc(r.id)}">🖨 ${esc(r.club)}</button>`).join('') || '<span class="muted">Geen clubs.</span>'}</div></div>`;
+}
+
+/* ===== tab 4: per trainer ===== */
+function dashTrainers(){
+  const trs = adminTrainers(), recs = dashRecs(), mets = dash.mets || [];
+  if (dash.tr){
+    const x = trs.find(t => t.uid === dash.tr);
+    if (!x) { dash.tr = null; return dashTrainers(); }
+    const mine = new Set(x.teams.map(t => t.id));
+    const rs = recs.filter(r => mine.has(r.teamId));
+    const wk = {}; rs.forEach(r => { if (r.ts) wk[wkKey(r.ts)] = (wk[wkKey(r.ts)] || 0) + 1; });
+    mets.filter(m => m.uid === x.uid).forEach(m => { wk[wkKey(m.at)] = (wk[wkKey(m.at)] || 0) + 1; });
+    const wks = Object.keys(wk).map(Number).sort((a, b) => a - b).slice(-12);
+    const used = {}; mets.filter(m => m.uid === x.uid).forEach(m => used[m.t] = (used[m.t] || 0) + 1);
+    let w = 0, g = 0, l = 0, ja = 0, tot = 0;
+    rs.forEach(r => { if (r.gf !== '' && r.gf != null && !isNaN(+r.gf)){ +r.gf > +r.ga ? w++ : +r.gf === +r.ga ? g++ : l++; }
+      Object.keys(r.players).forEach(id => { if (r.imported) return; tot++; if (r.att[id] === 'ja') ja++; }); });
+    const fairs = x.teams.map(t => {
+      const tr = recs.filter(r => r.teamId === t.id && r.done), sh = [];
+      const agg = {}; tr.forEach(r => new Set([...Object.keys(r.mins), ...r.present]).forEach(id => {
+        const a = agg[id] = agg[id] || {m: 0, p: 0}; a.m += +r.mins[id] || 0; a.p += r.minutes; }));
+      Object.values(agg).forEach(a => { if (a.p) sh.push(a.m / a.p); });
+      return {team: t.label, club: t.clubName || dClub(t.id), rol: t.role === 'owner' ? 'Teambeheerder' : 'Trainer', score: fairOf(sh) == null ? '–' : fairOf(sh), wed: tr.length};
+    });
+    return `<div class="drow"><button class="btn sm" data-act="dashTrBack">‹ Alle trainers</button></div>
+    <div class="card">${arow(x.name, `<span style="font-size:20px">${esc(x.name || 'Naam onbekend')}</span>`,
+      esc([x.email, x.clubAdmin.length ? 'Clubbeheer · ' + x.clubAdmin.join(', ') : '', 'Laatst actief: ' + ago(x.lastActive)].filter(Boolean).join(' · ')))}</div>
+    <div class="atiles">${[tile(x.teams.length, 'teams'), tile(rs.length, 'wedstrijden'), tile(`${w}-${g}-${l}`, 'W-G-V'), tile(pct1(ja, tot) + '%', 'opkomst')].join('')}</div>
+    <div class="card"><h2>📈 Activiteit per week</h2>${wks.length ? dLine(wks.map(wkLab), [{n: 'Acties en wedstrijden', c: 'var(--g)', v: wks.map(k => wk[k])}]) : '<div class="muted">Nog geen activiteit gemeten.</div>'}</div>
+    <div class="card"><h2>👥 Teams</h2>${dtable('trTeams', [{k: 'team', l: 'Team'}, {k: 'club', l: 'Club'}, {k: 'rol', l: 'Rol'}, {k: 'wed', l: 'Wed'}, {k: 'score', l: 'Eerlijkheid'}], fairs, {name: 'trainer-teams', sort: 'wed'})}</div>
+    <div class="card"><h2>🧩 Gebruikte functies</h2>${dBars(FEATURES.map(([k, L]) => ({l: L, v: used[k] || 0, c: used[k] ? 'var(--g)' : 'var(--line)'})))}</div>
+    <div class="card"><h2>📅 Teams aangemaakt of toegevoegd</h2>${x.teams.map(t => {
+      const td = (adm.data.teams || []).find(y => y.id === t.id) || {};
+      return arow(t.label, esc(t.label), `${t.role === 'owner' ? 'aangemaakt' : 'toegevoegd'} · ${td.created ? fmtD(td.created) : 'datum onbekend'} · laatste wijziging ${ago(td.updated)}`);
+    }).join('') || '<div class="muted">Geen teams.</div>'}</div>`;
+  }
+  const q = (dash.q || '').toLowerCase();
+  const rows = trs.map(x => {
+    const mine = new Set(x.teams.map(t => t.id)), rs = recs.filter(r => mine.has(r.teamId));
+    const sh = [], agg = {};
+    rs.filter(r => r.done).forEach(r => new Set([...Object.keys(r.mins), ...r.present]).forEach(id => {
+      const k = r.teamId + '|' + id, a = agg[k] = agg[k] || {m: 0, p: 0}; a.m += +r.mins[id] || 0; a.p += r.minutes; }));
+    Object.values(agg).forEach(a => { if (a.p) sh.push(a.m / a.p); });
+    const sc = fairOf(sh);
+    return {uid: x.uid, naam: x.name || x.email || x.uid.slice(0, 6), club: [...new Set(x.teams.map(t => t.clubName).filter(Boolean))].join(', ') || (x.clubAdmin || []).join(', ') || '–',
+      teams: x.teams.length, wed: rs.length, laatst: x.lastActive || 0, laatstT: ago(x.lastActive), score: sc == null ? '–' : sc,
+      rol: x.isOwner ? 'Eigenaar' : x.clubAdmin.length ? 'Clubbeheerder' : 'Trainer'};
+  }).filter(r => !q || [r.naam, r.club].join(' ').toLowerCase().includes(q));
+  return `<div class="card"><div class="ahead"><h2>${rows.length} trainers</h2></div>
+    <input class="dsearch" placeholder="Zoek op naam of club" value="${esc(dash.q || '')}" data-dash="q">
+    ${dtable('trainers', [{k: 'naam', l: 'Trainer', f: r => `<button class="dlink" data-act="dashTr" data-id="${esc(r.uid)}">${esc(r.naam)}</button>`, c: r => r.naam},
+      {k: 'club', l: 'Club'}, {k: 'rol', l: 'Rol'}, {k: 'teams', l: 'Teams'}, {k: 'wed', l: 'Wed'}, {k: 'score', l: 'Eerlijkheid', hi: r => r.score !== '–' && r.score < 70},
+      {k: 'laatst', l: 'Laatst actief', f: r => esc(r.laatstT), c: r => r.laatstT}], rows, {name: 'trainers', sort: 'wed'})}</div>`;
+}
+
+/* ---- clubrapport (print) ---- */
+function dashReport(club){
+  const recs = dashRecs().filter(r => (r.club || '') === club), teams = dashTeams().filter(t => (t.club || '') === club);
+  const agg = {}; recs.filter(r => r.done).forEach(r => new Set([...Object.keys(r.mins), ...r.present]).forEach(id => {
+    const k = r.teamId + '|' + id, a = agg[k] = agg[k] || {t: r.teamId, m: 0, p: 0}; a.m += +r.mins[id] || 0; a.p += r.minutes; }));
+  const perTeam = {}; Object.values(agg).forEach(a => { (perTeam[a.t] = perTeam[a.t] || []).push(a.p ? a.m / a.p : 0); });
+  const scores = Object.values(perTeam).map(sh => fairOf(sh)).filter(x => x != null);
+  let ja = 0, tot = 0, w = 0, g = 0, l = 0, dv = 0, dt = 0;
+  recs.forEach(r => { if (!r.imported) Object.keys(r.players).forEach(id => { tot++; if (r.att[id] === 'ja') ja++; });
+    if (r.gf !== '' && r.gf != null && !isNaN(+r.gf)){ dv += +r.gf; dt += +r.ga; +r.gf > +r.ga ? w++ : +r.gf === +r.ga ? g++ : l++; } });
+  const rows = teams.map(t => { const rs = recs.filter(r => r.teamId === t.id);
+    const sc = fairOf(perTeam[t.id] || []);
+    return `<tr><td>${esc(t.label)}</td><td>${rs.length}</td><td>${(t.players || []).length}</td><td>${sc == null ? '–' : sc}</td><td>${Object.keys(t.members || {}).length}</td></tr>`; }).join('');
+  const html = `<!doctype html><html lang="nl"><head><meta charset="utf-8"><title>Clubrapport ${esc(dClub(club))}</title>
+  <style>body{font:15px/1.5 system-ui,sans-serif;max-width:720px;margin:24px auto;padding:0 16px;color:#111}
+  h1{font-size:24px;margin:0 0 4px}h2{font-size:16px;margin:22px 0 6px;border-bottom:2px solid #0f6b35;padding-bottom:4px}
+  table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:6px 4px;border-bottom:1px solid #ddd;text-align:left}
+  th:not(:first-child),td:not(:first-child){text-align:center}.k{display:flex;gap:18px;flex-wrap:wrap;margin:10px 0}
+  .k div{background:#f2f8f4;border:1px solid #cfe3d6;border-radius:10px;padding:8px 14px}.k b{display:block;font-size:22px;color:#0f6b35}
+  small{color:#555}@media print{body{margin:0}}</style></head><body>
+  <h1>Clubrapport ${esc(dClub(club))}</h1>
+  <small>LineMeUp · ${esc(periodLab())} · gemaakt op ${new Date().toLocaleDateString('nl-NL')}</small>
+  <div class="k"><div><b>${teams.length}</b>teams</div><div><b>${recs.length}</b>wedstrijden</div>
+  <div><b>${scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : '–'}</b>eerlijkheid</div>
+  <div><b>${pct1(ja, tot)}%</b>opkomst</div><div><b>${new Set(teams.flatMap(t => Object.keys(t.members || {}))).size}</b>actieve trainers</div></div>
+  <h2>Resultaten</h2><p>${w} gewonnen, ${g} gelijk, ${l} verloren · doelpunten ${dv}–${dt} (saldo ${dv - dt >= 0 ? '+' : ''}${dv - dt}).</p>
+  <h2>Per team</h2><table><thead><tr><th>Team</th><th>Wedstrijden</th><th>Spelers</th><th>Eerlijkheid</th><th>Trainers</th></tr></thead><tbody>${rows || '<tr><td colspan="5">Geen teams.</td></tr>'}</tbody></table>
+  <h2>Toelichting</h2><p><small>De eerlijkheidsscore loopt van 0 tot 100 en geeft aan hoe gelijk de speeltijd verdeeld is: 100 betekent dat iedereen even veel speelde. Opkomst is het aandeel spelers dat zich per wedstrijd aanmeldde. Er staan geen persoonsgegevens van spelers in dit rapport.</small></p>
+  <script>window.onload=function(){setTimeout(function(){window.print()},300)}<\/script></body></html>`;
+  const w2 = window.open('', '_blank');
+  if (!w2){ downloadFile(`clubrapport-${club}.html`, html, 'text/html'); toast('Rapport gedownload'); return; }
+  w2.document.write(html); w2.document.close();
+}
+
 function viewBeheer(){
   if (!myUid()) return `<div class="card empty"><b>🔒</b>Log in om de beheeromgeving te gebruiken.</div>`;
   if (!adm.owner && !adm.clubs.length) return `<div class="card empty"><b>🛡️</b>Je hebt geen beheerrechten.</div>`;
   if (!adm.data){ setTimeout(() => loadAdmin(), 0); return `<div class="card empty"><b>⏳</b>Beheerdersgegevens laden…</div>`; }
   if (adm.err) return `<div class="card empty"><b>⚠️</b>${esc(adm.err)}<br><br><button class="btn" data-act="admReload">Opnieuw</button></div>`;
   const vq = ['vragen', 'Vragen' + (adm.qOpen ? ` (${adm.qOpen})` : '')];
-  const subs = adm.owner ? [['overzicht', 'Overzicht'], ['clubs', 'Clubs'], ['trainers', 'Trainers'], vq] : [['overzicht', 'Overzicht'], ['teams', 'Teams'], ['trainers', 'Trainers'], vq];
+  const subs = adm.owner ? [['overzicht', 'Overzicht'], ['dash', 'Dashboard'], ['clubs', 'Clubs'], ['trainers', 'Trainers'], vq] : [['overzicht', 'Overzicht'], ['teams', 'Teams'], ['trainers', 'Trainers'], vq];
   let head = `<div class="admhead"><button class="btn sm" data-tab="matches">‹ Terug naar app</button><span class="admrole">${adm.owner ? 'EIGENAAR' : 'CLUBBEHEER'}</span>${!adm.owner && adm.clubs.length > 1 ? `<select data-admclub="1">${adm.clubs.map(c => `<option value="${esc(c.key)}" ${c.key === adm.club ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select>` : !adm.owner ? `<b>${esc((adm.clubs[0] || {}).name || '')}</b>` : ''}<button class="btn sm" data-act="admReload" aria-label="Vernieuwen">🔄</button></div>
     <div class="admsubs">${subs.map(([k, n]) => `<button class="${adm.sub === k && !adm.view ? 'on' : ''}" data-act="admSub" data-id="${k}">${n}</button>`).join('')}</div>`;
   if (adm.view){
@@ -3560,6 +4040,7 @@ function viewBeheer(){
   }
   if (adm.sub === 'vragen') return head + admQuestions();
   if (adm.sub === 'trainers') return head + admTrainersList();
+  if (adm.sub === 'dash' && adm.owner) return head + admDash();
   if (adm.sub === 'clubs' && adm.owner) return head + admClubsList();
   if (adm.sub === 'teams') return head + admTeamsCard(adm.data.teams);
   return head + admOverview();
@@ -3818,6 +4299,19 @@ async function admAction(act, id){
     }
     if (act === 'admReload'){ await detectAdmin(); return reload(); }
     if (act === 'admSub'){ adm.sub = id; adm.view = null; return render(); }
+    if (act === 'dashTab'){ dash.tab = id; dash.tr = null; render(); window.scrollTo(0, 0); return; }
+    if (act === 'dashTr'){ dash.tr = id; render(); window.scrollTo(0, 0); return; }
+    if (act === 'dashTrBack'){ dash.tr = null; return render(); }
+    if (act === 'dashReset'){ Object.assign(dash, {club: '', team: '', trainer: '', season: '', period: 'seizoen', from: '', to: '', q: ''}); dash._recs = null; return render(); }
+    if (act === 'dsort'){ const [k, c] = id.split('|'); const cur = dash.sorts[k] || {}; dash.sorts[k] = {k: c, d: cur.k === c ? -(cur.d || -1) : -1}; return render(); }
+    if (act === 'dcsv'){ dcsvDownload(id); return; }
+    if (act === 'dashReport'){ dashReport(id); return; }
+    if (act === 'dashMets'){
+      dash.metL = true; render();
+      try { dash.mets = await api.metList(Date.now() - 180 * 864e5); dash.metErr = ''; }
+      catch(e){ dash.mets = []; dash.metErr = e.message || String(e); }
+      dash.metL = false; return render();
+    }
     if (act === 'admBack'){ adm.view = adm.prev || null; adm.prev = null; return render(); }
     if (act === 'admTeam' || act === 'admTrainer' || act === 'admClub'){ adm.prev = adm.view; adm.view = [act.slice(3).toLowerCase(), id]; render(); window.scrollTo(0, 0); return; }
     if (act === 'reqOk'){ const r = d.requests.find(x => x.id === id); await api.clubAdminsSet(r.club, {name: r.clubName, uids: {[r.id]: {name: r.name || '', email: r.email || ''}}}); await api.reqDel(r.id); return reload(`${r.name} is nu clubbeheerder van ${r.clubName}`); }
@@ -4199,7 +4693,7 @@ async function coachAnswer(m, pid, se){
   const p = player(pid); if (!p) return;
   const y = window.scrollY;
   const v = await coachSheet(pshort(p), attOf(m, pid)); if (!v) return;
-  setAtt(m, pid, v, se || season(), 'trainer');
+  setAtt(m, pid, v, se || season(), 'trainer'); logMet('att');
   requestAnimationFrame(() => window.scrollTo(0, y));
 }
 function attCard(m){
@@ -4270,7 +4764,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-12.18';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-13.1';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
@@ -4299,6 +4793,19 @@ const cloud = {creating:new Set(), api:null, status:'off', outdated:false, pendi
 const cloudMap = () => { try { return JSON.parse(localStorage.getItem(CLOUD_MAP_KEY)) || {}; } catch(e){ return {}; } };
 const setCloudMap = m => { try { localStorage.setItem(CLOUD_MAP_KEY, JSON.stringify(m)); } catch(e){} };
 const cloudCfg = (tid = S.active.team) => cloudMap()[tid] || null;
+// lichte gebruiksmeting voor het eigenaar-dashboard: geen namen, geen spelergegevens
+const MET_GAP = {stats: 18e5, share: 9e5, att: 9e5, survey: 36e5, rules: 36e5, lineupSave: 0};
+function logMet(t, ms){
+  try {
+    if (!cloud.api || !cloud.api.metAdd || !myUid()) return;
+    const team = (cloudCfg() || {}).id || '';
+    const gap = MET_GAP[t], k = 'lm.met.' + t + '.' + team;
+    if (gap){ const last = +localStorage.getItem(k) || 0; if (Date.now() - last < gap) return; localStorage.setItem(k, String(Date.now())); }
+    const v = {t, at: Date.now(), team, uid: myUid()};
+    if (ms > 0) v.ms = Math.min(36e5, Math.round(ms));
+    cloud.api.metAdd(v).catch(() => {});
+  } catch(e){}
+}
 const isLegacy = c => !!c && c.v !== 7;
 const cloudAvailable = () => !!(window.__cloudApi || window.FIREBASE_CONFIG);
 const myUid = () => cloud.user && cloud.user.uid;
@@ -4384,6 +4891,8 @@ function firebaseApi(){
       faqDel: id => fs.deleteDoc(d('faq', id)),
       usersList: async n => (await fs.getDocs(n ? fs.query(fs.collection(db, 'users'), fs.limit(n)) : fs.collection(db, 'users'))).docs.map(x => ({id: x.id, ...x.data()})),
       clubAdminsList: async () => (await fs.getDocs(fs.collection(db, 'clubAdmins'))).docs.map(x => ({id: x.id, ...x.data()})),
+      metAdd: v => fs.setDoc(d('metrics', 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8)), v),
+      metList: async since => (await fs.getDocs(fs.query(fs.collection(db, 'metrics'), fs.where('at', '>=', since), fs.orderBy('at', 'desc'), fs.limit(3000)))).docs.map(x => ({id: x.id, ...x.data()})),
       eventAdd: (club, v) => fs.setDoc(d('clubIndex', club, 'events', 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8)), v),
       eventsClub: async club => (await fs.getDocs(fs.collection(db, 'clubIndex', club, 'events'))).docs.map(x => ({id: x.id, ...x.data()})),
       clubAdminJoin: async (club, via, clubName, info) => { const ref = d('clubAdmins', club), snap = await fs.getDoc(ref); const v = {uids: {[cloud.user.uid]: info}, via}; if (!snap.exists()) v.name = clubName || club; await fs.setDoc(ref, v, {merge: true}); },
@@ -4576,7 +5085,8 @@ async function createRemoteTeamNow(t){
   t.people = {[uid]: {name: myName() || 'Trainer', email: (cloud.user && cloud.user.email) || '', joined: Date.now()}};
   t.invites = []; delete t.members;
   const club = clubSlug(t.club);
-  await cloud.api.teamCreate(rid, {members: {[uid]: 'owner'}, data: JSON.stringify(t), version: DATA_VERSION, updated: Date.now(), by: DEVICE, club, label: teamLabel(t)});
+  await cloud.api.teamCreate(rid, {members: {[uid]: 'owner'}, data: JSON.stringify(t), version: DATA_VERSION, updated: Date.now(), created: Date.now(), by: DEVICE, club, label: teamLabel(t)});
+  logMet('teamCreate');
   if (club && cloud.api.idxSet) cloud.api.idxSet(club, rid, {...idxInfo(t), updated: Date.now()}).catch(e => console.error(e));
   const map = cloudMap(); map[t.id] = {id: rid, v: 7}; setCloudMap(map);
   if (!t.fromInvite && cloud.api.eventAdd) cloud.api.eventAdd(club || '-', {type: 'self', uid, name: myName() || 'Trainer', email: (cloud.user && cloud.user.email) || '', team: teamLabel(t), clubName: (t.club || '').trim(), rid, at: Date.now()}).catch(e => console.warn('melding', e));
@@ -5548,6 +6058,7 @@ document.addEventListener('pointerup', e => endDrag(e, false));
 document.addEventListener('pointercancel', e => endDrag(e, true));
 
 function shareMatch(m){
+  logMet('share');
   const pos = matchPositions(m), times = segTimes(m.settings);
   let txt = `⚽ ${matchTitle(m)}${m.date ? ' (' + fmtDate(m.date, {}) + ')' : ''}\nFormatie ${m.settings.formation}\n`;
   m.segments.forEach((lu, s) => {
