@@ -140,7 +140,11 @@
   .bench.grid3 .benchp .bd{display:none}
   .bench.grid3 .benchp i{font-style:normal;font-size:12px;font-weight:800;color:var(--muted)}
   .bench.grid3 .benchp.low i{color:var(--outc)}
-  .livectl.stick{position:sticky;bottom:calc(76px + env(safe-area-inset-bottom));background:var(--solid);padding-top:8px;z-index:4;display:flex;flex-direction:column;gap:8px;margin-top:10px}
+  .livectl.stick{position:fixed;left:12px;right:12px;max-width:520px;margin:0 auto;bottom:calc(16px + env(safe-area-inset-bottom));z-index:35;display:flex;flex-direction:column;gap:8px;padding-right:62px}
+  body:not(.hashelp) .livectl.stick{padding-right:0}
+  body.livenow #app{padding-bottom:calc(150px + env(safe-area-inset-bottom))}
+  body.livenow nav{display:none}
+  .livectl.stick .btn{box-shadow:0 8px 24px rgba(0,0,0,.3)}
   .livectl .prim{min-height:56px;font-size:17px;font-weight:900}
   .livectl .sec{min-height:48px;font-weight:800}
   .livectl .tiny{min-height:44px;border:0;background:none;color:var(--muted);font-size:13px;font-weight:700;text-decoration:underline}
@@ -164,6 +168,14 @@
   .wtab.on{border:2px solid var(--inc);color:var(--g);background:var(--surf)}
   .incard{display:flex;align-items:center;gap:12px;background:color-mix(in srgb,var(--g) 10%,var(--surf));border:1px solid color-mix(in srgb,var(--g) 35%,transparent);border-radius:14px;padding:12px}
   .incard.sm{padding:8px 10px}
+  .incard.out{background:color-mix(in srgb,var(--outc) 12%,var(--surf));border-color:color-mix(in srgb,var(--outc) 45%,transparent)}
+  .incard.out .indot{background:var(--outc);color:#4a2400}
+  .incard.out .innm small{color:#b4601a}
+  .swrow{display:flex;align-items:center;gap:12px;border:1px solid var(--line);background:var(--surf);border-radius:12px;padding:10px 12px;margin-top:12px}
+  .swnm{display:flex;flex-direction:column;min-width:0}
+  .swnm b{font-size:15px;font-weight:800}
+  .swnm small{font-size:11px;color:var(--muted);font-weight:600}
+  .swrow .switch{margin-left:auto}
   .indot{flex:none;width:46px;height:46px;border-radius:50%;background:var(--g);color:#fff;display:grid;place-items:center;font-weight:900;font-size:15px}
   .incard.sm .indot{width:36px;height:36px;font-size:13px}
   .innm{display:flex;flex-direction:column;min-width:0}
@@ -202,7 +214,7 @@
   .sheetalt button{flex:1 1 auto;min-height:44px;border:0;background:none;color:var(--muted);font:inherit;font-weight:700;font-size:13px;text-decoration:underline;cursor:pointer}
   @media (prefers-reduced-motion: reduce){.modal.sheetup>.box{animation:none}}
   /* ---- tussendoor wisselen ---- */
-  .toast.undo{display:flex;align-items:center;gap:12px;white-space:normal;text-align:left}
+  .toast.undo{display:flex;align-items:center;gap:12px;white-space:normal;text-align:left;width:max-content;max-width:92vw;bottom:calc(92px + env(safe-area-inset-bottom))}
   .toast.undo button{flex:none;border:0;background:var(--y);color:var(--ink);font:inherit;font-weight:800;border-radius:999px;padding:7px 13px;min-height:36px;cursor:pointer}
   .midbox .pitch{margin:8px 0}
   .midout{display:flex;align-items:center;gap:8px;background:var(--surf2);border-radius:12px;padding:10px 12px;margin:8px 0}
@@ -2238,12 +2250,11 @@ async function wisselMenu(m){
       ? row('plan', 'Geplande wissels', nPlan ? `Naar ${blockLabel(m, cur + 1)} · ${nPlan} wissel${nPlan === 1 ? '' : 's'}, één voor één` : `Naar ${blockLabel(m, cur + 1)} · geen wissels gepland`)
       : row('none', 'Geplande wissels', 'Dit is het laatste blok', true)}
     ${row('extra', 'Extra wissel', `Nu iemand wisselen · telt als een half blok van ${Math.round((times[cur][1] - times[cur][0]) / 2)} min`)}
-    ${row('moment', 'Extra wisselmoment', 'Een extra blok toevoegen aan de wedstrijd')}
     <div class="sheetalt"><button data-r="no">Sluiten</button></div>`;
   const r = await sheetPick(html);
   if (r === 'plan') await goLiveBlock(m, cur + 1);
   else if (r === 'extra') await midSubPick(m);
-  else if (r === 'moment') await addSubFlow(m);
+
 }
 // keuzeblad dat de gekozen waarde teruggeeft
 function sheetPick(html){
@@ -2537,6 +2548,9 @@ async function midSubFlow(m, slot){
   if (!bench.length){ await tell('Er staat niemand op de bank die erin kan.'); return; }
   const half = splitLen(len, 2);
   const st = {step: 1, reason: 'tact', inId: bench[0], mode: 'plek', view: 'na'};
+  const cand = id => { const p2 = player(id), prefs = (prefsOf(p2) || []).filter(Boolean);
+    let hit = 0, via = ''; prefs.forEach(c => { const q = prefQuality(c, P); if (q >= .8 && q > hit){ hit = q; via = prefName(c); } });
+    return {id, mins: up[id] || 0, why: hit ? `past op ${esc(P.code)} (voorkeur ${esc(via)})` : (prefs.length ? 'voorkeur ' + prefs.map(prefName).join(', ') : 'voorkeur niet ingevuld')}; };
   const shift = () => st.mode === 'schuif' ? shiftSuggest(m, slot, st.inId) : null;
   const after = () => { const n = lu.slice(), sh = shift();
     if (sh){ n[slot] = sh.id; n[sh.j] = st.inId; } else n[slot] = st.inId;
@@ -2548,23 +2562,22 @@ async function midSubFlow(m, slot){
   const draw = () => {
     if (st.step === 1){
       const sug = shiftSuggest(m, slot, st.inId);
-      return `<p>🔁 Tussendoor wisselen · ${esc(blockLabel(m, cur))}</p>
-      <div class="midout"><span class="wpos">${esc(isK ? 'K' : P.code)}</span><b>${esc(pname(outId))}</b><span class="muted">${Math.round(up[outId] || 0)}' gespeeld</span></div>
-      <div class="midlbl">Waarom?</div>
-      <div class="grid2">
-        <button class="btn ${st.reason === 'tact' ? 'pri' : ''}" data-x="reason" data-v="tact">Tactisch / moe</button>
-        <button class="btn ${st.reason === 'blessure' ? 'pri' : ''}" data-x="reason" data-v="blessure">Blessure · niet meer in</button>
-      </div>
-      <div class="midlbl">Wie komt erin? <span class="muted">(minst gespeeld eerst)</span></div>
-      <div class="midlist">${bench.map((id, k) => `<button class="midpick ${st.inId === id ? 'on' : ''}" data-x="in" data-v="${id}">
-        <span class="bd">${esc((player(id).number || player(id).name.charAt(0)).toString().toUpperCase())}</span>
-        <span class="midnm">${esc(pshort(player(id)))}${k === 0 ? '<i class="tipbadge">aanbevolen</i>' : ''}<small>${esc((prefsOf(player(id)) || []).filter(Boolean).map(prefName).join(' · ') || 'geen voorkeur')}</small></span>
-        <b>${Math.round(up[id] || 0)}'</b></button>`).join('')}</div>
+      return `<div class="wizhead"><div><small>EXTRA WISSEL · ${esc(blockLabel(m, cur)).toUpperCase()}</small><b>Wie komt erin?</b></div><button class="wizx" data-x="close" aria-label="Sluiten">Sluiten</button></div>
+      <div class="incard out"><span class="indot">${esc(initials(player(outId)))}</span>
+        <span class="innm"><small>ERUIT</small><b>${esc(pshort(player(outId)))}</b><i>${esc(isK ? 'Keeper' : (POS_NAMES[P.code] || P.code))} · ${Math.round(up[outId] || 0)}' gespeeld</i></span></div>
+      <div class="midlbl">Erin · minst gespeeld eerst</div>
+      ${bench.map((id, k) => { const c = cand(id);
+        return `<button class="outc ${st.inId === id ? 'on' : ''}" data-x="in" data-v="${esc(id)}">
+          <span class="radio"></span>
+          <span class="outnm"><b>${esc(pshort(player(id)))}</b><small>${c.why}</small></span>
+          <span class="outr">${k === 0 ? '<i class="plan">MINST GESPEELD</i>' : ''}<i>${Math.round(c.mins)}'</i></span></button>`; }).join('')}
       <div class="midlbl">Dit blok wordt gedeeld</div>
       <div class="midsplit"><span style="flex:${half[0]}">${esc(pshort(player(outId)))} ${half[0]}'</span><span style="flex:${half[1]}" class="b">${esc(pshort(player(st.inId)))} ${half[1]}'</span></div>
       ${showSubCounter(m) && subMoments(m) >= maxSubMoments(m) ? `<div class="midnote red">Je hebt alle ${maxSubMoments(m)} wisselmomenten gebruikt. Deze wissel telt er nog een bij.</div>` : ''}
       ${isK ? `<div class="midnote">🧤 Je wisselt de keeper. ${esc(pshort(player(st.inId)))} staat na de wissel op goal.</div>` : ''}
       ${sug ? `<div class="midnote">Tip: ${esc(pshort(player(sug.id)))} past beter op ${esc(P.code)}. Je kunt op het volgende scherm kiezen om door te schuiven.</div>` : ''}
+      <div class="swrow"><span class="swnm"><b>Komt er niet meer in</b><small>Bijvoorbeeld bij een blessure: hij valt uit alle volgende blokken.</small></span>
+        <button class="switch ${st.reason === 'blessure' ? 'on' : ''}" data-x="reason" data-v="${st.reason === 'blessure' ? 'tact' : 'blessure'}" role="switch" aria-checked="${st.reason === 'blessure'}" aria-label="Komt er niet meer in"><i></i></button></div>
       <button class="btn pri full sheetbtn" data-x="step" data-v="2">Bekijk op het veld →</button>
       <div class="sheetalt"><button data-x="close">Annuleren</button><button data-x="swap">Alleen van plek ruilen</button></div>`;
     }
@@ -2828,6 +2841,7 @@ async function replanSheet(m, hurtId, hurtPlanned){
 function liveMore(m, last){
   const cur = m.cur || 0, b = (act, txt, note) => `<button class="moreitem" data-act="${act}"><b>${txt}</b>${note ? `<small>${note}</small>` : ''}</button>`;
   return `<details class="livemore" data-key="liveMore" ${ui.open.liveMore ? 'open' : ''}><summary aria-label="Meer opties"><span>•••</span> Meer opties</summary><div class="morelist">
+    ${b('addSub', '＋ Extra wisselmoment', 'Voegt een blok toe aan de wedstrijd.')}
     ${ui.seg < last ? b('regenRest', '🔄 Rest eerlijk verdelen', 'Laat alles t/m dit blok staan en verdeelt de blokken erna opnieuw.') : ''}
     ${m.posOverride && Object.keys(m.posOverride).length ? b('resetPos', '↩️ Posities terug', 'Zet verschoven posities terug naar de formatie.') : ''}
     ${ui.seg > 0 ? b('copyPrev', '📋 Neem vorige over', 'Dit blok gelijk maken aan het vorige.') : ''}
@@ -5440,7 +5454,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-14.6';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-14.7';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
