@@ -140,7 +140,7 @@
   .bench.grid3 .benchp .bd{display:none}
   .bench.grid3 .benchp i{font-style:normal;font-size:12px;font-weight:800;color:var(--muted)}
   .bench.grid3 .benchp.low i{color:var(--outc)}
-  .livectl.stick{position:sticky;bottom:calc(84px + env(safe-area-inset-bottom));background:var(--solid);padding-top:8px;z-index:4;display:flex;flex-direction:column;gap:8px;margin-top:10px}
+  .livectl.stick{position:sticky;bottom:calc(76px + env(safe-area-inset-bottom));background:var(--solid);padding-top:8px;z-index:4;display:flex;flex-direction:column;gap:8px;margin-top:10px}
   .livectl .prim{min-height:56px;font-size:17px;font-weight:900}
   .livectl .sec{min-height:48px;font-weight:800}
   .livectl .tiny{min-height:44px;border:0;background:none;color:var(--muted);font-size:13px;font-weight:700;text-decoration:underline}
@@ -190,6 +190,12 @@
   .sumrow{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid var(--line);background:var(--surf);border-radius:12px;padding:12px 10px;font:inherit;color:inherit;cursor:pointer;min-height:48px;margin-bottom:6px}
   .sumrow i{font-style:normal;margin-left:auto;font-size:11px;font-weight:800;color:var(--muted);background:var(--surf2);border-radius:999px;padding:3px 9px}
   .sheetalt.two button{flex:1 1 0}
+  .wmenu{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid var(--line);background:var(--surf);border-radius:14px;padding:14px 12px;font:inherit;color:inherit;cursor:pointer;min-height:64px;margin-bottom:8px}
+  .wmenu.dim{opacity:.5}
+  .wmnm{display:flex;flex-direction:column;min-width:0}
+  .wmnm b{font-size:16px;font-weight:900}
+  .wmnm small{font-size:12px;color:var(--muted);font-weight:600}
+  .wmar{margin-left:auto;color:var(--muted);font-size:20px;font-weight:700}
   .pitch.wizp{max-height:34vh}
   .sheetbtn{min-height:56px!important;font-size:17px;font-weight:900;margin-top:12px}
   .sheetalt{display:flex;gap:10px;justify-content:center;margin-top:8px}
@@ -2197,12 +2203,58 @@ function liveControls(m, times, cur, last, kind){
   const used = subMoments(m), max = maxSubMoments(m);
   const cnt = showSubCounter(m) ? `<div class="submcnt ${used >= max ? 'full' : ''}">Wisselmomenten gebruikt: <b>${used}</b> van ${max}${used >= max ? ' · op' : ''}</div>` : '';
   return `<div class="livectl stick">${cnt}
-    ${cur === last
-      ? `<button class="btn pri full prim" data-act="phase" data-v="post">Wedstrijd afgelopen</button>`
-      : `<button class="btn pri full prim" data-act="nextSeg">${esc(blockLabel(m, cur))} klaar → naar ${esc(blockLabel(m, cur + 1))}</button>`}
-    <button class="btn full sec" data-act="midSub">Tussendoor wisselen</button>
-    <button class="btn full tiny" data-act="addSub">＋ Extra wisselmoment</button>
+    <button class="btn pri full prim" data-act="wisselMenu">Wisselen</button>
+    ${cur === last ? `<button class="btn full sec" data-act="phase" data-v="post">Wedstrijd afgelopen</button>` : ''}
   </div>`;
+}
+async function midSubPick(m){
+  const cur = m.cur || 0, lu = m.segments[cur] || [], pos = matchPositions(m);
+  const opts = lu.map((id, i) => ({id, i})).filter(x => x.id);
+  if (!opts.length){ toast('Er staat nog niemand in het veld'); return; }
+  const up = playedUpTo(m, cur - 1);
+  const r = await chooseDialog('Wie gaat eruit?', opts.map(x => ({v: String(x.i),
+    n: `${pos[x.i].line === 'K' ? '🧤' : pos[x.i].code} ${pshort(player(x.id))} · ${Math.round(up[x.id] || 0)}'`, cls: ''})));
+  if (r != null) await midSubFlow(m, +r);
+}
+async function addSubFlow(m){
+  const times = segTimes(m.settings), b = m.phase === 'live' ? (m.cur || 0) : ui.seg;
+  let def = Math.round((times[b][0] + times[b][1]) / 2);
+  if (times.some(t => t[0] === def)) def = times[b][0] + 1;
+  const r = await subDialog(m, def);
+  if (!r) return;
+  addSubMoment(m, r.min, r.s, r.pairs);
+  commit(); window.scrollTo(0, 0);
+  toast(r.pairs.length ? `Wissel op ${r.min}' toegevoegd` : `Wisselmoment op ${r.min}' toegevoegd – zet de wissel op het veld`);
+}
+// één knop Wisselen: geplande wissels van het volgende blok, of nu iemand wisselen
+async function wisselMenu(m){
+  const times = segTimes(m.settings), cur = m.cur || 0, last = m.segments.length - 1;
+  const up = playedUpTo(m, cur);
+  const nPlan = cur < last ? subSteps(m, cur, cur + 1, up).length : 0;
+  const row = (act, title, sub, dim) => `<button class="wmenu ${dim ? 'dim' : ''}" data-r="${act}">
+    <span class="wmnm"><b>${esc(title)}</b><small>${esc(sub)}</small></span><span class="wmar">›</span></button>`;
+  const html = `<p>Wisselen · ${esc(blockLabel(m, cur))}</p>
+    ${cur < last
+      ? row('plan', 'Geplande wissels', nPlan ? `Naar ${blockLabel(m, cur + 1)} · ${nPlan} wissel${nPlan === 1 ? '' : 's'}, één voor één` : `Naar ${blockLabel(m, cur + 1)} · geen wissels gepland`)
+      : row('none', 'Geplande wissels', 'Dit is het laatste blok', true)}
+    ${row('extra', 'Extra wissel', `Nu iemand wisselen · telt als een half blok van ${Math.round((times[cur][1] - times[cur][0]) / 2)} min`)}
+    ${row('moment', 'Extra wisselmoment', 'Een extra blok toevoegen aan de wedstrijd')}
+    <div class="sheetalt"><button data-r="no">Sluiten</button></div>`;
+  const r = await sheetPick(html);
+  if (r === 'plan') await goLiveBlock(m, cur + 1);
+  else if (r === 'extra') await midSubPick(m);
+  else if (r === 'moment') await addSubFlow(m);
+}
+// keuzeblad dat de gekozen waarde teruggeeft
+function sheetPick(html){
+  return new Promise(res => {
+    const d = document.createElement('div'); d.className = 'modal sheetup';
+    d.innerHTML = iconize(`<div class="box midbox"><i class="grip"></i>${html}</div>`);
+    document.body.appendChild(d);
+    d.addEventListener('click', e => { e.stopPropagation(); const b = e.target.closest('[data-r]');
+      if (b){ d.remove(); res(b.dataset.r); setTimeout(() => { try { flushPending(); } catch(x){} }, 0); }
+      else if (e.target === d){ d.remove(); res(null); } });
+  });
 }
 // tijdens de wedstrijd: tik op een blok = naar dat blok (vooruit eerst de wissels bevestigen)
 async function goLiveBlock(m, to){
@@ -3340,28 +3392,11 @@ document.addEventListener('click', async e => {
     }
     case 'copyPrev': m.segments[ui.seg] = m.segments[ui.seg - 1].slice(); m.edited = true; commit(); toast('Vorig blok overgenomen'); break;
     case 'clearSeg': m.segments[ui.seg] = m.segments[ui.seg].map(() => null); m.edited = true; commit(); break;
-    case 'midSub': {
-      const cur = m.cur || 0, lu = m.segments[cur] || [], pos = matchPositions(m);
-      const opts = lu.map((id, i) => ({id, i})).filter(x => x.id);
-      if (!opts.length){ toast('Er staat nog niemand in het veld'); break; }
-      const up = playedUpTo(m, cur - 1);
-      const r = await chooseDialog('Wie gaat eruit?', opts.map(x => ({v: String(x.i),
-        n: `${pos[x.i].line === 'K' ? '🧤' : pos[x.i].code} ${pshort(player(x.id))} · ${Math.round(up[x.id] || 0)}'`, cls: ''})));
-      if (r != null) await midSubFlow(m, +r);
-      break;
-    }
+    case 'midSub': await midSubPick(m); break;
+    case 'wisselMenu': await wisselMenu(m); break;
     case 'regenRest': generate(m, false, ui.seg + 1); m.edited = true; commit(); toast('De rest van de wedstrijd is opnieuw eerlijk verdeeld'); break;
     case 'resetPos': delete m.posOverride; commit(); break;
-    case 'addSub': {
-      const times = segTimes(m.settings), b = m.phase === 'live' ? (m.cur || 0) : ui.seg;
-      let def = Math.round((times[b][0] + times[b][1]) / 2);
-      if (times.some(t => t[0] === def)) def = times[b][0] + 1;
-      const r = await subDialog(m, def);
-      if (!r) return;
-      addSubMoment(m, r.min, r.s, r.pairs);
-      commit(); window.scrollTo(0, 0);
-      toast(r.pairs.length ? `Wissel op ${r.min}' toegevoegd` : `Wisselmoment op ${r.min}' toegevoegd – zet de wissel op het veld`); break;
-    }
+    case 'addSub': await addSubFlow(m); break;
     case 'delSub': {
       const t = segTimes(m.settings)[ui.seg];
       const happened = m.phase === 'live' && ui.seg <= (m.cur || 0);
@@ -5405,7 +5440,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-14.5';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-14.6';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
