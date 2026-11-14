@@ -151,6 +151,46 @@
   .pl.rin .dot{box-shadow:0 0 0 4px var(--inc),0 6px 16px rgba(0,0,0,.4)}
   .pl.rout .dot{box-shadow:0 0 0 4px var(--outc),0 6px 16px rgba(0,0,0,.4)}
   .pl.rmove .dot{box-shadow:0 0 0 4px var(--movec),0 6px 16px rgba(0,0,0,.4)}
+  /* ---- wissel voor wissel ---- */
+  .wizhead{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+  .wizhead small{display:block;font-size:10px;font-weight:800;letter-spacing:.08em;color:var(--muted)}
+  .wizhead b{display:block;font-size:22px;font-weight:900;line-height:1.15}
+  .wizhead .r{margin-left:auto;text-align:right}
+  .wizx{margin-left:auto;border:0;background:none;font:inherit;font-weight:800;font-size:14px;color:var(--muted);cursor:pointer;min-height:44px;padding:0 4px}
+  .wizhead .r+.wizx,.wizhead .wizx+.r{margin-left:0}
+  .wiztabs{display:grid;gap:5px;margin-bottom:12px}
+  .wtab{min-height:36px;border-radius:9px;border:1px solid var(--line);background:var(--surf2);color:var(--muted);font:inherit;font-size:12px;font-weight:800;cursor:pointer;padding:0 2px}
+  .wtab.done{background:var(--g);border-color:var(--g);color:#fff}
+  .wtab.on{border:2px solid var(--inc);color:var(--g);background:var(--surf)}
+  .incard{display:flex;align-items:center;gap:12px;background:color-mix(in srgb,var(--g) 10%,var(--surf));border:1px solid color-mix(in srgb,var(--g) 35%,transparent);border-radius:14px;padding:12px}
+  .incard.sm{padding:8px 10px}
+  .indot{flex:none;width:46px;height:46px;border-radius:50%;background:var(--g);color:#fff;display:grid;place-items:center;font-weight:900;font-size:15px}
+  .incard.sm .indot{width:36px;height:36px;font-size:13px}
+  .innm{display:flex;flex-direction:column;min-width:0}
+  .innm small{font-size:10px;font-weight:800;letter-spacing:.07em;color:var(--g)}
+  .innm b{font-size:17px;font-weight:900}
+  .innm i{font-style:normal;font-size:12px;color:var(--muted);font-weight:600}
+  .outc{display:flex;align-items:center;gap:10px;width:100%;text-align:left;flex-wrap:wrap;border:2px solid var(--line);background:var(--surf);border-radius:12px;padding:10px;font:inherit;color:inherit;cursor:pointer;min-height:56px;margin-bottom:6px}
+  .outc.on{border-color:var(--inc);background:color-mix(in srgb,var(--inc) 12%,var(--surf))}
+  .outc .radio{flex:none;width:20px;height:20px;border-radius:50%;border:2px solid var(--line);background:var(--surf2)}
+  .outc.on .radio{border-color:var(--g);background:var(--g);box-shadow:inset 0 0 0 3px var(--surf)}
+  .outnm{display:flex;flex-direction:column;min-width:0;flex:1 1 auto}
+  .outnm b{font-size:15px;font-weight:800}
+  .outnm small{font-size:11px;color:var(--muted);font-weight:600}
+  .outr{display:flex;align-items:center;gap:6px;margin-left:auto}
+  .outr i{font-style:normal;font-size:12px;font-weight:800;color:var(--muted)}
+  .outr i.plan{background:var(--inc);color:#052e14;border-radius:999px;padding:2px 8px;font-size:10px;letter-spacing:.05em}
+  .outex{flex:1 1 100%;font-size:11px;font-weight:700;color:var(--keeper)}
+  .wizfx{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--surf2);border-radius:10px;padding:9px 10px;margin-top:10px;font-size:13px;font-weight:700;color:var(--muted)}
+  .wizfx .btn{margin-left:auto}
+  .wizbank{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .wizbank small{font-size:10px;font-weight:800;letter-spacing:.07em;color:var(--muted)}
+  .bchip{border:2px solid var(--line);border-radius:999px;padding:5px 11px;font-size:12px;font-weight:800;background:var(--surf2)}
+  .bchip.out{border-color:var(--outc);color:var(--outc)}
+  .sumrow{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid var(--line);background:var(--surf);border-radius:12px;padding:12px 10px;font:inherit;color:inherit;cursor:pointer;min-height:48px;margin-bottom:6px}
+  .sumrow i{font-style:normal;margin-left:auto;font-size:11px;font-weight:800;color:var(--muted);background:var(--surf2);border-radius:999px;padding:3px 9px}
+  .sheetalt.two button{flex:1 1 0}
+  .pitch.wizp{max-height:34vh}
   .sheetbtn{min-height:56px!important;font-size:17px;font-weight:900;margin-top:12px}
   .sheetalt{display:flex;gap:10px;justify-content:center;margin-top:8px}
   .sheetalt button{flex:1 1 auto;min-height:44px;border:0;background:none;color:var(--muted);font:inherit;font-weight:700;font-size:13px;text-decoration:underline;cursor:pointer}
@@ -2179,15 +2219,21 @@ async function goLiveBlock(m, to){
   }
   ui.peek = null;
   if (to > cur){
+    const before = m.segments.map(x => x.slice());
     for (let i = cur + 1; i <= to; i++) if (isEmptySeg(m.segments[i])) m.segments[i] = m.segments[i - 1].slice();
+    let dev = 0;
     if (to === cur + 1){
       const r = await nextBlockSheet(m, to);
-      if (r === 'edit'){ ui.seg = to; ui.peek = {m: m.id, i: to}; render(); toast('Pas dit blok aan en tik daarna opnieuw op doorgaan'); return; }
-      if (r !== 'go') return;
+      if (!r) return;
+      if (r !== 'go' && r.steps){
+        dev = r.steps.filter(x => x.skip || x.outId !== x.planned).length;
+        if (dev) m.segments[to] = workLineup(m, cur, r.steps, r.steps.length);
+      }
     }
     if (to > cur + 1 && !await confirmWissel(m, to)) return;
-    const back = cur; m.cur = to; ui.seg = to; ui.sel = null; commit(); logMet('blockNext');
-    toastUndo(`${blockLabel(m, to)} loopt`, () => { m.cur = back; ui.seg = back; commit(); toast(`Terug naar ${blockLabel(m, back)}`); });
+    const back = cur;
+    m.cur = to; ui.seg = to; ui.sel = null; commit(); logMet('blockNext', 0, String(dev));
+    toastUndo(`${blockLabel(m, to)} loopt`, () => { m.cur = back; ui.seg = back; m.segments = before; commit(); toast(`Terug naar ${blockLabel(m, back)}`); });
   } else {
     m.cur = to; ui.seg = to; ui.sel = null; commit(); toast(`Terug naar ${blockLabel(m, to)}`);
   }
@@ -2390,7 +2436,20 @@ function midPitch(m, lu, badge, mins){
 function liveDialog(draw, onAct){
   return new Promise(res => {
     const d = document.createElement('div'); d.className = 'modal sheetup';
-    const paint = () => { d.innerHTML = iconize(`<div class="box midbox"><i class="grip"></i>${draw()}</div>`); };
+    const paint = () => {
+      const prev = {}; d.querySelectorAll('[data-pid]').forEach(el => prev[el.dataset.pid] = el.getBoundingClientRect());
+      d.innerHTML = iconize(`<div class="box midbox"><i class="grip"></i>${draw()}</div>`);
+      if (!Object.keys(prev).length) return;
+      d.querySelectorAll('[data-pid]').forEach(el => {
+        const o = prev[el.dataset.pid]; if (!o) return;
+        const r = el.getBoundingClientRect(), dx = o.left - r.left, dy = o.top - r.top;
+        if (Math.abs(dx) < 3 && Math.abs(dy) < 3) return;
+        const pl = el.classList.contains('pl');
+        try { el.animate([
+          {transform: pl ? `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))` : `translate(${dx}px, ${dy}px)`},
+          {transform: pl ? 'translate(-50%,-50%)' : 'none'}], {duration: 650, easing: 'ease'}); } catch(e){}
+      });
+    };
     const close = v => { d.remove(); res(v); setTimeout(() => { try { flushPending(); } catch(e){} }, 0); };
     d.addEventListener('click', async e => {
       e.stopPropagation();
@@ -2505,35 +2564,156 @@ async function midSubFlow(m, slot){
   if (cur < m.segments.length - 1) await replanSheet(m, res.reason === 'blessure' ? outId : null, plannedLater);
 }
 
-/* ---- scherm 5: naar het volgende blok ---- */
+/* ---- scherm 5: naar het volgende blok, wissel voor wissel ---- */
+// welke invallers staan er gepland voor het volgende blok, en wie had het schema eruit gehaald?
+function subSteps(m, cur, to, up){
+  const a = (m.segments[cur] || []).slice(), b = (m.segments[to] || []).slice();
+  const ins = [];
+  b.forEach((id, i) => { if (id && !a.includes(id)) ins.push({inId: id, slot: i, planned: (a[i] && !b.includes(a[i])) ? a[i] : null}); });
+  const free = a.filter(id => id && !b.includes(id) && !ins.some(x => x.planned === id));
+  ins.forEach(x => { if (!x.planned && free.length) x.planned = free.shift(); });
+  ins.sort((x, y) => (up[x.inId] || 0) - (up[y.inId] || 0));
+  return ins.map(x => ({inId: x.inId, planned: x.planned, outId: x.planned, skip: false}));
+}
+// opstelling zoals die er nu uitziet met de keuzes die al gemaakt zijn
+function workLineup(m, cur, steps, upto){
+  const lu = (m.segments[cur] || []).slice();
+  steps.forEach((st, k) => { if (k >= upto || st.skip || !st.outId) return;
+    const i = lu.indexOf(st.outId); if (i >= 0) lu[i] = st.inId; });
+  return lu;
+}
+// suggesties: eerst op positievoorkeur, dan op meeste speeltijd
+function outCands(m, work, steps, idx, up, all){
+  const pos = matchPositions(m), st = steps[idx];
+  const inP = player(st.inId), prefs = (prefsOf(inP) || []).filter(Boolean);
+  const came = steps.slice(0, idx).filter(s => !s.skip && s.outId).map(s => s.inId);
+  const list = work.map((id, i) => ({id, i})).filter(x => x.id && x.id !== st.planned && !came.includes(x.id) && isIn(m, x.id));
+  const keeperIdx = pos.findIndex(p => p.line === 'K');
+  const useable = all ? list : list.filter(x => x.i !== keeperIdx);
+  useable.forEach(x => {
+    const P = pos[x.i];
+    let best = 0, via = '';
+    prefs.forEach(c => { const q = prefQuality(c, P); if (q >= .8 && q > best){ best = q; via = prefName(c); } });
+    x.hit = best; x.via = via; x.mins = up[x.id] || 0; x.code = P.line === 'K' ? 'K' : P.code; x.keeper = x.i === keeperIdx;
+  });
+  useable.sort((x, y) => (y.hit - x.hit) || (y.mins - x.mins));
+  useable.forEach((x, k) => { x.why = x.hit ? `zelfde positie als voorkeur (${x.via})` : (k === 0 && !useable[0].hit ? 'meest gespeeld' : 'gespeelde tijd'); });
+  return all ? useable : useable.slice(0, 3);
+}
+function inCard(m, st, up, compact){
+  const p = player(st.inId), prefs = (prefsOf(p) || []).filter(Boolean);
+  return `<div class="incard ${compact ? 'sm' : ''}">
+    <span class="indot">${esc(initials(p))}</span>
+    <span class="innm"><small>ERIN · MINST GESPEELD</small><b>${esc(pshort(p))}</b>
+      <i>${Math.round(up[st.inId] || 0)}' gespeeld · ${prefs.length ? 'voorkeur ' + esc(prefs.map(prefName).join(', ')) : 'voorkeur niet ingevuld'}</i></span></div>`;
+}
+function outCard(m, x, sel, label, why, extra){
+  return `<button class="outc ${sel ? 'on' : ''}" data-x="pick" data-v="${esc(x.id)}">
+    <span class="radio"></span>
+    <span class="outnm"><b>${esc(pshort(player(x.id)))}</b><small>${esc(why || '')}</small></span>
+    <span class="outr"><span class="wpos">${esc(x.code)}</span>${label ? `<i class="plan">${esc(label)}</i>` : `<i>${Math.round(x.mins)}'</i>`}</span>
+    ${extra ? `<small class="outex">${esc(extra)}</small>` : ''}</button>`;
+}
 async function nextBlockSheet(m, to){
   const cur = m.cur || 0, times = segTimes(m.settings), pos = matchPositions(m);
-  const a = m.segments[cur] || [], b = m.segments[to] || [];
-  const {subs, moves} = wisselChanges(m, cur, to);
-  const badge = {};
-  b.forEach((id, i) => { if (id && !a.includes(id)) badge[i] = 'in'; else if (id && a.indexOf(id) !== i) badge[i] = 'move'; });
-  const badgeNow = {}; a.forEach((id, i) => { if (id && !b.includes(id)) badgeNow[i] = 'out'; });
-  const kNow = a[pos.findIndex(p => p.line === 'K')], kNext = b[pos.findIndex(p => p.line === 'K')];
-  const st = {view: 'next'};
-  const draw = () => {
-    const nu = st.view === 'nu';
-    return `<p>▶️ Naar ${esc(blockLabel(m, to))} · ${times[to][0]}'–${times[to][1]}'</p>
-    <div class="segs two"><button class="pill ${nu ? 'on' : ''}" data-x="view" data-v="nu">${esc(blockLabel(m, cur))} (nu)</button><button class="pill ${nu ? '' : 'on'}" data-x="view" data-v="next">${esc(blockLabel(m, to))}</button></div>
-    ${midPitch(m, nu ? a : b, nu ? badgeNow : badge, playedUpTo(m, cur - 1))}
-    <div class="midlegend"><span><i class="bout"></i>eruit</span><span><i class="bin"></i>erin</span><span><i class="bmove"></i>schuift</span></div>
-    <div class="midlbl">Wissels</div>
-    ${subs.length ? subs.map(x => `<div class="wrow"><span class="wpos">${esc(x.pos)}</span><b>${x.inId ? esc(pname(x.inId)) : '–'}</b><span class="warr">erin voor</span><span>${x.outId ? esc(pname(x.outId)) : '–'}</span></div>`).join('')
-      : '<div class="wrow">Geen wissels: iedereen blijft staan.</div>'}
-    ${moves.map(x => `<div class="wrow"><b>${esc(pname(x.id))}</b><span class="grow"></span><span class="wpos">${esc(x.from)}</span><span class="warr">→</span><span class="wpos">${esc(x.to)}</span></div>`).join('')}
-    ${kNext && kNext !== kNow ? `<div class="midnote">🧤 ${esc(pname(kNext))} gaat op goal${kNow ? `, ${esc(pname(kNow))} eruit` : ''}.</div>`
-      : kNext ? `<div class="midnote">🧤 ${esc(pname(kNext))} blijft op goal.</div>` : ''}
-    <button class="btn pri full sheetbtn" data-x="go">Start ${esc(blockLabel(m, to))}</button>
-    <div class="sheetalt"><button data-x="edit">Eerst dit blok wijzigen</button></div>`;
+  const len = times[to][1] - times[to][0];
+  const up = playedUpTo(m, cur);
+  const steps = subSteps(m, cur, to, up);
+  const kIdx = pos.findIndex(p => p.line === 'K');
+  const st = {i: 0, view: 'list', all: false};
+  const n = steps.length;
+  if (!n) return (await sheet(`<p>Naar ${esc(blockLabel(m, to))} · ${times[to][0]}'–${times[to][1]}'</p>
+    <div class="muted">Er staan geen wissels gepland: iedereen blijft staan.</div>
+    <button class="btn pri full sheetbtn" data-r="ok">Start ${esc(blockLabel(m, to))}</button>
+    <div class="sheetalt"><button data-r="no">Annuleren</button></div>`)) ? 'go' : null;
+
+  // een keuze in een eerdere stap kan de gekozen speler van een latere stap weghalen
+  const normalize = () => { for (let k = 0; k < n; k++){ const w = workLineup(m, cur, steps, k), s2 = steps[k];
+    if (s2.outId && (w.indexOf(s2.outId) < 0 || !isIn(m, s2.outId))) s2.outId = null; } };
+  const cands = () => outCands(m, workLineup(m, cur, steps, st.i), steps, st.i, up, st.all);
+  const plannedOk = () => { const s = steps[st.i]; if (!s.planned) return null;
+    const w = workLineup(m, cur, steps, st.i), i = w.indexOf(s.planned);
+    return i >= 0 && isIn(m, s.planned) ? {id: s.planned, i, code: pos[i].line === 'K' ? 'K' : pos[i].code, mins: up[s.planned] || 0, keeper: pos[i].line === 'K'} : null; };
+
+  const head = () => `<div class="wizhead"><div><small>${esc(blockLabel(m, cur)).toUpperCase()} KLAAR · NAAR ${esc(blockLabel(m, to)).toUpperCase()}</small>
+      <b>${st.i >= n ? 'Overzicht' : `Wissel ${st.i + 1} van ${n}`}</b></div><button class="wizx" data-x="close" aria-label="Sluiten">Sluiten</button></div>
+    <div class="wiztabs" style="grid-template-columns:repeat(${n + 1},1fr)">
+      ${steps.map((s, k) => `<button class="wtab ${k < st.i ? 'done' : ''} ${k === st.i ? 'on' : ''}" data-x="step" data-v="${k}">Wissel ${k + 1}</button>`).join('')}
+      <button class="wtab ${st.i >= n ? 'on' : ''}" data-x="step" data-v="${n}">Overzicht</button></div>`;
+
+  const listView = () => {
+    normalize();
+    const s = steps[st.i], pl = plannedOk(), cs = cands(), sel = s.skip ? null : s.outId;
+    const selName = sel ? pshort(player(sel)) : null;
+    return `${head()}${inCard(m, s, up)}
+    <div class="midlbl">Wie gaat eruit?</div>
+    ${pl ? outCard(m, pl, sel === pl.id, 'GEPLAND', 'stond zo in het schema', pl.keeper ? `dan keept ${pshort(player(s.inId))}` : '') : '<div class="muted" style="font-size:13px;margin-bottom:6px">De geplande speler staat er niet meer in. Kies zelf wie eruit gaat.</div>'}
+    <div class="midlbl">${st.all ? 'Alle spelers in het veld' : 'Of een suggestie · op positie, dan speeltijd'}</div>
+    ${cs.map(x => outCard(m, x, sel === x.id, '', x.why, x.keeper ? `dan keept ${pshort(player(s.inId))}` : '')).join('') || '<div class="muted" style="font-size:13px">Geen andere spelers beschikbaar.</div>'}
+    ${sel ? `<div class="wizfx"><span>${esc(pshort(player(s.inId)))} gaat naar ${Math.round((up[s.inId] || 0) + len)}' · ${esc(selName)} blijft op ${Math.round(up[sel] || 0)}'</span>
+      <button class="btn sm" data-x="view" data-v="field">Bekijk op het veld</button></div>`
+      : `<div class="wizfx"><span>${s.skip ? `${esc(pshort(player(s.inId)))} blijft op de bank.` : `Kies wie eruit gaat, of sla deze wissel over.`}</span></div>`}
+    <div class="sheetalt two"><button data-x="all">${st.all ? 'Alleen suggesties' : 'Wissel met andere'}</button><button data-x="skip">${s.skip ? 'Toch wisselen' : 'Sla over'}</button></div>
+    <button class="btn pri full sheetbtn" data-x="next">${st.i + 1 < n ? 'Volgende wissel →' : 'Naar overzicht →'}</button>`;
   };
-  return liveDialog(draw, (act, v, close) => {
-    if (act === 'view'){ st.view = v; return; }
-    close(act); return false;
-  });
+
+  const fieldView = () => {
+    normalize();
+    const s = steps[st.i], pl = plannedOk(), cs = cands(), sel = s.skip ? null : s.outId;
+    const w = workLineup(m, cur, steps, st.i);
+    const shown = w.slice(); let ring = {};
+    if (sel){ const i = w.indexOf(sel); if (i >= 0){ shown[i] = s.inId; ring[i] = 'in'; } }
+    const benched = benchIds(m, cur).filter(id => id !== s.inId).concat(sel ? [sel] : []);
+    return `<div class="wizhead"><button class="wizx" data-x="view" data-v="list">← Lijst</button>
+      <div class="r"><small>NAAR ${esc(blockLabel(m, to)).toUpperCase()}</small><b>Wissel ${st.i + 1} van ${n}</b></div></div>
+    ${inCard(m, s, up, true)}
+    ${wizPitch(m, shown, ring, up, s.inId)}
+    <div class="wizbank"><small>BANK</small>${benched.map(id => `<span class="bchip ${sel === id ? 'out' : ''}" data-pid="${esc(id)}">${esc(pshort(player(id)))}</span>`).join('') || '<span class="muted">–</span>'}</div>
+    <div class="midlbl">Wie gaat eruit? · of tik een speler op het veld</div>
+    ${pl ? outCard(m, pl, sel === pl.id, 'GEPLAND', 'stond zo in het schema', pl.keeper ? `dan keept ${pshort(player(s.inId))}` : '') : ''}
+    ${cs.map(x => outCard(m, x, sel === x.id, '', x.hit ? 'POSITIE' : 'SPEELTIJD', x.keeper ? `dan keept ${pshort(player(s.inId))}` : '')).join('')}
+    <div class="sheetalt"><button data-x="all">${st.all ? 'Suggesties' : 'Wissel met andere'}</button></div>
+    <button class="btn pri full sheetbtn" data-x="view" data-v="list" ${sel ? '' : 'disabled'}>${sel ? `Kies ${esc(pshort(player(sel)))} →` : 'Kies eerst een speler'}</button>`;
+  };
+
+  const sumView = () => (normalize(), `${head()}
+    <div class="midlbl">Dit gebeurt er bij ${esc(blockLabel(m, to))}</div>
+    ${steps.map((s, k) => `<button class="sumrow" data-x="step" data-v="${k}">
+      ${s.skip || !s.outId ? `<span><b>${esc(pshort(player(s.inId)))}</b> blijft op de bank</span><i>${s.skip ? 'overgeslagen' : 'niemand gekozen'}</i>`
+        : `<span><b>${esc(pshort(player(s.inId)))}</b> erin voor ${esc(pshort(player(s.outId)))}</span><i>${esc(posCodeOf(m, workLineup(m, cur, steps, k), s.outId))}</i>`}</button>`).join('')}
+    <div class="muted" style="font-size:12px;margin-top:8px">Tik op een regel om die wissel te wijzigen.</div>
+    <button class="btn pri full sheetbtn" data-x="go">Start ${esc(blockLabel(m, to))}</button>`);
+
+  return liveDialog(
+    () => st.i >= n ? sumView() : (st.view === 'field' ? fieldView() : listView()),
+    (act, v, close) => {
+      const s = steps[st.i];
+      if (act === 'close'){ close(null); return false; }
+      if (act === 'step'){ st.i = +v; st.view = 'list'; st.all = false; return; }
+      if (act === 'view'){ st.view = v; return; }
+      if (act === 'all'){ st.all = !st.all; return; }
+      if (act === 'pick'){ s.outId = v; s.skip = false; return; }
+      if (act === 'skip'){ s.skip = !s.skip; if (!s.skip && !s.outId) s.outId = s.planned; return; }
+      if (act === 'next'){ st.i++; st.view = 'list'; st.all = false; return; }
+      if (act === 'go'){ close({steps}); return false; }
+    });
+}
+const posCodeOf = (m, lu, id) => { const pos = matchPositions(m), i = lu.indexOf(id); return i >= 0 ? (pos[i].line === 'K' ? 'K' : pos[i].code) : ''; };
+// veld in de wizard: bolletjes met data-pid zodat ze geanimeerd verschuiven
+function wizPitch(m, lu, ring, up, inId){
+  const pos = matchPositions(m);
+  const size = pos.length <= 7 ? 'lg' : pos.length <= 9 ? 'md' : 'sm';
+  return `<div class="pitch ${size} mini livebig wizp">
+    <div class="ln mid"></div><div class="ln circ"></div>
+    <div class="ln box t"></div><div class="ln box b"></div>
+    ${pos.map((p, i) => {
+      const id = lu[i], k = ring[i];
+      return `<div class="pl ${p.line === 'K' ? 'k' : ''} ${id ? '' : 'emptyp'} ${k ? 'r' + k : ''} ${id && id !== inId ? 'tapfocus' : ''}" ${id ? `data-pid="${esc(id)}"` : ''} ${id && id !== inId ? `data-x="pick" data-v="${esc(id)}" role="button" tabindex="0"` : ''}
+        style="left:${p.x}%;top:${7 + p.y * .86}%" aria-label="${esc((p.line === 'K' ? 'Keeper' : (POS_NAMES[p.code] || p.code)) + ': ' + (id ? pname(id) : 'leeg'))}">
+        <div class="dot">${id ? esc(initials(player(id))) : (p.line === 'K' ? '🧤' : p.code)}</div>
+        <div class="nm">${id ? esc(pname(id)) : '—'}</div>
+        <div class="pmin">${esc(p.line === 'K' ? 'K' : p.code)}${id ? ' · ' + Math.round(up[id] || 0) + "'" : ''}</div></div>`;
+    }).join('')}</div>`;
 }
 
 /* ---- scherm 4: herplannen ---- */
@@ -5225,7 +5405,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-14.4';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-14.5';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
