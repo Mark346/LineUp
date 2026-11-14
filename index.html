@@ -1907,16 +1907,18 @@ function viewMatch(){
     <div class="card">
       <h2>⏱️ Speeltijd</h2>
       <div class="ovwrap"><table class="ov">
-        <tr><th>Speler</th>${times.map((t, i) => `<th class="${i === ui.seg ? 'cur' : ''}">${i + 1}</th>`).join('')}<th>${ph === 'done' || ph === 'post' ? 'Min' : 'Nu'}</th>${ph === 'done' || ph === 'post' ? '' : '<th>Tot.</th>'}</tr>
+        <tr><th>Speler</th>${times.map((t, i) => `<th class="${i === ui.seg ? 'cur' : ''}">${i + 1}</th>`).join('')}<th>${ph === 'done' || ph === 'post' ? 'Min' : 'Nu'}</th>${ph === 'done' || ph === 'post' ? '<th>⚽</th><th>Ass</th>' : '<th>Tot.</th>'}</tr>
         ${Object.entries(stt).sort((a, b) => (ph === 'done' || ph === 'post') ? (b[1].mins - a[1].mins) : ((up[a[0]] - up[b[0]]) || (a[1].mins - b[1].mins))).map(([id, r]) => {
           const shown = (ph === 'done' || ph === 'post') ? r.mins : up[id];
           return `<tr>
           <td>${esc(pname(id))}${isIn(m, id) ? '' : ' <span class="muted">(weg)</span>'}<div class="bar"><i style="width:${Math.round(shown / st.matchMinutes * 100)}%"></i></div></td>
           ${r.per.map((c, i) => `<td class="${i === ui.seg ? 'cur ' : ''}${c ? (c === 'K' ? 'kp' : '') : 'w'}">${c ? c : (avail(m, id, i) ? 'W' : '–')}</td>`).join('')}
-          <td><b>${Math.round(shown)}'</b></td>${ph === 'done' || ph === 'post' ? '' : `<td class="muted">${Math.round(r.mins)}'</td>`}</tr>`;
+          <td><b>${Math.round(shown)}'</b></td>${ph === 'done' || ph === 'post'
+            ? `<td><b>${(m.goals || {})[id] || ''}</b></td><td><b>${(m.assists || {})[id] || ''}</b></td>`
+            : `<td class="muted">${Math.round(r.mins)}'</td>`}</tr>`;
         }).join('')}
       </table></div>
-      <div class="muted" style="margin-top:8px">${ph === 'done' || ph === 'post' ? 'W = reserve' : `Nu = gespeeld t/m blok ${ui.seg + 1} · Tot. = met de planning erbij · W = reserve · minst gespeeld bovenaan`}</div>
+      <div class="muted" style="margin-top:8px">${ph === 'done' || ph === 'post' ? 'W = reserve · ⚽ = doelpunten · Ass = assists' : `Nu = gespeeld t/m blok ${ui.seg + 1} · Tot. = met de planning erbij · W = reserve · minst gespeeld bovenaan`}</div>
     </div>`;
 
   const presenceCard = `
@@ -1960,8 +1962,9 @@ function viewMatch(){
   </div>`;
 
   // ---- na de wedstrijd
-  const goals = m.goals || {};
+  const goals = m.goals || {}, assists = m.assists || {};
   const scorerTotal = Object.values(goals).reduce((a, b) => a + b, 0);
+  const assistTotal = Object.values(assists).reduce((a, b) => a + b, 0);
   const played = Object.entries(stt).filter(([id, r]) => r.mins > 0 || isIn(m, id)).map(([id]) => id);
   const scoreStep = (k, label) => `<div class="sc"><div class="scl">${label}</div><div class="step"><button data-act="score" data-k="${k}" data-d="-1">−</button><b>${m[k] === '' || m[k] == null ? 0 : m[k]}</b><button data-act="score" data-k="${k}" data-d="1">+</button></div></div>`;
   const postCard = `
@@ -1977,13 +1980,23 @@ function viewMatch(){
     ${played.map(id => `<div class="set"><div class="lbl">${esc(pname(id))} ${'⚽'.repeat(Math.min(goals[id] || 0, 6))}</div><div class="step"><button data-act="goal" data-id="${id}" data-d="-1">−</button><b>${goals[id] || 0}</b><button data-act="goal" data-id="${id}" data-d="1">+</button></div></div>`).join('')}
     ${scorerTotal !== (+m.goalsFor || 0) ? `<div class="muted" style="color:var(--red);margin-top:8px">Let op: het aantal doelpuntenmakers (${scorerTotal}) klopt niet met de eindstand (${+m.goalsFor || 0}).</div>` : ''}
   </div>
+  <div class="card">
+    <h2>🤝 Assists</h2>
+    <div class="muted" style="margin-bottom:6px">Niet verplicht. Tik + bij wie de assist gaf. ${assistTotal} van ${+m.goalsFor || 0} doelpunt${(+m.goalsFor || 0) === 1 ? '' : 'en'} met assist.</div>
+    ${played.map(id => `<div class="set"><div class="lbl">${esc(pname(id))} ${'🤝'.repeat(Math.min(assists[id] || 0, 6))}</div><div class="step"><button data-act="assist" data-id="${id}" data-d="-1">−</button><b>${assists[id] || 0}</b><button data-act="assist" data-id="${id}" data-d="1">+</button></div></div>`).join('')}
+    ${assistTotal > (+m.goalsFor || 0) ? `<div class="muted" style="color:var(--red);margin-top:8px">Let op: er staan meer assists (${assistTotal}) dan doelpunten (${+m.goalsFor || 0}).</div>` : ''}
+  </div>
   <button class="btn pri full big" data-act="saveDone">✅ Opslaan als gespeeld</button>`;
 
   const doneCard = `
   <div class="card">
     <h2>⚽ Doelpuntenmakers</h2>
     ${Object.entries(goals).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]).map(([id, n]) => `<div class="set"><div class="lbl">${esc(pname(id))}</div><b>${'⚽'.repeat(Math.min(n, 6))} ${n}</b></div>`).join('') || '<div class="muted">Geen doelpuntenmakers ingevuld.</div>'}
-  </div>`;
+  </div>
+  ${assistTotal ? `<div class="card">
+    <h2>🤝 Assists</h2>
+    ${Object.entries(assists).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]).map(([id, n]) => `<div class="set"><div class="lbl">${esc(pname(id))}</div><b>${'🤝'.repeat(Math.min(n, 6))} ${n}</b></div>`).join('')}
+  </div>` : ''}`;
 
   let body;
   if (ph === 'prep') body = `${tourCard}${knvbCard}${infoCard}${attCard(m)}${guestCard}${rulesCard}${attWarn}${lineupCard}${minutesCard}
@@ -1993,7 +2006,7 @@ function viewMatch(){
   else if (ph === 'post') body = `${tourCard}${postCard}<div style="height:12px"></div>${lineupCard}${minutesCard}`;
   else body = `${tourCard}${doneCard}${minutesCard}${lineupCard}
     <div class="grid2" style="margin-bottom:12px"><button class="btn" data-act="share">📤 Delen</button><button class="btn" data-act="print">🖨️ Printen</button></div>
-    <button class="btn full" style="margin-bottom:12px" data-act="phase" data-v="post">✏️ Uitslag of doelpunten aanpassen</button>`;
+    <button class="btn full" style="margin-bottom:12px" data-act="phase" data-v="post">✏️ Uitslag, doelpunten of assists aanpassen</button>`;
 
   const fs = ph === 'live' ? fontLevel() : 0;
   return `<div class="fsz fs${fs}${fs === 3 ? ' fs2' : ''}">
@@ -2239,13 +2252,14 @@ function viewStats(){
   const se = season(), t = team();
   const done = se.matches.filter(m => m.phase === 'done' && m.segments);
   const rows = {};
-  se.players.forEach(p => rows[p.id] = {p, matches:0, mins:0, possible:0, kmins:0, bench:0, blocks:0, pos:{}, goals:0});
+  se.players.forEach(p => rows[p.id] = {p, matches:0, mins:0, possible:0, kmins:0, bench:0, blocks:0, pos:{}, goals:0, assists:0});
   let w = 0, d = 0, l = 0, gf = 0, ga = 0, scored = 0;
   done.forEach(m => {
     const pos = matchPositions(m), times = segTimes(m.settings);
     m.present.forEach(id => {
       const r = rows[id]; if (!r) return;
       r.goals += (m.goals || {})[id] || 0;
+      r.assists += (m.assists || {})[id] || 0;
       r.matches++; r.possible += m.settings.matchMinutes;
       m.segments.forEach((lu, s) => {
         const len = times[s][1] - times[s][0], i = lu.indexOf(id);
@@ -2263,6 +2277,7 @@ function viewStats(){
     const mins = h.mins || {}, who = Object.keys(mins).length ? Object.keys(mins) : Object.keys(h.goals || {});
     who.forEach(id => { const r = rows[id]; if (!r) return; r.matches++; r.mins += +mins[id] || 0; r.possible += +h.minutes || se.matchMinutes; });
     Object.entries(h.goals || {}).forEach(([id, g]) => { const r = rows[id]; if (r) r.goals += +g || 0; });
+    Object.entries(h.assists || {}).forEach(([id, a]) => { const r = rows[id]; if (r) r.assists += +a || 0; });
     if (h.gf !== '' && h.gf != null){ const a = +h.gf, b = +h.ga; if (!isNaN(a) && !isNaN(b)){ scored++; gf += a; ga += b; a > b ? w++ : a === b ? d++ : l++; } }
   });
   const list = Object.values(rows).sort((a, b) => b.mins - a.mins);
@@ -2287,14 +2302,14 @@ function viewStats(){
     <h2>⏱️ Speeltijd per speler</h2>
     <div class="muted" style="margin-bottom:8px">% = deel van de minuten in wedstrijden waarbij de speler aanwezig was. Gemiddeld ${avgPct}%.</div>
     <div class="ovwrap"><table class="ov">
-      <tr><th>Speler</th><th>Wed</th><th>Min</th><th>%</th><th>⚽ Goals</th><th>🧤 Keeper</th><th>Reserve</th></tr>
+      <tr><th>Speler</th><th>Wed</th><th>Min</th><th>%</th><th>⚽ Goals</th><th>Assists</th><th>🧤 Keeper</th><th>Reserve</th></tr>
       ${list.map(r => {
         const top = Object.entries(r.pos).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([c]) => c === 'K' ? '🧤' : c).join(' · ');
         return `<tr>
           <td>${esc(pshort(r.p))}<div class="bar"><i style="width:${Math.round(r.mins / maxMin * 100)}%"></i></div>${top ? `<div class="muted" style="font-size:11px;margin-top:2px">${top}</div>` : ''}</td>
           <td>${r.matches}</td><td><b>${Math.round(r.mins)}'</b></td>
           <td style="color:${tooLow(r) ? 'var(--red)' : 'inherit'}">${r.possible ? pct(r) + '%' : '–'}</td>
-          <td><b>${r.goals || ''}</b></td><td class="kp">${r.kmins ? Math.round(r.kmins) + "'" : ''}</td><td class="w">${r.bench}×</td></tr>`;
+          <td><b>${r.goals || ''}</b></td><td><b>${r.assists || ''}</b></td><td class="kp">${r.kmins ? Math.round(r.kmins) + "'" : ''}</td><td class="w">${r.bench}×</td></tr>`;
       }).join('')}
     </table></div>
     <div class="muted" style="margin-top:8px">Reserve = aantal blokken als reserve. Rood = duidelijk onder het haalbare gemiddelde van ${fairPct}%; één blok meer of minder is normaal.</div>
@@ -2302,6 +2317,10 @@ function viewStats(){
   ${list.some(r => r.goals) ? `<div class="card">
     <h2>⚽ Topscorers</h2>
     ${list.filter(r => r.goals).sort((a, b) => b.goals - a.goals).map(r => `<div class="set"><div class="lbl">${esc(pshort(r.p))}</div><b>${r.goals}</b></div>`).join('')}
+  </div>` : ''}
+  ${list.some(r => r.assists) ? `<div class="card">
+    <h2>🤝 Meeste assists</h2>
+    ${list.filter(r => r.assists).sort((a, b) => b.assists - a.assists).map(r => `<div class="set"><div class="lbl">${esc(pshort(r.p))}</div><b>${r.assists}</b></div>`).join('')}
   </div>` : ''}
   ${keepers.length ? `<div class="card">
     <h2>🧤 In de goal dit seizoen</h2>
@@ -2603,6 +2622,18 @@ document.addEventListener('click', async e => {
       else { const g = [...m.events].reverse().find(x => !!x.us === us);
         if (g) delGoal(m, g.id); else { m[k] = now - 1; commit(); } }
       break; }
+    case 'assist': {
+      m.assists = m.assists || {}; m.events = m.events || []; const aid = el.dataset.id, dd = +el.dataset.d;
+      if (dd > 0){
+        m.assists[aid] = (m.assists[aid] || 0) + 1;
+        const open = m.events.find(x => x.us && !x.as && x.by !== aid); if (open) open.as = aid;
+      } else {
+        if (!(m.assists[aid] > 0)) break;
+        m.assists[aid]--; if (!m.assists[aid]) delete m.assists[aid];
+        const g = [...m.events].reverse().find(x => x.as === aid); if (g) g.as = null;
+      }
+      commit(); break;
+    }
     case 'goal': {
       m.goals = m.goals || {}; m.events = m.events || []; const gid = el.dataset.id, d = +el.dataset.d;
       if (d > 0){
@@ -3633,7 +3664,7 @@ function dashRecs(){
           done: m.phase === 'done', phase: m.phase, gf: m.goalsFor, ga: m.goalsAgainst,
           minutes: +st.matchMinutes || +se.matchMinutes || 0, formation: st.formation || '', subs: +st.subMoments || 0,
           tour: m.tourId ? (((se.tours || []).find(x => x.id === m.tourId) || {}).name || 'Toernooi') : '', round: m.round || '',
-          goals: m.goals || {}, att: m.att || {}, attBy: m.attBy || {}, time: m.time || '', present: m.present || [],
+          goals: m.goals || {}, assists: m.assists || {}, att: m.att || {}, attBy: m.attBy || {}, time: m.time || '', present: m.present || [],
           mins: {}, kmins: {}, start: {}, benchSeg: {}, segs: 0, pos: {}, imported: false});
         if (m.phase === 'done' && m.segments){
           const P = matchPositions(m), T = segTimes(st);
@@ -3657,7 +3688,7 @@ function dashRecs(){
         const mins = h.mins || {};
         out.push(Object.assign({}, base, {id: h.id, ts, date: h.date || '', opponent: h.opponent || '', home: h.home !== false,
           done: true, phase: 'done', gf: h.gf, ga: h.ga, minutes: +h.minutes || +se.matchMinutes || 0, formation: '', subs: 0,
-          tour: h.tour || '', round: h.round || '', goals: h.goals || {}, att: {}, attBy: {}, time: '',
+          tour: h.tour || '', round: h.round || '', goals: h.goals || {}, assists: h.assists || {}, att: {}, attBy: {}, time: '',
           present: Object.keys(mins), mins, kmins: {}, start: {}, benchSeg: {}, segs: 0, pos: {}, imported: true}));
       });
     });
@@ -3763,8 +3794,8 @@ function dashVoetbal(){
     ids.forEach(id => {
       const p = r.players[id]; if (!p) return;
       const k = r.teamId + '|' + id;
-      const x = P[k] = P[k] || {key: k, id, naam: pshortOf(p), team: r.label, club: dClub(r.club), wed: 0, min: 0, mog: 0, basis: 0, wissel: 0, keeper: 0, doel: 0, codes: {}, pref: (prefsOf(p) || []).map(prefName).join(', ')};
-      x.wed++; x.min += +r.mins[id] || 0; x.mog += r.minutes; x.doel += +(r.goals || {})[id] || 0;
+      const x = P[k] = P[k] || {key: k, id, naam: pshortOf(p), team: r.label, club: dClub(r.club), wed: 0, min: 0, mog: 0, basis: 0, wissel: 0, keeper: 0, doel: 0, ass: 0, codes: {}, pref: (prefsOf(p) || []).map(prefName).join(', ')};
+      x.wed++; x.min += +r.mins[id] || 0; x.mog += r.minutes; x.doel += +(r.goals || {})[id] || 0; x.ass += +(r.assists || {})[id] || 0;
       if (r.kmins[id]) x.keeper++;
       if (!r.imported){ r.start[id] ? x.basis++ : x.wissel++; }
       Object.entries(r.pos[id] || {}).forEach(([c, n]) => x.codes[c] = (x.codes[c] || 0) + n);
@@ -3804,7 +3835,7 @@ function dashVoetbal(){
     r.home ? t.thuis++ : t.uit++; if (r.tour) t.toer++;
   });
   const res = Object.values(R).map(t => Object.assign(t, {wgv: `${t.w}-${t.g}-${t.v}`, saldo: t.dv - t.dt}));
-  const scorers = pl.filter(x => x.doel > 0).map(x => ({naam: x.naam, team: x.team, doel: x.doel, wed: x.wed}));
+  const scorers = pl.filter(x => x.doel > 0 || x.ass > 0).map(x => ({naam: x.naam, team: x.team, doel: x.doel, ass: x.ass, wed: x.wed}));
   // opstellingen per leeftijd
   const F = {};
   done.filter(r => !r.imported).forEach(r => {
@@ -3824,7 +3855,7 @@ function dashVoetbal(){
   return `<div class="atiles">${tiles.join('')}</div>
   <div class="card"><h2>⏱ Speeltijd per speler</h2><div class="muted">Minuten, aandeel van de mogelijke minuten, basis/wissel en keeperbeurten.</div>
     ${dtable('speeltijd', [{k: 'naam', l: 'Speler'}, {k: 'team', l: 'Team'}, {k: 'wed', l: 'Wed'}, {k: 'min', l: 'Min'},
-      {k: 'pctv', l: '%', f: r => r.pctv + '%'}, {k: 'basis', l: 'Basis'}, {k: 'wissel', l: 'Wissel'}, {k: 'keeper', l: 'Keeper'}, {k: 'doel', l: 'Doel'}],
+      {k: 'pctv', l: '%', f: r => r.pctv + '%'}, {k: 'basis', l: 'Basis'}, {k: 'wissel', l: 'Wissel'}, {k: 'keeper', l: 'Keeper'}, {k: 'doel', l: 'Doel'}, {k: 'ass', l: 'Assist'}],
       pl, {name: 'speeltijd', sort: 'min'})}</div>
   <div class="card"><h2>⚖️ Eerlijkheid per team</h2><div class="muted">100 = iedereen speelt even veel. Score = 100 − (spreiding ÷ gemiddelde × 100).</div>
     ${dtable('eerlijk', [{k: 'team', l: 'Team'}, {k: 'club', l: 'Club'}, {k: 'score', l: 'Score', hi: r => r.score !== '–' && r.score < 70},
@@ -3843,7 +3874,7 @@ function dashVoetbal(){
       {k: 'saldo', l: 'Saldo'}, {k: 'thuis', l: 'Thuis'}, {k: 'uit', l: 'Uit'}, {k: 'toer', l: 'Toernooi'}], res, {name: 'resultaten', sort: 'saldo'})}
     ${Object.keys(rondes).length ? `<h3 class="dh3">Toernooiwedstrijden per ronde</h3>${dBars(Object.entries(rondes).map(([l, v]) => ({l, v})))}` : ''}
     <h3 class="dh3">Topscorers</h3>
-    ${dtable('scorers', [{k: 'naam', l: 'Speler'}, {k: 'team', l: 'Team'}, {k: 'doel', l: 'Doelpunten'}, {k: 'wed', l: 'Wed'}], scorers, {name: 'topscorers', sort: 'doel', max: 50, empty: 'Nog geen doelpuntenmakers ingevuld.'})}</div>
+    ${dtable('scorers', [{k: 'naam', l: 'Speler'}, {k: 'team', l: 'Team'}, {k: 'doel', l: 'Doelpunten'}, {k: 'ass', l: 'Assists'}, {k: 'wed', l: 'Wed'}], scorers, {name: 'topscorers', sort: 'doel', max: 50, empty: 'Nog geen doelpuntenmakers ingevuld.'})}</div>
   <div class="card"><h2>🎯 Posities</h2><div class="muted">Opgegeven voorkeur tegenover de posities die echt gespeeld zijn.</div>
     ${dtable('posities', [{k: 'naam', l: 'Speler'}, {k: 'team', l: 'Team'}, {k: 'pref', l: 'Voorkeur'}, {k: 'meest', l: 'Meest gespeeld'},
       {k: 'versch', l: 'Verschillende'}], pl.filter(x => x.versch || x.pref), {name: 'posities', sort: 'versch'})}</div>
@@ -4764,7 +4795,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-13.1';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-14.1';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
