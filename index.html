@@ -116,6 +116,49 @@
   .empty b{display:block;font-size:36px;margin-bottom:6px}
   body.hashelp .toast{bottom:calc(104px + env(safe-area-inset-bottom))}
   .toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--txt);color:var(--bg);padding:11px 18px;border-radius:999px;font-weight:700;z-index:50;box-shadow:0 10px 30px rgba(0,0,0,.35);white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis}
+  /* ---- tussendoor wisselen ---- */
+  .toast.undo{display:flex;align-items:center;gap:12px;white-space:normal;text-align:left}
+  .toast.undo button{flex:none;border:0;background:var(--y);color:var(--ink);font:inherit;font-weight:800;border-radius:999px;padding:7px 13px;min-height:36px;cursor:pointer}
+  .midbox .pitch{margin:8px 0}
+  .midout{display:flex;align-items:center;gap:8px;background:var(--surf2);border-radius:12px;padding:10px 12px;margin:8px 0}
+  .midout b{font-size:16px}
+  .midout .muted{margin-left:auto;font-size:13px}
+  .midlbl{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:12px 0 5px}
+  .midlist{display:flex;flex-direction:column;gap:6px;max-height:40vh;overflow:auto}
+  .midpick{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:2px solid var(--line);background:var(--surf);border-radius:12px;padding:8px 10px;font:inherit;color:inherit;cursor:pointer;min-height:48px}
+  .midpick.on{border-color:var(--g);background:var(--surf2)}
+  .midpick .bd{flex:none;width:30px;height:30px;border-radius:50%;background:var(--g);color:#fff;display:grid;place-items:center;font-weight:800;font-size:13px}
+  .midnm{display:flex;flex-direction:column;font-weight:800;min-width:0}
+  .midnm small{font-weight:600;color:var(--muted);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .midpick b{margin-left:auto;font-variant-numeric:tabular-nums}
+  .tipbadge{display:inline-block;margin-left:6px;background:var(--y);color:var(--ink);border-radius:999px;padding:1px 7px;font-size:10px;font-style:normal;font-weight:800;vertical-align:1px}
+  .midsplit{display:flex;gap:3px;height:34px;font-size:12px;font-weight:800}
+  .midsplit span{display:grid;place-items:center;background:var(--surf2);color:var(--muted);border-radius:8px;overflow:hidden;white-space:nowrap}
+  .midsplit .b{background:var(--g);color:#fff}
+  .midnote{background:var(--surf2);border-left:3px solid var(--y);border-radius:8px;padding:8px 10px;font-size:13px;margin-top:10px;color:var(--muted)}
+  .midnote.red{border-left-color:var(--red);color:var(--red);font-weight:700}
+  .midlegend{display:flex;gap:14px;justify-content:center;font-size:11px;font-weight:700;color:var(--muted);margin-top:2px}
+  .midlegend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+  .bin,.midlegend .bin{background:var(--g)}
+  .bout,.midlegend .bout{background:#e08c2a}
+  .bmove,.midlegend .bmove{background:var(--y)}
+  .pitch.mini{width:auto;max-width:100%;max-height:34vh;margin:8px auto}
+  .pitch.mini .pl{width:76px}
+  .pitch.mini .pl .dot{width:34px;height:34px;font-size:11px}
+  .pitch.mini .pl .nm{font-size:10px;max-width:76px}
+  .pbadge{position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-style:normal;font-size:8px;font-weight:800;letter-spacing:.04em;padding:2px 5px;border-radius:999px;color:#fff;white-space:nowrap}
+  .pbadge.bmove{color:var(--ink)}
+  .segs.two{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
+  .segs.two .pill{width:100%;justify-content:center}
+  .submcnt{font-size:12px;font-weight:800;color:var(--muted);text-align:center;margin-bottom:6px}
+  .submcnt.full{color:var(--red)}
+  table.ov.mx td{text-align:center;font-weight:700;font-size:12px}
+  table.ov.mx td.w{color:var(--muted);font-weight:600}
+  table.ov.mx td.x{color:var(--red)}
+  table.ov.mx td.chg{outline:2px solid var(--y);outline-offset:-2px;border-radius:4px}
+  table.ov.mx th.past{opacity:.5}
+  .midstats{display:flex;gap:16px;justify-content:center;font-size:13px;color:var(--muted);margin-top:8px}
+  .midstats b{color:var(--txt);font-size:15px}
 
   /* ===================== Navigatie ===================== */
   nav{position:fixed;bottom:calc(10px + env(safe-area-inset-bottom));left:12px;right:12px;max-width:520px;margin:0 auto;z-index:30;display:flex;background:color-mix(in srgb,var(--solid) 88%,transparent);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border:1px solid var(--line);border-radius:22px;box-shadow:0 12px 34px rgba(0,0,0,.28);padding:6px}
@@ -872,7 +915,7 @@ const KMODES = [
   {v:'helft', t:'Wissel in rust', s:'2 kiepers'},
   {v:'blok',  t:'Elk wisselmoment', s:'per blok'}
 ];
-const LIMITS = {fieldPlayers:[4,11,1], subMoments:[0,12,1], matchMinutes:[10,120,5]};
+const LIMITS = {fieldPlayers:[4,11,1], subMoments:[0,12,1], matchMinutes:[10,120,5], maxSubs:[0,20,1]};
 
 function getFormation(fp, name){ const list = FORMATIONS[fp] || FORMATIONS[11]; return list.find(f => f.n === name) || list[0]; }
 function positions(fp, name){
@@ -1021,7 +1064,7 @@ function tourCarry(m){
   const ms = season().matches, upto = ms.indexOf(m);
   ms.forEach((x, i) => { if (i >= upto || x.tourId !== m.tourId || !x.segments) return;
     const times = segTimes(x.settings);
-    x.segments.forEach((lu, s) => lu.forEach(id => { if (id) res[id] = (res[id] || 0) + (times[s][1] - times[s][0]); }));
+    const sh = minsOfSegs(x, x.segments); Object.keys(sh).forEach(id => { if (sh[id]) res[id] = (res[id] || 0) + sh[id]; });
   });
   return res;
 }
@@ -1533,15 +1576,7 @@ function matchPositions(m){
   return pos.map((p, i) => o[i] ? {...p, x:o[i].x, y:o[i].y} : p);
 }
 // Minuten per speler in blok 0..upto (incl.)
-function playedUpTo(m, upto){
-  const times = segTimes(m.settings), res = {};
-  m.present.forEach(id => res[id] = 0);
-  (m.segments || []).forEach((lu, s) => {
-    if (s > upto) return;
-    lu.forEach(id => { if (id && id in res) res[id] += times[s][1] - times[s][0]; });
-  });
-  return res;
-}
+function playedUpTo(m, upto){ return minsOfSegs(m, m.segments, upto); }
 
 // from = eerste blok dat (opnieuw) berekend wordt; eerdere blokken blijven staan
 // Vult de blokken vanaf 'from' opnieuw eerlijk in (alleen gebruikt tijdens een actieve wedstrijd)
@@ -1559,9 +1594,14 @@ function generate(m, mix, from){
   from = keep.length;
   let prev = null;
   keep.forEach((lu, s) => {
+    const len = times[s][1] - times[s][0], share = {};
+    lu.forEach((id, i) => { const occ = slotOcc(m, s, i); if (!occ.length) return;
+      const parts = splitLen(len, occ.length);
+      occ.forEach((pid, k) => share[pid] = (share[pid] || 0) + parts[k]); });
     order.forEach(id => {
       const i = lu.indexOf(id);
-      if (i >= 0){ mins[id] += times[s][1] - times[s][0]; playedCodes[id].add(pos[i].code); benchedLast[id] = false; }
+      if (share[id]) mins[id] += share[id];
+      if (i >= 0){ playedCodes[id].add(pos[i].code); benchedLast[id] = false; }
       else benchedLast[id] = true;
     });
     prev = lu;
@@ -1639,13 +1679,20 @@ function fillHoles(m, from){
 
 function stats(m){
   const pos = matchPositions(m), times = segTimes(m.settings), res = {};
-  m.present.filter(id => player(id)).forEach(id => res[id] = {mins:0, per:[]});
+  m.present.filter(id => player(id)).forEach(id => res[id] = {mins:0, per:[], half:[]});
   (m.segments || []).forEach((lu, s) => {
-    const len = times[s][1] - times[s][0];
+    const len = (times[s] || [0, 0])[1] - (times[s] || [0, 0])[0];
+    const share = {}, slotOf = {}, halves = new Set();
+    lu.forEach((id, i) => {
+      const occ = slotOcc(m, s, i); if (!occ.length) return;
+      const parts = splitLen(len, occ.length);
+      occ.forEach((pid, k) => { share[pid] = (share[pid] || 0) + parts[k]; if (slotOf[pid] == null) slotOf[pid] = i; if (occ.length > 1) halves.add(pid); });
+    });
     Object.keys(res).forEach(id => {
-      const i = lu.indexOf(id);
+      const i = slotOf[id] == null ? -1 : slotOf[id];
       res[id].per.push(i >= 0 ? (pos[i].line === 'K' ? 'K' : (pos[i].code || 'K')) : null);
-      if (i >= 0) res[id].mins += len;
+      res[id].half.push(halves.has(id));
+      res[id].mins += share[id] || 0;
     });
   });
   return res;
@@ -1666,6 +1713,7 @@ function settingsBlock(st, scope){
     ${stepper('⚽ Spelers in het veld', `${st.fieldPlayers} tegen ${st.fieldPlayers}, incl. kieper`, 'fieldPlayers', st.fieldPlayers, scope)}
     ${stepper('🔁 Wisselmomenten', `${blocksText(blocks)} van ±${len} min`, 'subMoments', st.subMoments, scope)}
     ${stepper('⏱️ Speelduur', 'minuten totaal', 'matchMinutes', st.matchMinutes, scope)}
+    ${scope === 'season' && st.fieldPlayers >= 11 ? stepper('🔢 Maximum wisselmomenten', (st.maxSubs ? 'KNVB-maximum bij doorwisselen; tussendoor wisselen telt mee' : 'Uit: geen teller tijdens de wedstrijd'), 'maxSubs', st.maxSubs || 0, scope) : ''}
     <div class="set"><div class="lbl">📐 Formatie</div><select data-act="formation" data-scope="${scope}" style="width:auto;flex:none">${FORMATIONS[st.fieldPlayers].map(f => `<option ${f.n === st.formation ? 'selected' : ''}>${esc(f.n)}</option>`).join('')}</select></div>
 `;
 }
@@ -1907,16 +1955,18 @@ function viewMatch(){
     <div class="card">
       <h2>⏱️ Speeltijd</h2>
       <div class="ovwrap"><table class="ov">
-        <tr><th>Speler</th>${times.map((t, i) => `<th class="${i === ui.seg ? 'cur' : ''}">${i + 1}</th>`).join('')}<th>${ph === 'done' || ph === 'post' ? 'Min' : 'Nu'}</th>${ph === 'done' || ph === 'post' ? '' : '<th>Tot.</th>'}</tr>
+        <tr><th>Speler</th>${times.map((t, i) => `<th class="${i === ui.seg ? 'cur' : ''}">${i + 1}</th>`).join('')}<th>${ph === 'done' || ph === 'post' ? 'Min' : 'Nu'}</th>${ph === 'done' || ph === 'post' ? '<th>⚽</th><th>Ass</th>' : '<th>Tot.</th>'}</tr>
         ${Object.entries(stt).sort((a, b) => (ph === 'done' || ph === 'post') ? (b[1].mins - a[1].mins) : ((up[a[0]] - up[b[0]]) || (a[1].mins - b[1].mins))).map(([id, r]) => {
           const shown = (ph === 'done' || ph === 'post') ? r.mins : up[id];
           return `<tr>
           <td>${esc(pname(id))}${isIn(m, id) ? '' : ' <span class="muted">(weg)</span>'}<div class="bar"><i style="width:${Math.round(shown / st.matchMinutes * 100)}%"></i></div></td>
-          ${r.per.map((c, i) => `<td class="${i === ui.seg ? 'cur ' : ''}${c ? (c === 'K' ? 'kp' : '') : 'w'}">${c ? c : (avail(m, id, i) ? 'W' : '–')}</td>`).join('')}
-          <td><b>${Math.round(shown)}'</b></td>${ph === 'done' || ph === 'post' ? '' : `<td class="muted">${Math.round(r.mins)}'</td>`}</tr>`;
+          ${r.per.map((c, i) => `<td class="${i === ui.seg ? 'cur ' : ''}${c ? (c === 'K' ? 'kp' : '') : 'w'}">${c ? c + (r.half[i] ? '<small>½</small>' : '') : (avail(m, id, i) ? 'W' : '–')}</td>`).join('')}
+          <td><b>${Math.round(shown)}'</b></td>${ph === 'done' || ph === 'post'
+            ? `<td><b>${(m.goals || {})[id] || ''}</b></td><td><b>${(m.assists || {})[id] || ''}</b></td>`
+            : `<td class="muted">${Math.round(r.mins)}'</td>`}</tr>`;
         }).join('')}
       </table></div>
-      <div class="muted" style="margin-top:8px">${ph === 'done' || ph === 'post' ? 'W = reserve' : `Nu = gespeeld t/m blok ${ui.seg + 1} · Tot. = met de planning erbij · W = reserve · minst gespeeld bovenaan`}</div>
+      <div class="muted" style="margin-top:8px">${ph === 'done' || ph === 'post' ? 'W = reserve · ⚽ = doelpunten · Ass = assists' : `Nu = gespeeld t/m blok ${ui.seg + 1} · Tot. = met de planning erbij · W = reserve · minst gespeeld bovenaan`}</div>
     </div>`;
 
   const presenceCard = `
@@ -1960,8 +2010,9 @@ function viewMatch(){
   </div>`;
 
   // ---- na de wedstrijd
-  const goals = m.goals || {};
+  const goals = m.goals || {}, assists = m.assists || {};
   const scorerTotal = Object.values(goals).reduce((a, b) => a + b, 0);
+  const assistTotal = Object.values(assists).reduce((a, b) => a + b, 0);
   const played = Object.entries(stt).filter(([id, r]) => r.mins > 0 || isIn(m, id)).map(([id]) => id);
   const scoreStep = (k, label) => `<div class="sc"><div class="scl">${label}</div><div class="step"><button data-act="score" data-k="${k}" data-d="-1">−</button><b>${m[k] === '' || m[k] == null ? 0 : m[k]}</b><button data-act="score" data-k="${k}" data-d="1">+</button></div></div>`;
   const postCard = `
@@ -1977,13 +2028,23 @@ function viewMatch(){
     ${played.map(id => `<div class="set"><div class="lbl">${esc(pname(id))} ${'⚽'.repeat(Math.min(goals[id] || 0, 6))}</div><div class="step"><button data-act="goal" data-id="${id}" data-d="-1">−</button><b>${goals[id] || 0}</b><button data-act="goal" data-id="${id}" data-d="1">+</button></div></div>`).join('')}
     ${scorerTotal !== (+m.goalsFor || 0) ? `<div class="muted" style="color:var(--red);margin-top:8px">Let op: het aantal doelpuntenmakers (${scorerTotal}) klopt niet met de eindstand (${+m.goalsFor || 0}).</div>` : ''}
   </div>
+  <div class="card">
+    <h2>🤝 Assists</h2>
+    <div class="muted" style="margin-bottom:6px">Niet verplicht. Tik + bij wie de assist gaf. ${assistTotal} van ${+m.goalsFor || 0} doelpunt${(+m.goalsFor || 0) === 1 ? '' : 'en'} met assist.</div>
+    ${played.map(id => `<div class="set"><div class="lbl">${esc(pname(id))} ${'🤝'.repeat(Math.min(assists[id] || 0, 6))}</div><div class="step"><button data-act="assist" data-id="${id}" data-d="-1">−</button><b>${assists[id] || 0}</b><button data-act="assist" data-id="${id}" data-d="1">+</button></div></div>`).join('')}
+    ${assistTotal > (+m.goalsFor || 0) ? `<div class="muted" style="color:var(--red);margin-top:8px">Let op: er staan meer assists (${assistTotal}) dan doelpunten (${+m.goalsFor || 0}).</div>` : ''}
+  </div>
   <button class="btn pri full big" data-act="saveDone">✅ Opslaan als gespeeld</button>`;
 
   const doneCard = `
   <div class="card">
     <h2>⚽ Doelpuntenmakers</h2>
     ${Object.entries(goals).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]).map(([id, n]) => `<div class="set"><div class="lbl">${esc(pname(id))}</div><b>${'⚽'.repeat(Math.min(n, 6))} ${n}</b></div>`).join('') || '<div class="muted">Geen doelpuntenmakers ingevuld.</div>'}
-  </div>`;
+  </div>
+  ${assistTotal ? `<div class="card">
+    <h2>🤝 Assists</h2>
+    ${Object.entries(assists).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]).map(([id, n]) => `<div class="set"><div class="lbl">${esc(pname(id))}</div><b>${'🤝'.repeat(Math.min(n, 6))} ${n}</b></div>`).join('')}
+  </div>` : ''}`;
 
   let body;
   if (ph === 'prep') body = `${tourCard}${knvbCard}${infoCard}${attCard(m)}${guestCard}${rulesCard}${attWarn}${lineupCard}${minutesCard}
@@ -1993,7 +2054,7 @@ function viewMatch(){
   else if (ph === 'post') body = `${tourCard}${postCard}<div style="height:12px"></div>${lineupCard}${minutesCard}`;
   else body = `${tourCard}${doneCard}${minutesCard}${lineupCard}
     <div class="grid2" style="margin-bottom:12px"><button class="btn" data-act="share">📤 Delen</button><button class="btn" data-act="print">🖨️ Printen</button></div>
-    <button class="btn full" style="margin-bottom:12px" data-act="phase" data-v="post">✏️ Uitslag of doelpunten aanpassen</button>`;
+    <button class="btn full" style="margin-bottom:12px" data-act="phase" data-v="post">✏️ Uitslag, doelpunten of assists aanpassen</button>`;
 
   const fs = ph === 'live' ? fontLevel() : 0;
   return `<div class="fsz fs${fs}${fs === 3 ? ' fs2' : ''}">
@@ -2028,7 +2089,14 @@ function listCard(m, times, cur, last){
 }
 // knoppen tijdens de wedstrijd: bovenaan, zodat je niet hoeft te scrollen
 function liveControls(m, times, cur, last, kind){
-  return `<div class="livectl"><div class="${cur === last ? 'grid2' : ''}"><button class="btn ${kind === 'hc' ? 'sm' : ''} full" data-act="addSub">＋ Wisselmoment</button>${cur === last ? `<button class="btn full" data-act="phase" data-v="post">🏁 Wedstrijd afgelopen</button>` : ''}</div></div>`;
+  const used = subMoments(m), max = maxSubMoments(m);
+  const cnt = showSubCounter(m) ? `<div class="submcnt ${used >= max ? 'full' : ''}">Wisselmomenten gebruikt: <b>${used}</b> van ${max}${used >= max ? ' · op' : ''}</div>` : '';
+  return `<div class="livectl">${cnt}
+    <div class="grid2"><button class="btn ${kind === 'hc' ? 'sm' : ''} full" data-act="midSub">🔁 Tussendoor wisselen</button><button class="btn ${kind === 'hc' ? 'sm' : ''} full" data-act="addSub">＋ Wisselmoment</button></div>
+    ${cur === last
+      ? `<button class="btn full" style="margin-top:8px" data-act="phase" data-v="post">🏁 Wedstrijd afgelopen</button>`
+      : `<button class="btn pri full big" style="margin-top:8px" data-act="nextSeg">${esc(blockLabel(m, cur))} klaar → naar ${esc(blockLabel(m, cur + 1))}</button>`}
+  </div>`;
 }
 // tijdens de wedstrijd: tik op een blok = naar dat blok (vooruit eerst de wissels bevestigen)
 async function goLiveBlock(m, to){
@@ -2046,8 +2114,14 @@ async function goLiveBlock(m, to){
   ui.peek = null;
   if (to > cur){
     for (let i = cur + 1; i <= to; i++) if (isEmptySeg(m.segments[i])) m.segments[i] = m.segments[i - 1].slice();
+    if (to === cur + 1){
+      const r = await nextBlockSheet(m, to);
+      if (r === 'edit'){ ui.seg = to; ui.peek = {m: m.id, i: to}; render(); toast('Pas dit blok aan en tik daarna opnieuw op doorgaan'); return; }
+      if (r !== 'go') return;
+    }
     if (to > cur + 1 && !await confirmWissel(m, to)) return;
-    m.cur = to; ui.seg = to; ui.sel = null; commit(); toast(`Wissel doorgevoerd – ${blockLabel(m, to)} loopt`);
+    const back = cur; m.cur = to; ui.seg = to; ui.sel = null; commit(); logMet('blockNext');
+    toastUndo(`${blockLabel(m, to)} loopt`, () => { m.cur = back; ui.seg = back; commit(); toast(`Terug naar ${blockLabel(m, back)}`); });
   } else {
     m.cur = to; ui.seg = to; ui.sel = null; commit(); toast(`Terug naar ${blockLabel(m, to)}`);
   }
@@ -2170,6 +2244,288 @@ async function confirmWissel(m, to){
     <div class="grid2" style="margin-top:12px"><button class="btn" data-r="no">Annuleren</button><button class="btn pri" data-r="ok">Bevestig</button></div>`;
   return sheet(html);
 }
+
+/* ===================== TUSSENDOOR WISSELEN (per blok) =====================
+   m.mid = [{id, blk, slot, out, in, reason:'tact'|'blessure', at}]
+   Een tussendoor-wissel deelt dat blok op die plek in gelijke delen; bij een
+   oneven bloklengte krijgt de speler die eruit gaat het naar beneden afgeronde deel. */
+function slotOcc(m, s, i){
+  const cur = ((m.segments || [])[s] || [])[i] || null;
+  const subs = (m.mid || []).filter(x => x.blk === s && x.slot === i);
+  if (!subs.length) return cur ? [cur] : [];
+  const occ = [subs[0].out, ...subs.map(x => x.in)].filter(Boolean);
+  if (cur && occ.length && occ[occ.length - 1] !== cur) occ[occ.length - 1] = cur;
+  return occ;
+}
+function splitLen(len, n){
+  const base = Math.floor(len / n), rem = len - base * n;
+  return Array.from({length: n}, (_, k) => base + (k >= n - rem ? 1 : 0));
+}
+// minuten per speler voor een (mogelijk hypothetisch) schema
+function minsOfSegs(m, segs, upto, kout){
+  const times = segTimes(m.settings), res = {}, pos = kout ? matchPositions(m) : null;
+  (m.present || []).forEach(id => res[id] = 0);
+  (segs || []).forEach((lu, s) => {
+    if (upto != null && s > upto) return;
+    if (isEmptySeg(lu) || !times[s]) return;
+    const len = times[s][1] - times[s][0];
+    lu.forEach((id, i) => {
+      const occ = slotOccFor(m, segs, s, i);
+      if (!occ.length) return;
+      const parts = splitLen(len, occ.length), isK = pos && pos[i] && pos[i].line === 'K';
+      occ.forEach((pid, k) => { if (pid in res) res[pid] += parts[k]; if (isK) kout[pid] = (kout[pid] || 0) + parts[k]; });
+    });
+  });
+  return res;
+}
+function slotOccFor(m, segs, s, i){
+  if (segs === m.segments) return slotOcc(m, s, i);
+  const cur = (segs[s] || [])[i] || null;
+  const subs = (m.mid || []).filter(x => x.blk === s && x.slot === i);
+  if (!subs.length) return cur ? [cur] : [];
+  const occ = [subs[0].out, ...subs.map(x => x.in)].filter(Boolean);
+  if (cur && occ.length && occ[occ.length - 1] !== cur) occ[occ.length - 1] = cur;
+  return occ;
+}
+const midCount = m => (m.mid || []).length;
+const subMoments = m => (m.cur || 0) + midCount(m);
+const maxSubMoments = m => +((season() || {}).maxSubs) || 0;
+const showSubCounter = m => maxSubMoments(m) > 0 && (m.settings.fieldPlayers >= 11);
+
+/* ---- melding met "Ongedaan maken" ---- */
+let undoT = null;
+function toastUndo(msg, fn){
+  document.querySelectorAll('.toast').forEach(x => x.remove());
+  clearTimeout(undoT);
+  const d = document.createElement('div'); d.className = 'toast undo';
+  d.innerHTML = `<span>${esc(stripEmo(msg))}</span><button type="button">Ongedaan maken</button>`;
+  d.querySelector('button').addEventListener('click', e => { e.stopPropagation(); d.remove(); clearTimeout(undoT); try { fn(); } catch(err){ console.error(err); } });
+  document.body.appendChild(d);
+  undoT = setTimeout(() => d.remove(), 5000);
+}
+
+/* ---- veldweergave met labels, voor de voorbeelden in de dialogen ---- */
+function midPitch(m, lu, badge){
+  const pos = matchPositions(m);
+  const size = pos.length <= 7 ? 'lg' : pos.length <= 9 ? 'md' : 'sm';
+  const B = {in: ['ERIN', 'bin'], out: ['ERUIT', 'bout'], move: ['SCHUIFT', 'bmove']};
+  return `<div class="pitch ${size} mini">
+    <div class="ln mid"></div><div class="ln circ"></div>
+    <div class="ln box t"></div><div class="ln box b"></div>
+    ${pos.map((p, i) => {
+      const id = lu[i], bg = badge && badge[i] ? B[badge[i]] : null;
+      return `<div class="pl ${p.line === 'K' ? 'k' : ''} ${id ? '' : 'emptyp'}" style="left:${p.x}%;top:${7 + p.y * .86}%">
+        <div class="dot">${p.line === 'K' ? '🧤' : p.code}</div>
+        ${bg ? `<i class="pbadge ${bg[1]}">${bg[0]}</i>` : ''}
+        <div class="nm">${id ? esc(pname(id)) : '—'}</div></div>`;
+    }).join('')}</div>`;
+}
+/* ---- dialoog die zichzelf opnieuw tekent ---- */
+function liveDialog(draw, onAct){
+  return new Promise(res => {
+    const d = document.createElement('div'); d.className = 'modal';
+    const paint = () => { d.innerHTML = iconize(`<div class="box midbox">${draw()}</div>`); };
+    const close = v => { d.remove(); res(v); setTimeout(() => { try { flushPending(); } catch(e){} }, 0); };
+    d.addEventListener('click', async e => {
+      e.stopPropagation();
+      const b = e.target.closest('[data-x]');
+      if (b){ if (await onAct(b.dataset.x, b.dataset.v, close) !== false) paint(); return; }
+      if (e.target === d) close(null);
+    });
+    paint(); document.body.appendChild(d);
+  });
+}
+
+/* ---- één logische doorschuif voorstellen ---- */
+function shiftSuggest(m, slot, inId){
+  if (!usePos()) return null;
+  const pos = matchPositions(m), lu = m.segments[m.cur || 0] || [], inP = player(inId);
+  let best = null;
+  lu.forEach((id, j) => {
+    if (j === slot || !id || pos[j].line === 'K' || pos[slot].line === 'K') return;
+    const gain = (prefScore(player(id), pos[slot]) + prefScore(inP, pos[j])) - (prefScore(inP, pos[slot]) + prefScore(player(id), pos[j]));
+    if (gain > 0 && (!best || gain > best.gain)) best = {j, id, gain};
+  });
+  return best;
+}
+
+/* ---- scherm 2 + 3: tussendoor wisselen ---- */
+async function midSubFlow(m, slot){
+  const cur = m.cur || 0, times = segTimes(m.settings), len = times[cur][1] - times[cur][0];
+  const lu = m.segments[cur] || [], outId = lu[slot];
+  if (!outId){ toast('Op deze plek staat niemand'); return; }
+  const pos = matchPositions(m), P = pos[slot], isK = P.line === 'K';
+  const up = playedUpTo(m, cur - 1);
+  const bench = benchIds(m, cur).slice().sort((a, b) => ((up[a] || 0) - (up[b] || 0)) || (prefScore(player(b), P) - prefScore(player(a), P)));
+  if (!bench.length){ await tell('Er staat niemand op de bank die erin kan.'); return; }
+  const half = splitLen(len, 2);
+  const st = {step: 1, reason: 'tact', inId: bench[0], mode: 'plek', view: 'na'};
+  const shift = () => st.mode === 'schuif' ? shiftSuggest(m, slot, st.inId) : null;
+  const after = () => { const n = lu.slice(), sh = shift();
+    if (sh){ n[slot] = sh.id; n[sh.j] = st.inId; } else n[slot] = st.inId;
+    return n; };
+  const badges = () => { const b = {}, sh = shift();
+    if (sh){ b[slot] = 'move'; b[sh.j] = 'in'; } else b[slot] = 'in';
+    return b; };
+
+  const draw = () => {
+    if (st.step === 1){
+      const sug = shiftSuggest(m, slot, st.inId);
+      return `<p>🔁 Tussendoor wisselen · ${esc(blockLabel(m, cur))}</p>
+      <div class="midout"><span class="wpos">${esc(isK ? 'K' : P.code)}</span><b>${esc(pname(outId))}</b><span class="muted">${Math.round(up[outId] || 0)}' gespeeld</span></div>
+      <div class="midlbl">Waarom?</div>
+      <div class="grid2">
+        <button class="btn ${st.reason === 'tact' ? 'pri' : ''}" data-x="reason" data-v="tact">Tactisch / moe</button>
+        <button class="btn ${st.reason === 'blessure' ? 'pri' : ''}" data-x="reason" data-v="blessure">Blessure · niet meer in</button>
+      </div>
+      <div class="midlbl">Wie komt erin? <span class="muted">(minst gespeeld eerst)</span></div>
+      <div class="midlist">${bench.map((id, k) => `<button class="midpick ${st.inId === id ? 'on' : ''}" data-x="in" data-v="${id}">
+        <span class="bd">${esc((player(id).number || player(id).name.charAt(0)).toString().toUpperCase())}</span>
+        <span class="midnm">${esc(pshort(player(id)))}${k === 0 ? '<i class="tipbadge">aanbevolen</i>' : ''}<small>${esc((prefsOf(player(id)) || []).filter(Boolean).map(prefName).join(' · ') || 'geen voorkeur')}</small></span>
+        <b>${Math.round(up[id] || 0)}'</b></button>`).join('')}</div>
+      <div class="midlbl">Dit blok wordt gedeeld</div>
+      <div class="midsplit"><span style="flex:${half[0]}">${esc(pshort(player(outId)))} ${half[0]}'</span><span style="flex:${half[1]}" class="b">${esc(pshort(player(st.inId)))} ${half[1]}'</span></div>
+      ${showSubCounter(m) && subMoments(m) >= maxSubMoments(m) ? `<div class="midnote red">Je hebt alle ${maxSubMoments(m)} wisselmomenten gebruikt. Deze wissel telt er nog een bij.</div>` : ''}
+      ${isK ? `<div class="midnote">🧤 Je wisselt de keeper. ${esc(pshort(player(st.inId)))} staat na de wissel op goal.</div>` : ''}
+      ${sug ? `<div class="midnote">Tip: ${esc(pshort(player(sug.id)))} past beter op ${esc(P.code)}. Je kunt op het volgende scherm kiezen om door te schuiven.</div>` : ''}
+      <div class="grid2" style="margin-top:12px"><button class="btn" data-x="close">Annuleren</button><button class="btn pri" data-x="step" data-v="2">Bekijk op het veld →</button></div>
+      <button class="btn full sm" style="margin-top:8px" data-x="swap">↔️ Toch alleen van plek ruilen</button>`;
+    }
+    const sh = shift(), nu = st.view === 'nu';
+    return `<p>👀 Effect op de opstelling</p>
+      <div class="segs two"><button class="pill ${nu ? 'on' : ''}" data-x="view" data-v="nu">Nu</button><button class="pill ${nu ? '' : 'on'}" data-x="view" data-v="na">Na de wissel</button></div>
+      ${midPitch(m, nu ? lu : after(), nu ? {[slot]: 'out'} : badges())}
+      <div class="midlegend"><span><i class="bout"></i>eruit</span><span><i class="bin"></i>erin</span><span><i class="bmove"></i>schuift</span></div>
+      <div class="midlbl">Hoe vul je de plek op?</div>
+      <div class="midlist">
+        <button class="midpick ${st.mode === 'plek' ? 'on' : ''}" data-x="mode" data-v="plek"><span class="midnm">${esc(pshort(player(st.inId)))} op ${esc(isK ? 'keeper' : P.code)}<small>invaller neemt de plek over</small></span></button>
+        ${shiftSuggest(m, slot, st.inId) ? (() => { const s2 = shiftSuggest(m, slot, st.inId);
+          return `<button class="midpick ${st.mode === 'schuif' ? 'on' : ''}" data-x="mode" data-v="schuif"><span class="midnm">${esc(pshort(player(s2.id)))} schuift naar ${esc(P.code)}<small>${esc(pshort(player(st.inId)))} komt op ${esc(pos[s2.j].code)}</small></span></button>`; })() : ''}
+      </div>
+      <div class="grid2" style="margin-top:12px"><button class="btn" data-x="step" data-v="1">‹ Terug</button><button class="btn pri" data-x="ok">Wissel bevestigen</button></div>`;
+  };
+
+  const res = await liveDialog(draw, (a, v, close) => {
+    if (a === 'close') { close(null); return false; }
+    if (a === 'swap'){ close(null); ui.sel = {type: 'f', i: slot}; render(); toast('Tik nu op de speler waarmee je ruilt'); return false; }
+    if (a === 'reason') st.reason = v;
+    if (a === 'in') st.inId = v;
+    if (a === 'mode') st.mode = v;
+    if (a === 'view') st.view = v;
+    if (a === 'step') st.step = +v;
+    if (a === 'ok'){ close({inId: st.inId, reason: st.reason, lu: after()}); return false; }
+  });
+  if (!res) return;
+
+  // vastleggen
+  const before = {segments: m.segments.map(x => x.slice()), mid: (m.mid || []).map(x => ({...x})), out: {...(m.out || {})}};
+  m.mid = m.mid || [];
+  m.mid.push({id: uid(), blk: cur, slot, out: outId, in: res.inId, reason: res.reason, at: Date.now()});
+  m.segments[cur] = res.lu;
+  const plannedLater = m.segments.some((lu, s) => s > cur && (lu || []).includes(outId));
+  if (res.reason === 'blessure'){
+    for (let s = cur + 1; s < m.segments.length; s++){
+      const l2 = m.segments[s]; if (!l2) continue;
+      const j = l2.indexOf(outId); if (j >= 0) l2[j] = null;
+    }
+    m.out = m.out || {}; m.out[outId] = cur + 1;
+  }
+  m.edited = true;
+  commit(); logMet('subMid');
+  toastUndo(`${pshort(player(res.inId))} erin voor ${pshort(player(outId))}`, () => {
+    m.segments = before.segments; m.mid = before.mid; m.out = before.out; commit(); toast('Wissel teruggedraaid');
+  });
+  if (cur < m.segments.length - 1) await replanSheet(m, res.reason === 'blessure' ? outId : null, plannedLater);
+}
+
+/* ---- scherm 5: naar het volgende blok ---- */
+async function nextBlockSheet(m, to){
+  const cur = m.cur || 0, times = segTimes(m.settings), pos = matchPositions(m);
+  const a = m.segments[cur] || [], b = m.segments[to] || [];
+  const {subs, moves} = wisselChanges(m, cur, to);
+  const badge = {};
+  b.forEach((id, i) => { if (id && !a.includes(id)) badge[i] = 'in'; else if (id && a.indexOf(id) !== i) badge[i] = 'move'; });
+  const badgeNow = {}; a.forEach((id, i) => { if (id && !b.includes(id)) badgeNow[i] = 'out'; });
+  const kNow = a[pos.findIndex(p => p.line === 'K')], kNext = b[pos.findIndex(p => p.line === 'K')];
+  const st = {view: 'next'};
+  const draw = () => {
+    const nu = st.view === 'nu';
+    return `<p>▶️ Naar ${esc(blockLabel(m, to))} · ${times[to][0]}'–${times[to][1]}'</p>
+    <div class="segs two"><button class="pill ${nu ? 'on' : ''}" data-x="view" data-v="nu">${esc(blockLabel(m, cur))} (nu)</button><button class="pill ${nu ? '' : 'on'}" data-x="view" data-v="next">${esc(blockLabel(m, to))}</button></div>
+    ${midPitch(m, nu ? a : b, nu ? badgeNow : badge)}
+    <div class="midlegend"><span><i class="bout"></i>eruit</span><span><i class="bin"></i>erin</span><span><i class="bmove"></i>schuift</span></div>
+    <div class="midlbl">Wissels</div>
+    ${subs.length ? subs.map(x => `<div class="wrow"><span class="wpos">${esc(x.pos)}</span><b>${x.inId ? esc(pname(x.inId)) : '–'}</b><span class="warr">erin voor</span><span>${x.outId ? esc(pname(x.outId)) : '–'}</span></div>`).join('')
+      : '<div class="wrow">Geen wissels: iedereen blijft staan.</div>'}
+    ${moves.map(x => `<div class="wrow"><b>${esc(pname(x.id))}</b><span class="grow"></span><span class="wpos">${esc(x.from)}</span><span class="warr">→</span><span class="wpos">${esc(x.to)}</span></div>`).join('')}
+    ${kNext && kNext !== kNow ? `<div class="midnote">🧤 ${esc(pname(kNext))} gaat op goal${kNow ? `, ${esc(pname(kNow))} eruit` : ''}.</div>`
+      : kNext ? `<div class="midnote">🧤 ${esc(pname(kNext))} blijft op goal.</div>` : ''}
+    <div class="grid2" style="margin-top:12px"><button class="btn" data-x="edit">Wijzig</button><button class="btn pri" data-x="go">Start ${esc(blockLabel(m, to))}</button></div>`;
+  };
+  return liveDialog(draw, (act, v, close) => {
+    if (act === 'view'){ st.view = v; return; }
+    close(act); return false;
+  });
+}
+
+/* ---- scherm 4: herplannen ---- */
+async function replanSheet(m, hurtId, hurtPlanned){
+  const cur = m.cur || 0, times = segTimes(m.settings), pos = matchPositions(m);
+  const oldSegs = m.segments.map(x => x.slice());
+  generate(m, false, cur + 1);
+  const newSegs = m.segments.map(x => x.slice());
+  m.segments = oldSegs.map(x => x.slice());
+  const oldBad = !!hurtId && (hurtPlanned || oldSegs.some((lu, s) => s > cur && lu.includes(hurtId)));
+  const ids = (m.present || []).filter(id => player(id));
+  const minsNew = minsOfSegs(m, newSegs), minsOld = minsOfSegs(m, oldSegs);
+  const score = mins => { const sh = ids.map(id => (mins[id] || 0) / (m.settings.matchMinutes || 1)).filter(x => x >= 0);
+    if (sh.length < 2) return null;
+    const mu = sh.reduce((a, b) => a + b, 0) / sh.length; if (!mu) return null;
+    const sd = Math.sqrt(sh.reduce((a, b) => a + (b - mu) * (b - mu), 0) / sh.length);
+    return Math.max(0, Math.min(100, Math.round(100 - sd / mu * 100)));
+  };
+  const spread = mins => { const v = ids.map(id => mins[id] || 0); return Math.round(Math.max(...v) - Math.min(...v)); };
+  const cell = (segs, s, id) => {
+    const i = (segs[s] || []).indexOf(id);
+    if (i < 0) return avail(m, id, s) ? {c: 'W', k: 'w'} : {c: '–', k: 'x'};
+    const half = (m.mid || []).some(x => x.blk === s && x.slot === i);
+    return {c: (pos[i].line === 'K' ? 'K' : pos[i].code) + (half ? '½' : ''), k: pos[i].line === 'K' ? 'kp' : ''};
+  };
+  const st = {view: 'new'};
+  const draw = () => {
+    const segs = st.view === 'new' ? newSegs : oldSegs, mins = st.view === 'new' ? minsNew : minsOld;
+    return `<p>🧮 Rest van de wedstrijd opnieuw verdelen</p>
+    <div class="muted">${hurtId ? `${esc(pshort(player(hurtId)))} speelt niet meer mee. ` : ''}Gespeelde blokken liggen vast; alleen de blokken hierna veranderen.</div>
+    <div class="segs two" style="margin-top:8px"><button class="pill ${st.view === 'new' ? 'on' : ''}" data-x="view" data-v="new">Nieuw schema</button><button class="pill ${st.view === 'old' ? 'on' : ''}" data-x="view" data-v="old">Huidig schema</button></div>
+    <div class="ovwrap"><table class="ov mx"><thead><tr><th>Speler</th>${times.map((t, s) => `<th class="${s < cur ? 'past' : s === cur ? 'cur' : ''}">${s + 1}</th>`).join('')}<th>Tot.</th></tr></thead><tbody>
+    ${ids.map(id => `<tr><td>${esc(pshort(player(id)))}</td>${times.map((t, s) => { const c = cell(segs, s, id), o = cell(oldSegs, s, id);
+      const ch = st.view === 'new' && s > cur && c.c !== o.c;
+      return `<td class="${c.k} ${ch ? 'chg' : ''}">${esc(c.c)}</td>`; }).join('')}<td><b>${Math.round(mins[id] || 0)}'</b></td></tr>`).join('')}
+    </tbody></table></div>
+    <div class="midstats"><span>Spreiding <b>${spread(mins)}'</b></span><span>Eerlijkheid <b>${score(mins) == null ? '–' : score(mins)}</b></span></div>
+    ${oldBad ? `<div class="midnote red">Het huidige schema kan niet blijven staan: ${esc(pshort(player(hurtId)))} stond ingepland voor de blokken hierna, maar doet niet meer mee. Er vallen dan plekken leeg.</div>` : ''}
+    <div style="display:grid;gap:8px;margin-top:12px">
+      <button class="btn pri" data-x="use">Nieuw schema gebruiken</button>
+      <button class="btn" data-x="keep" ${oldBad ? 'disabled' : ''}>Huidig schema houden</button>
+      <button class="btn" data-x="edit">Zelf aanpassen</button>
+    </div>`;
+  };
+  const r = await liveDialog(draw, (a, v, close) => {
+    if (a === 'view'){ st.view = v; return; }
+    if (a === 'use' || a === 'keep' || a === 'edit'){ close(a); return false; }
+  });
+  if (r == null && oldBad){ m.segments = newSegs.map(x => x.slice()); m.edited = true; commit(); toast('Rest opnieuw verdeeld'); return; }
+  if (r === 'use'){
+    const before = oldSegs.map(x => x.slice());
+    m.segments = newSegs.map(x => x.slice()); m.edited = true; commit(); logMet('replan', 0, 'nieuw');
+    toastUndo('Nieuw schema in gebruik', () => { m.segments = before; commit(); toast('Oude schema terug'); });
+  } else if (r === 'edit'){
+    ui.seg = Math.min(cur + 1, m.segments.length - 1); ui.peek = {m: m.id, i: ui.seg}; commit(); logMet('replan', 0, 'zelf');
+    toast('Pas het blok hieronder zelf aan');
+  } else if (r === 'keep'){ logMet('replan', 0, 'oud'); commit(); }
+  else commit();
+}
+
 // overige opties tijdens de wedstrijd onder ⋯
 function liveMore(m, last){
   const cur = m.cur || 0, b = (act, txt, note) => `<button class="moreitem" data-act="${act}"><b>${txt}</b>${note ? `<small>${note}</small>` : ''}</button>`;
@@ -2239,18 +2595,21 @@ function viewStats(){
   const se = season(), t = team();
   const done = se.matches.filter(m => m.phase === 'done' && m.segments);
   const rows = {};
-  se.players.forEach(p => rows[p.id] = {p, matches:0, mins:0, possible:0, kmins:0, bench:0, blocks:0, pos:{}, goals:0});
+  se.players.forEach(p => rows[p.id] = {p, matches:0, mins:0, possible:0, kmins:0, bench:0, blocks:0, pos:{}, goals:0, assists:0});
   let w = 0, d = 0, l = 0, gf = 0, ga = 0, scored = 0;
   done.forEach(m => {
     const pos = matchPositions(m), times = segTimes(m.settings);
+    const kk = {}, share = minsOfSegs(m, m.segments, null, kk);
     m.present.forEach(id => {
       const r = rows[id]; if (!r) return;
       r.goals += (m.goals || {})[id] || 0;
+      r.assists += (m.assists || {})[id] || 0;
       r.matches++; r.possible += m.settings.matchMinutes;
+      r.mins += share[id] || 0; r.kmins += kk[id] || 0;
       m.segments.forEach((lu, s) => {
-        const len = times[s][1] - times[s][0], i = lu.indexOf(id);
+        const i = lu.indexOf(id);
         r.blocks++;
-        if (i >= 0){ r.mins += len; const c = pos[i].code; r.pos[c] = (r.pos[c] || 0) + 1; if (pos[i].line === 'K') r.kmins += len; }
+        if (i >= 0){ const c = pos[i].code; r.pos[c] = (r.pos[c] || 0) + 1; }
         else r.bench++;
       });
     });
@@ -2263,6 +2622,7 @@ function viewStats(){
     const mins = h.mins || {}, who = Object.keys(mins).length ? Object.keys(mins) : Object.keys(h.goals || {});
     who.forEach(id => { const r = rows[id]; if (!r) return; r.matches++; r.mins += +mins[id] || 0; r.possible += +h.minutes || se.matchMinutes; });
     Object.entries(h.goals || {}).forEach(([id, g]) => { const r = rows[id]; if (r) r.goals += +g || 0; });
+    Object.entries(h.assists || {}).forEach(([id, a]) => { const r = rows[id]; if (r) r.assists += +a || 0; });
     if (h.gf !== '' && h.gf != null){ const a = +h.gf, b = +h.ga; if (!isNaN(a) && !isNaN(b)){ scored++; gf += a; ga += b; a > b ? w++ : a === b ? d++ : l++; } }
   });
   const list = Object.values(rows).sort((a, b) => b.mins - a.mins);
@@ -2287,14 +2647,14 @@ function viewStats(){
     <h2>⏱️ Speeltijd per speler</h2>
     <div class="muted" style="margin-bottom:8px">% = deel van de minuten in wedstrijden waarbij de speler aanwezig was. Gemiddeld ${avgPct}%.</div>
     <div class="ovwrap"><table class="ov">
-      <tr><th>Speler</th><th>Wed</th><th>Min</th><th>%</th><th>⚽ Goals</th><th>🧤 Keeper</th><th>Reserve</th></tr>
+      <tr><th>Speler</th><th>Wed</th><th>Min</th><th>%</th><th>⚽ Goals</th><th>Assists</th><th>🧤 Keeper</th><th>Reserve</th></tr>
       ${list.map(r => {
         const top = Object.entries(r.pos).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([c]) => c === 'K' ? '🧤' : c).join(' · ');
         return `<tr>
           <td>${esc(pshort(r.p))}<div class="bar"><i style="width:${Math.round(r.mins / maxMin * 100)}%"></i></div>${top ? `<div class="muted" style="font-size:11px;margin-top:2px">${top}</div>` : ''}</td>
           <td>${r.matches}</td><td><b>${Math.round(r.mins)}'</b></td>
           <td style="color:${tooLow(r) ? 'var(--red)' : 'inherit'}">${r.possible ? pct(r) + '%' : '–'}</td>
-          <td><b>${r.goals || ''}</b></td><td class="kp">${r.kmins ? Math.round(r.kmins) + "'" : ''}</td><td class="w">${r.bench}×</td></tr>`;
+          <td><b>${r.goals || ''}</b></td><td><b>${r.assists || ''}</b></td><td class="kp">${r.kmins ? Math.round(r.kmins) + "'" : ''}</td><td class="w">${r.bench}×</td></tr>`;
       }).join('')}
     </table></div>
     <div class="muted" style="margin-top:8px">Reserve = aantal blokken als reserve. Rood = duidelijk onder het haalbare gemiddelde van ${fairPct}%; één blok meer of minder is normaal.</div>
@@ -2302,6 +2662,10 @@ function viewStats(){
   ${list.some(r => r.goals) ? `<div class="card">
     <h2>⚽ Topscorers</h2>
     ${list.filter(r => r.goals).sort((a, b) => b.goals - a.goals).map(r => `<div class="set"><div class="lbl">${esc(pshort(r.p))}</div><b>${r.goals}</b></div>`).join('')}
+  </div>` : ''}
+  ${list.some(r => r.assists) ? `<div class="card">
+    <h2>🤝 Meeste assists</h2>
+    ${list.filter(r => r.assists).sort((a, b) => b.assists - a.assists).map(r => `<div class="set"><div class="lbl">${esc(pshort(r.p))}</div><b>${r.assists}</b></div>`).join('')}
   </div>` : ''}
   ${keepers.length ? `<div class="card">
     <h2>🧤 In de goal dit seizoen</h2>
@@ -2603,6 +2967,18 @@ document.addEventListener('click', async e => {
       else { const g = [...m.events].reverse().find(x => !!x.us === us);
         if (g) delGoal(m, g.id); else { m[k] = now - 1; commit(); } }
       break; }
+    case 'assist': {
+      m.assists = m.assists || {}; m.events = m.events || []; const aid = el.dataset.id, dd = +el.dataset.d;
+      if (dd > 0){
+        m.assists[aid] = (m.assists[aid] || 0) + 1;
+        const open = m.events.find(x => x.us && !x.as && x.by !== aid); if (open) open.as = aid;
+      } else {
+        if (!(m.assists[aid] > 0)) break;
+        m.assists[aid]--; if (!m.assists[aid]) delete m.assists[aid];
+        const g = [...m.events].reverse().find(x => x.as === aid); if (g) g.as = null;
+      }
+      commit(); break;
+    }
     case 'goal': {
       m.goals = m.goals || {}; m.events = m.events || []; const gid = el.dataset.id, d = +el.dataset.d;
       if (d > 0){
@@ -2677,7 +3053,7 @@ document.addEventListener('click', async e => {
     case 'back': { const mm = match(); ui.tourId = mm && mm.tourId ? mm.tourId : null; } ui.matchId = null; ui.sel = null; render(); window.scrollTo(0, 0); break;
     case 'step': {
       const k = el.dataset.k, [mn, mx, stp] = LIMITS[k];
-      tgt[k] = Math.max(mn, Math.min(mx, tgt[k] + (+el.dataset.d) * stp));
+      tgt[k] = Math.max(mn, Math.min(mx, (+tgt[k] || 0) + (+el.dataset.d) * stp));
       if (k === 'fieldPlayers') tgt.formation = FORMATIONS[tgt[k]][0].n;
       if (k !== 'fieldPlayers') delete tgt.cuts;
       if (el.dataset.scope === 'match'){ if (k === 'fieldPlayers') delete m.posOverride; regenIfNeeded(m); }
@@ -2718,6 +3094,16 @@ document.addEventListener('click', async e => {
     }
     case 'copyPrev': m.segments[ui.seg] = m.segments[ui.seg - 1].slice(); m.edited = true; commit(); toast('Vorig blok overgenomen'); break;
     case 'clearSeg': m.segments[ui.seg] = m.segments[ui.seg].map(() => null); m.edited = true; commit(); break;
+    case 'midSub': {
+      const cur = m.cur || 0, lu = m.segments[cur] || [], pos = matchPositions(m);
+      const opts = lu.map((id, i) => ({id, i})).filter(x => x.id);
+      if (!opts.length){ toast('Er staat nog niemand in het veld'); break; }
+      const up = playedUpTo(m, cur - 1);
+      const r = await chooseDialog('Wie gaat eruit?', opts.map(x => ({v: String(x.i),
+        n: `${pos[x.i].line === 'K' ? '🧤' : pos[x.i].code} ${pshort(player(x.id))} · ${Math.round(up[x.id] || 0)}'`, cls: ''})));
+      if (r != null) await midSubFlow(m, +r);
+      break;
+    }
     case 'regenRest': generate(m, false, ui.seg + 1); m.edited = true; commit(); toast('De rest van de wedstrijd is opnieuw eerlijk verdeeld'); break;
     case 'resetPos': delete m.posOverride; commit(); break;
     case 'addSub': {
@@ -2757,6 +3143,9 @@ document.addEventListener('click', async e => {
     }
     case 'tapField': case 'tapBench': {
       const t = act === 'tapField' ? {type:'f', i:+el.dataset.i} : {type:'b', id};
+      if (act === 'tapField' && !ui.sel && m.phase === 'live' && !ui.peek && ui.seg === (m.cur || 0) && (m.segments[ui.seg] || [])[t.i]){
+        await midSubFlow(m, t.i); break;
+      }
       if (!ui.sel){ ui.sel = t; render(); break; }
       const same = ui.sel.type === t.type && (t.type === 'f' ? ui.sel.i === t.i : ui.sel.id === t.id);
       if (same || (ui.sel.type === 'b' && t.type === 'b')){ ui.sel = same ? null : t; render(); break; }
@@ -3584,7 +3973,7 @@ const dash = {tab: 'voetbal', club: '', team: '', trainer: '', season: '', perio
 const DASH_TABS = [['voetbal', '⚽ Voetbaldata'], ['gebruik', '📈 Gebruik'], ['clubs', '🏟 Clubs'], ['trainers', '🧑‍🏫 Per trainer']];
 const FEATURES = [['lineupSave', 'Opstelling opgeslagen'], ['autoAll', 'Automatisch invullen'], ['share', 'Wedstrijdlink gedeeld'],
   ['att', 'Aanwezigheid ingevuld'], ['stats', 'Statistieken bekeken'], ['import', 'Import van wedstrijden'],
-  ['invite', 'Uitnodiging verstuurd'], ['tour', 'Toernooi aangemaakt'], ['rules', 'Wisselregels gebruikt'], ['survey', 'Posities-enquête']];
+  ['invite', 'Uitnodiging verstuurd'], ['tour', 'Toernooi aangemaakt'], ['subMid', 'Tussendoor gewisseld'], ['replan', 'Rest herverdeeld'], ['blockNext', 'Naar volgend blok'], ['rules', 'Wisselregels gebruikt'], ['survey', 'Posities-enquête']];
 const dClub = k => (((adm.data && adm.data.clubs) || []).find(c => c.id === k) || {}).name
   || (((adm.data && adm.data.teams) || []).find(t => (t.club || '') === k) || {}).clubName || k || 'Zonder club';
 const pshortOf = p => p ? shortName(p.name) : '?';
@@ -3633,7 +4022,7 @@ function dashRecs(){
           done: m.phase === 'done', phase: m.phase, gf: m.goalsFor, ga: m.goalsAgainst,
           minutes: +st.matchMinutes || +se.matchMinutes || 0, formation: st.formation || '', subs: +st.subMoments || 0,
           tour: m.tourId ? (((se.tours || []).find(x => x.id === m.tourId) || {}).name || 'Toernooi') : '', round: m.round || '',
-          goals: m.goals || {}, att: m.att || {}, attBy: m.attBy || {}, time: m.time || '', present: m.present || [],
+          goals: m.goals || {}, assists: m.assists || {}, att: m.att || {}, attBy: m.attBy || {}, time: m.time || '', present: m.present || [],
           mins: {}, kmins: {}, start: {}, benchSeg: {}, segs: 0, pos: {}, imported: false});
         if (m.phase === 'done' && m.segments){
           const P = matchPositions(m), T = segTimes(st);
@@ -3649,6 +4038,10 @@ function dashRecs(){
             });
           });
         }
+        if (m.mid && m.mid.length && m.phase === 'done'){
+          const kk = {}, sh = minsOfSegs(m, m.segments, null, kk);
+          Object.keys(sh).forEach(id => { if (!(id in r.mins) && !sh[id]) return; r.mins[id] = sh[id] || 0; r.kmins[id] = kk[id] || 0; if (!r.pos[id]) r.pos[id] = {}; });
+        }
         out.push(r);
       });
       (se.history || []).forEach(h => {
@@ -3657,7 +4050,7 @@ function dashRecs(){
         const mins = h.mins || {};
         out.push(Object.assign({}, base, {id: h.id, ts, date: h.date || '', opponent: h.opponent || '', home: h.home !== false,
           done: true, phase: 'done', gf: h.gf, ga: h.ga, minutes: +h.minutes || +se.matchMinutes || 0, formation: '', subs: 0,
-          tour: h.tour || '', round: h.round || '', goals: h.goals || {}, att: {}, attBy: {}, time: '',
+          tour: h.tour || '', round: h.round || '', goals: h.goals || {}, assists: h.assists || {}, att: {}, attBy: {}, time: '',
           present: Object.keys(mins), mins, kmins: {}, start: {}, benchSeg: {}, segs: 0, pos: {}, imported: true}));
       });
     });
@@ -3763,8 +4156,8 @@ function dashVoetbal(){
     ids.forEach(id => {
       const p = r.players[id]; if (!p) return;
       const k = r.teamId + '|' + id;
-      const x = P[k] = P[k] || {key: k, id, naam: pshortOf(p), team: r.label, club: dClub(r.club), wed: 0, min: 0, mog: 0, basis: 0, wissel: 0, keeper: 0, doel: 0, codes: {}, pref: (prefsOf(p) || []).map(prefName).join(', ')};
-      x.wed++; x.min += +r.mins[id] || 0; x.mog += r.minutes; x.doel += +(r.goals || {})[id] || 0;
+      const x = P[k] = P[k] || {key: k, id, naam: pshortOf(p), team: r.label, club: dClub(r.club), wed: 0, min: 0, mog: 0, basis: 0, wissel: 0, keeper: 0, doel: 0, ass: 0, codes: {}, pref: (prefsOf(p) || []).map(prefName).join(', ')};
+      x.wed++; x.min += +r.mins[id] || 0; x.mog += r.minutes; x.doel += +(r.goals || {})[id] || 0; x.ass += +(r.assists || {})[id] || 0;
       if (r.kmins[id]) x.keeper++;
       if (!r.imported){ r.start[id] ? x.basis++ : x.wissel++; }
       Object.entries(r.pos[id] || {}).forEach(([c, n]) => x.codes[c] = (x.codes[c] || 0) + n);
@@ -3804,7 +4197,7 @@ function dashVoetbal(){
     r.home ? t.thuis++ : t.uit++; if (r.tour) t.toer++;
   });
   const res = Object.values(R).map(t => Object.assign(t, {wgv: `${t.w}-${t.g}-${t.v}`, saldo: t.dv - t.dt}));
-  const scorers = pl.filter(x => x.doel > 0).map(x => ({naam: x.naam, team: x.team, doel: x.doel, wed: x.wed}));
+  const scorers = pl.filter(x => x.doel > 0 || x.ass > 0).map(x => ({naam: x.naam, team: x.team, doel: x.doel, ass: x.ass, wed: x.wed}));
   // opstellingen per leeftijd
   const F = {};
   done.filter(r => !r.imported).forEach(r => {
@@ -3824,7 +4217,7 @@ function dashVoetbal(){
   return `<div class="atiles">${tiles.join('')}</div>
   <div class="card"><h2>⏱ Speeltijd per speler</h2><div class="muted">Minuten, aandeel van de mogelijke minuten, basis/wissel en keeperbeurten.</div>
     ${dtable('speeltijd', [{k: 'naam', l: 'Speler'}, {k: 'team', l: 'Team'}, {k: 'wed', l: 'Wed'}, {k: 'min', l: 'Min'},
-      {k: 'pctv', l: '%', f: r => r.pctv + '%'}, {k: 'basis', l: 'Basis'}, {k: 'wissel', l: 'Wissel'}, {k: 'keeper', l: 'Keeper'}, {k: 'doel', l: 'Doel'}],
+      {k: 'pctv', l: '%', f: r => r.pctv + '%'}, {k: 'basis', l: 'Basis'}, {k: 'wissel', l: 'Wissel'}, {k: 'keeper', l: 'Keeper'}, {k: 'doel', l: 'Doel'}, {k: 'ass', l: 'Assist'}],
       pl, {name: 'speeltijd', sort: 'min'})}</div>
   <div class="card"><h2>⚖️ Eerlijkheid per team</h2><div class="muted">100 = iedereen speelt even veel. Score = 100 − (spreiding ÷ gemiddelde × 100).</div>
     ${dtable('eerlijk', [{k: 'team', l: 'Team'}, {k: 'club', l: 'Club'}, {k: 'score', l: 'Score', hi: r => r.score !== '–' && r.score < 70},
@@ -3843,7 +4236,7 @@ function dashVoetbal(){
       {k: 'saldo', l: 'Saldo'}, {k: 'thuis', l: 'Thuis'}, {k: 'uit', l: 'Uit'}, {k: 'toer', l: 'Toernooi'}], res, {name: 'resultaten', sort: 'saldo'})}
     ${Object.keys(rondes).length ? `<h3 class="dh3">Toernooiwedstrijden per ronde</h3>${dBars(Object.entries(rondes).map(([l, v]) => ({l, v})))}` : ''}
     <h3 class="dh3">Topscorers</h3>
-    ${dtable('scorers', [{k: 'naam', l: 'Speler'}, {k: 'team', l: 'Team'}, {k: 'doel', l: 'Doelpunten'}, {k: 'wed', l: 'Wed'}], scorers, {name: 'topscorers', sort: 'doel', max: 50, empty: 'Nog geen doelpuntenmakers ingevuld.'})}</div>
+    ${dtable('scorers', [{k: 'naam', l: 'Speler'}, {k: 'team', l: 'Team'}, {k: 'doel', l: 'Doelpunten'}, {k: 'ass', l: 'Assists'}, {k: 'wed', l: 'Wed'}], scorers, {name: 'topscorers', sort: 'doel', max: 50, empty: 'Nog geen doelpuntenmakers ingevuld.'})}</div>
   <div class="card"><h2>🎯 Posities</h2><div class="muted">Opgegeven voorkeur tegenover de posities die echt gespeeld zijn.</div>
     ${dtable('posities', [{k: 'naam', l: 'Speler'}, {k: 'team', l: 'Team'}, {k: 'pref', l: 'Voorkeur'}, {k: 'meest', l: 'Meest gespeeld'},
       {k: 'versch', l: 'Verschillende'}], pl.filter(x => x.versch || x.pref), {name: 'posities', sort: 'versch'})}</div>
@@ -4764,7 +5157,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-13.1';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-14.3';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
@@ -4795,15 +5188,16 @@ const setCloudMap = m => { try { localStorage.setItem(CLOUD_MAP_KEY, JSON.string
 const cloudCfg = (tid = S.active.team) => cloudMap()[tid] || null;
 // lichte gebruiksmeting voor het eigenaar-dashboard: geen namen, geen spelergegevens
 const MET_GAP = {stats: 18e5, share: 9e5, att: 9e5, survey: 36e5, rules: 36e5, lineupSave: 0};
-function logMet(t, ms){
+function logMet(t, ms, v){
   try {
     if (!cloud.api || !cloud.api.metAdd || !myUid()) return;
     const team = (cloudCfg() || {}).id || '';
     const gap = MET_GAP[t], k = 'lm.met.' + t + '.' + team;
     if (gap){ const last = +localStorage.getItem(k) || 0; if (Date.now() - last < gap) return; localStorage.setItem(k, String(Date.now())); }
-    const v = {t, at: Date.now(), team, uid: myUid()};
-    if (ms > 0) v.ms = Math.min(36e5, Math.round(ms));
-    cloud.api.metAdd(v).catch(() => {});
+    const rec = {t, at: Date.now(), team, uid: myUid()};
+    if (ms > 0) rec.ms = Math.min(36e5, Math.round(ms));
+    if (v) rec.v = String(v).slice(0, 12);
+    cloud.api.metAdd(rec).catch(() => {});
   } catch(e){}
 }
 const isLegacy = c => !!c && c.v !== 7;
