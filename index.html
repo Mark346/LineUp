@@ -151,6 +151,31 @@
   .vopen{font-size:12px;color:var(--muted);font-weight:700;padding-top:6px;margin-top:6px;border-top:1px solid var(--line)}
   .vall{margin-top:12px;min-height:44px;font-weight:800;border:0;background:none;color:var(--g);text-decoration:underline}
   .lhsub.split{color:#b4601a}
+  .vhead{display:flex;align-items:center;gap:8px}
+  .vhead .lhblk{flex:1 1 auto;text-align:left}
+  .vswl{font-size:12px;font-weight:800;color:var(--muted)}
+  .vpair{display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:0;background:none;font:inherit;color:inherit;padding:2px 0;min-height:44px;cursor:pointer}
+  .vpl{display:flex;flex-direction:column;gap:2px;flex:1 1 auto;min-width:0}
+  .pen{font-style:normal;color:var(--g);font-size:15px;flex:none}
+  .vcard.mid button,.vcard.mid.l{align-items:stretch}
+  button.vcard{text-align:left;border:0;font:inherit;color:inherit;cursor:pointer;flex-direction:row;align-items:center;gap:8px}
+  button.vcard small{position:absolute;top:6px;left:10px}
+  button.vcard.mid{padding-top:22px}
+  .vplus{position:absolute;right:0;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;border:2px solid var(--g);background:var(--solid);color:var(--g);font-size:19px;font-weight:900;cursor:pointer;z-index:2}
+  .vfoot{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:10px;border-top:1px solid var(--line);font-size:13px;color:var(--muted);font-weight:700;text-align:left}
+  .vfoot .btn{margin-left:auto}
+  .qrow{display:grid;gap:6px;margin-bottom:4px}
+  .qb{min-height:48px;border-radius:10px;border:2px solid var(--line);background:var(--surf);color:var(--muted);font:inherit;font-weight:800;cursor:pointer}
+  .qb.on{border-color:var(--inc);background:color-mix(in srgb,var(--inc) 12%,var(--surf));color:var(--txt)}
+  .erow{display:flex;align-items:center;gap:10px;border:1px solid var(--line);background:var(--surf);border-radius:12px;padding:10px 12px;min-height:52px;margin-bottom:6px}
+  .erow b{font-size:15px;font-weight:800;flex:1 1 auto}
+  .fxbox{background:var(--surf2);border-radius:12px;padding:10px 12px}
+  .fxln{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:var(--muted);min-height:26px}
+  .fxln b{margin-left:auto;color:var(--txt);font-variant-numeric:tabular-nums}
+  .fxln.tot{border-top:1px solid var(--line);margin-top:6px;padding-top:6px}
+  .sheetalt .red{color:var(--red)}
+  .card.flash{animation:flash 1.3s ease}
+  @keyframes flash{0%,100%{box-shadow:none}30%{box-shadow:0 0 0 3px var(--y)}}
   .segnow{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px}
   .pitch.livebig{max-height:none}
   .pitch.livebig .pl{width:84px}
@@ -2191,8 +2216,8 @@ function viewMatch(){
     <div class="grid2" style="margin-bottom:12px"><button class="btn" data-act="share">📤 Delen</button><button class="btn" data-act="print">🖨️ Printen</button></div>`;
   else if (ph === 'live') body = tourCard + scoreBar(m, cur) + liveHead(m, times, cur, last)
     + lineupCard + minutesCard + rulesCard;
-  else if (ph === 'post') body = `${tourCard}${postCard}<div style="height:12px"></div>${vloopCard(m, times)}${lineupCard}${minutesCard}`;
-  else body = `${tourCard}${doneCard}${minutesCard}${lineupCard}
+  else if (ph === 'post') body = `${tourCard}${postCard}<div style="height:12px"></div>${vloopCard(m, times)}`;
+  else body = `${tourCard}${doneCard}${vloopCard(m, times)}
     <div class="grid2" style="margin-bottom:12px"><button class="btn" data-act="share">📤 Delen</button><button class="btn" data-act="print">🖨️ Printen</button></div>
     <button class="btn full" style="margin-bottom:12px" data-act="phase" data-v="post">✏️ Uitslag, doelpunten of assists aanpassen</button>`;
 
@@ -2251,7 +2276,9 @@ function vloopRow(it, m, opts){
   if (it.t === 'start') return `<div class="vrow c"><span class="vpill">AFTRAP</span></div>`;
   if (it.t === 'edge'){
     const s = it.end && hasScore(m) ? {us: +m.goalsFor || 0, them: +m.goalsAgainst || 0} : scoreUpto(m, it.b);
-    return `<div class="vrow c"><span class="vpill"${tap(it.b)}>${it.end ? 'EINDE WEDSTRIJD' : 'EINDE ' + esc(blockLabel(m, it.b)).toUpperCase()} · ${s.us} – ${s.them}</span></div>`;
+    const plus = o.edit && !it.end && it.b + 1 < m.segments.length
+      ? `<button class="vplus" data-act="subAdd" data-id="${it.b + 1}" aria-label="Wissel toevoegen in ${esc(blockLabel(m, it.b + 1))}">＋</button>` : '';
+    return `<div class="vrow c"><span class="vpill"${o.edit ? '' : tap(it.b)}>${it.end ? 'EINDE WEDSTRIJD' : 'EINDE ' + esc(blockLabel(m, it.b)).toUpperCase()} · ${s.us} – ${s.them}</span>${plus}</div>`;
   }
   if (it.t === 'now') return `<div class="vrow c"><span class="vpill nu">NU${it.sub ? ' · ' + esc(it.sub).toUpperCase() : ''}</span></div>`;
   if (it.t === 'plan'){
@@ -2264,10 +2291,13 @@ function vloopRow(it, m, opts){
     </div><span class="vdot dash">${times[it.b][0]}'</span><div></div></div>`;
   }
   if (it.t === 'sub'){
-    return `<div class="vrow"><div class="vcard l"${tap(it.b)}>
+    const pair = x => `${x.inId ? `<span class="vln"><i class="up" aria-hidden="true">↑</i>${esc(pname(x.inId))}<em>erin</em></span>` : ''}
+      ${x.outId ? `<span class="vln out"><i aria-hidden="true">↓</i>${esc(pname(x.outId))}<em>eruit</em></span>` : ''}`;
+    return `<div class="vrow"><div class="vcard l"${o.edit ? '' : tap(it.b)}>
       <small>WISSELMOMENT</small>
-      ${it.subs.map(x => `${x.inId ? `<span class="vln"><i class="up" aria-hidden="true">↑</i>${esc(pname(x.inId))}<em>erin</em></span>` : ''}
-        ${x.outId ? `<span class="vln out"><i aria-hidden="true">↓</i>${esc(pname(x.outId))}<em>eruit</em></span>` : ''}`).join('')}
+      ${it.subs.map(x => o.edit && x.inId && x.outId
+        ? `<button class="vpair" data-act="subEdit" data-id="${esc('sub|' + it.b + '|' + x.inId + '|' + x.outId)}" aria-label="Wissel ${esc(pname(x.inId))} voor ${esc(pname(x.outId))} aanpassen"><span class="vpl">${pair(x)}</span><i class="pen" aria-hidden="true">✎</i></button>`
+        : `<div class="vpair">${pair(x)}</div>`).join('')}
     </div><span class="vdot">${times[it.b][0]}'</span><div></div></div>`;
   }
   if (it.t === 'mid'){
@@ -2275,6 +2305,11 @@ function vloopRow(it, m, opts){
     const occ = slotOcc(m, blk, x.slot), parts = slotParts(m, blk, x.slot, t0, t1, occ.length);
     const deel = occ.map((id, k) => `${pshort(player(id)) || '?'} ${parts[k]}'`).join(' · ');
     const kan = vloopLast(m) === x.id && (m.phase === 'live');
+    if (o.edit) return `<div class="vrow"><button class="vcard l mid" data-act="subEdit" data-id="${esc('mid|' + x.id)}" aria-label="Tussendoor-wissel aanpassen">
+      <small>TUSSENDOOR${x.reason === 'blessure' ? ' · KOMT ER NIET MEER IN' : ''}</small>
+      <span class="vpl"><span class="vln"><i class="up" aria-hidden="true">↑</i>${esc(pname(x.in))}<em>erin</em></span>
+      <span class="vln out"><i aria-hidden="true">↓</i>${esc(pname(x.out))}<em>eruit</em></span></span><i class="pen" aria-hidden="true">✎</i>
+      </button><span class="vdot mid">${Math.round(it.min)}'</span><div></div></div>`;
     return `<div class="vrow"><details class="vcard l mid"><summary>
       <small>TUSSENDOOR${x.reason === 'blessure' ? ' · KOMT ER NIET MEER IN' : ''}</small>
       <span class="vln"><i class="up" aria-hidden="true">↑</i>${esc(pname(x.in))}<em>erin</em></span>
@@ -2286,11 +2321,12 @@ function vloopRow(it, m, opts){
   if (it.t === 'goal'){
     const e = it.e, s = scoreUpto(m, it.b);
     const who = e.us ? (e.og ? 'Eigen doelpunt' : (e.by ? pname(e.by) : 'Onbekend')) : (teamOpp(m) || 'Tegenstander');
+    const gt = o.edit ? ' data-act="goalEdit" role="button" tabindex="0"' : tap(it.b);
     return `<div class="vrow">${e.us
-      ? `<div class="vcard l goal"${tap(it.b)}><small>DOELPUNT</small><span class="vln"><i class="ball" aria-hidden="true">⚽</i>${esc(who)}<em>doelpunt</em></span><span class="vsc">${s.us} – ${s.them}</span></div>
+      ? `<div class="vcard l goal"${gt}><small>DOELPUNT</small><span class="vln"><i class="ball" aria-hidden="true">⚽</i>${esc(who)}<em>doelpunt</em></span><span class="vsc">${s.us} – ${s.them}</span></div>
          <span class="vdot">${esc(shortBlock(m, it.b))}</span><div></div>`
       : `<div></div><span class="vdot">${esc(shortBlock(m, it.b))}</span>
-         <div class="vcard r goal"${tap(it.b)}><small>TEGENDOELPUNT</small><span class="vln"><i class="ball" aria-hidden="true">⚽</i>${esc(who)}<em>doelpunt</em></span><span class="vsc">${s.us} – ${s.them}</span></div>`}</div>`;
+         <div class="vcard r goal"${gt}><small>TEGENDOELPUNT</small><span class="vln"><i class="ball" aria-hidden="true">⚽</i>${esc(who)}<em>doelpunt</em></span><span class="vsc">${s.us} – ${s.them}</span></div>`}</div>`;
   }
   return '';
 }
@@ -2315,13 +2351,212 @@ function liveHead(m, times, cur, last){
     <button class="btn full vall" data-act="vloop">Heel verloop ›</button>
   </div>`;
 }
-// kaart na de wedstrijd: het hele verloop, tikken kiest het blok voor het veld eronder
+/* ===================== NA DE WEDSTRIJD: VERLOOP AANPASSEN ===================== */
+const fairOfMatch = m => {
+  const ids = (m.present || []).filter(id => player(id));
+  const mins = minsOfSegs(m, m.segments);
+  const sh = ids.map(id => (mins[id] || 0) / Math.max(1, m.settings.matchMinutes));
+  if (sh.length < 2) return null;
+  const mu = sh.reduce((a, b) => a + b, 0) / sh.length; if (!mu) return null;
+  const sd = Math.sqrt(sh.reduce((a, b) => a + (b - mu) * (b - mu), 0) / sh.length);
+  return Math.max(0, Math.min(100, Math.round(100 - sd / mu * 100)));
+};
+// wie staat er op dit moment in het veld? (begin van blok b, of middenin na de wissels tot minuut t)
+function fieldAt(m, b, t){
+  const lu = startLineup(m, b).slice();
+  (m.mid || []).filter(x => x.blk === b && (t == null || (x.min != null ? +x.min : 0) < t))
+    .sort((a, c) => (+a.min || 0) - (+c.min || 0))
+    .forEach(x => { const i = lu.indexOf(x.out); if (i >= 0) lu[i] = x.in; else if (lu[x.slot] != null) lu[x.slot] = x.in; });
+  return lu;
+}
+// klopt de keten nog? geeft de problemen terug in gewone taal
+function chainProblems(m){
+  const p = [], times = segTimes(m.settings);
+  (m.segments || []).forEach((lu, b) => {
+    if (isEmptySeg(lu)) return;
+    const seen = {};
+    startLineup(m, b).forEach(id => { if (!id) return; if (seen[id]) p.push(`${pshort(player(id))} staat twee keer in ${blockLabel(m, b)}`); seen[id] = 1; });
+  });
+  (m.mid || []).slice().sort((a, c) => a.blk - c.blk || (+a.min || 0) - (+c.min || 0)).forEach(x => {
+    const lu = fieldAt(m, x.blk, +x.min);
+    if (!lu.includes(x.out)) p.push(`${pshort(player(x.out))} stond niet in het veld bij de wissel op ${x.min}'`);
+    if (lu.includes(x.in)) p.push(`${pshort(player(x.in))} staat bij ${x.min}' al in het veld`);
+  });
+  return [...new Set(p)];
+}
+const cloneMatch = m => JSON.parse(JSON.stringify({segments: m.segments, mid: m.mid || [], out: m.out || {},
+  settings: m.settings, present: m.present, posOverride: m.posOverride || null}));
+const putBack = (m, c) => { m.segments = c.segments; m.mid = c.mid; m.out = c.out; };
+
+// onderblad: wissel aanpassen of toevoegen
+async function subEditSheet(m, src){
+  const times = segTimes(m.settings), nB = m.segments.length, pos = matchPositions(m);
+  const st = src.kind === 'mid'
+    ? {b: src.x.blk, when: 'mid', inId: src.x.in, outId: src.x.out, reason: src.x.reason || 'tact', min: +src.x.min || 0}
+    : src.kind === 'sub'
+      ? {b: src.b, when: 'start', inId: src.inId, outId: src.outId, reason: 'tact', min: times[src.b][0]}
+      : {b: src.b != null ? src.b : Math.max(1, (m.cur || 0)), when: 'start', inId: null, outId: null, reason: 'tact', min: 0};
+  const before = cloneMatch(m);
+  const midMin = b => { const n = (m.mid || []).filter(x => x.blk === b && (!src.x || x.id !== src.x.id)).length + 2;
+    return Math.round(times[b][0] + (times[b][1] - times[b][0]) / n); };
+  if (st.when === 'start') st.min = times[st.b][0];
+
+  // de wedstrijd zonder de wissel die we aan het bewerken zijn
+  const simBase = () => { const mm = Object.assign({}, m, cloneMatch(m)); applyEdit(mm, src, null); return mm; };
+  // spelers op het veld / op de bank op dat moment
+  const onField = () => { const mm = simBase();
+    return (st.when === 'start' ? (mm.segments[st.b - 1] || []) : fieldAt(mm, st.b, st.min)).filter(Boolean); };
+  const onBench = () => { const mm = simBase(), f = onField(), blok = (mm.segments[st.b] || []).filter(Boolean);
+    return (m.present || []).filter(id => player(id) && !f.includes(id) && !blok.includes(id)); };
+  const isKeeperOut = () => { if (!st.outId) return false;
+    const lu = st.when === 'start' ? (m.segments[st.b] || []) : (m.segments[st.b] || []);
+    const k = pos.findIndex(x => x.line === 'K');
+    const src2 = st.when === 'start' ? (m.segments[st.b - 1] || []) : fieldAt(m, st.b, st.min);
+    return k >= 0 && src2[k] === st.outId; };
+  const build = () => { // bouw een voorstel op een kopie en geef minuten + problemen terug
+    const sim = cloneMatch(m); const mm = Object.assign(Object.create(Object.getPrototypeOf(m)), m, sim);
+    applyEdit(mm, src, st);
+    return {mins: minsOfSegs(mm, mm.segments), fair: fairOfMatch(mm), probs: chainProblems(mm)};
+  };
+  const oldMins = minsOfSegs(m, m.segments), oldFair = fairOfMatch(m);
+
+  const draw = () => {
+    const res = st.inId && st.outId ? build() : null;
+    const field = onField(), bench = onBench();
+    const nm = id => id ? esc(pshort(player(id))) : 'Kies een speler';
+    return `<div class="wizhead"><div><small>${src.kind === 'new' ? 'WISSEL TOEVOEGEN' : 'WISSEL AANPASSEN'}</small><b>${esc(blockLabel(m, st.b))}</b></div>
+      <button class="wizx" data-x="close" aria-label="Sluiten">Sluiten</button></div>
+    <div class="midlbl">In welk ${esc(blockWord(m))}?</div>
+    <div class="qrow" style="grid-template-columns:repeat(${nB - (src.kind === 'mid' ? 0 : 1)},1fr)">
+      ${times.map((t, b) => (src.kind !== 'mid' && b === 0) ? '' : `<button class="qb ${b === st.b ? 'on' : ''}" data-x="b" data-v="${b}">${b + 1}e</button>`).join('')}</div>
+    <div class="midlbl">Wanneer in dat ${esc(blockWord(m))}?</div>
+    <button class="outc ${st.when === 'start' ? 'on' : ''}" data-x="when" data-v="start"><span class="radio"></span>
+      <span class="outnm"><b>Bij het begin</b><small>wisselmoment · ${times[st.b][0]}'</small></span></button>
+    ${st.b >= 0 ? `<button class="outc ${st.when === 'mid' ? 'on' : ''}" data-x="when" data-v="mid"><span class="radio"></span>
+      <span class="outnm"><b>Tussendoor</b><small>half ${esc(blockWord(m))} · ${st.when === 'mid' ? st.min : midMin(st.b)}'</small></span></button>` : ''}
+    ${st.when === 'mid' ? `<div class="minrow">
+      <button class="minb" data-x="min" data-v="-1" aria-label="Een minuut eerder">−</button>
+      <span class="minv"><b>${st.min}'</b><small>${times[st.b][0]}' – ${times[st.b][1]}'</small></span>
+      <button class="minb" data-x="min" data-v="1" aria-label="Een minuut later">+</button></div>` : ''}
+    <div class="midlbl">Erin</div>
+    <div class="erow"><b>${nm(st.inId)}</b><button class="btn sm" data-x="pickIn">Wijzig</button></div>
+    <div class="midlbl">Eruit</div>
+    <div class="erow"><b>${nm(st.outId)}</b><button class="btn sm" data-x="pickOut">Wijzig</button></div>
+    ${isKeeperOut() ? `<div class="midlbl">Wie keept er dan?</div>
+      <button class="outc ${!st.kp ? 'on' : ''}" data-x="kp" data-v=""><span class="radio"></span>
+        <span class="outnm"><b>${nm(st.inId)}</b><small>de invaller gaat op goal</small></span></button>
+      ${st.kp ? `<button class="outc on" data-x="kpPick"><span class="radio"></span>
+        <span class="outnm"><b>${nm(st.kp)}</b><small>schuift naar goal, ${nm(st.inId)} neemt zijn plek</small></span></button>`
+        : `<button class="outc" data-x="kpPick"><span class="radio"></span><span class="outnm"><b>Een veldspeler</b><small>die schuift naar goal</small></span></button>`}` : ''}
+    ${st.when === 'mid' ? `<div class="midlbl">Reden</div>
+      <div class="grid2"><button class="btn ${st.reason === 'tact' ? 'pri' : ''}" data-x="reason" data-v="tact">Tactisch / moe</button>
+      <button class="btn ${st.reason === 'blessure' ? 'pri' : ''}" data-x="reason" data-v="blessure">Blessure</button></div>` : ''}
+    ${res ? `<div class="midlbl">Gevolg voor de speeltijd</div>
+      <div class="fxbox">${[st.inId, st.outId, ...(src.kind === 'mid' ? [src.x.in, src.x.out] : src.kind === 'sub' ? [src.inId, src.outId] : [])]
+        .filter((v, i, a) => v && a.indexOf(v) === i)
+        .map(id => `<div class="fxln"><span>${esc(pshort(player(id)))}</span><b>${Math.round(oldMins[id] || 0)}' → ${Math.round(res.mins[id] || 0)}'</b></div>`).join('')}
+        <div class="fxln tot"><span>Eerlijkheid wedstrijd</span><b>${oldFair == null ? '–' : oldFair} → ${res.fair == null ? '–' : res.fair}</b></div></div>` : ''}
+    ${res && res.probs.length ? `<div class="midnote red">Dit kan niet: ${esc(res.probs[0])}.</div>` : ''}
+    <button class="btn pri full sheetbtn" data-x="save" ${!st.inId || !st.outId || (res && res.probs.length) ? 'disabled' : ''}>Opslaan</button>
+    <div class="sheetalt">${src.kind !== 'new' ? `<button class="red" data-x="del">Wissel verwijderen</button>` : ''}<button data-x="close">Annuleer</button></div>`;
+  };
+
+  const r = await liveDialog(draw, async (a, v, close) => {
+    if (a === 'close'){ close(null); return false; }
+    if (a === 'b'){ st.b = +v; if (st.when === 'start') st.min = times[st.b][0]; else st.min = midMin(st.b); st.inId = st.outId = st.kp = null; return; }
+    if (a === 'when'){ st.when = v; st.min = v === 'start' ? times[st.b][0] : midMin(st.b); st.inId = st.outId = st.kp = null; return; }
+    if (a === 'min'){ st.min = Math.max(times[st.b][0] + 1, Math.min(times[st.b][1] - 1, st.min + (+v))); return; }
+    if (a === 'reason'){ st.reason = v; return; }
+    if (a === 'kp'){ st.kp = null; return; }
+    if (a === 'kpPick'){
+      const f = onField().filter(id => id !== st.outId);
+      if (!f.length){ toast('Geen veldspelers'); return false; }
+      const up = playedUpTo(m, st.b);
+      const r2 = await chooseDialog('Wie schuift naar goal?', f.map(id => ({v: id, n: `${pshort(player(id))} · ${Math.round(up[id] || 0)}'`, cls: ''})));
+      if (r2) st.kp = r2;
+      return;
+    }
+    if (a === 'pickIn' || a === 'pickOut'){
+      const list = a === 'pickIn' ? onBench() : onField();
+      if (!list.length){ toast('Geen spelers beschikbaar'); return false; }
+      const up = st.when === 'start' ? playedUpTo(m, st.b - 1) : playedUpTo(m, st.b);
+      const pick = await chooseDialog(a === 'pickIn' ? 'Wie komt erin?' : 'Wie gaat eruit?',
+        list.sort((x, y) => (up[x] || 0) - (up[y] || 0)).map(id => ({v: id, n: `${pshort(player(id))} · ${Math.round(up[id] || 0)}'`, cls: ''})));
+      if (pick){ if (a === 'pickIn') st.inId = pick; else st.outId = pick; }
+      return;
+    }
+    if (a === 'save'){ close('save'); return false; }
+    if (a === 'del'){ close('del'); return false; }
+  });
+  if (!r) return false;
+  if (r === 'del'){ applyEdit(m, src, null); logMet('editAfter', 0, 'delete'); }
+  else { applyEdit(m, src, st); logMet('editAfter', 0, src.kind === 'new' ? 'add' : 'edit'); }
+  m.edited = true; commit();
+  toastUndo(r === 'del' ? 'Wissel verwijderd' : 'Wissel opgeslagen', () => { putBack(m, before); commit(); toast('Teruggedraaid'); });
+  return true;
+}
+// de wijziging echt toepassen (ook op een kopie, om door te rekenen)
+function applyEdit(m, src, st){
+  m.mid = m.mid || [];
+  // oude wissel terugdraaien
+  if (src.kind === 'mid'){
+    const k = m.mid.findIndex(x => x.id === src.x.id);
+    if (k >= 0){ const x = m.mid[k];
+      if ((m.segments[x.blk] || [])[x.slot] === x.in) m.segments[x.blk][x.slot] = x.out;
+      if (x.reason === 'blessure' && m.out) delete m.out[x.out];
+      m.mid.splice(k, 1); }
+  } else if (src.kind === 'sub'){
+    const lu = m.segments[src.b] || [], i = lu.indexOf(src.inId);
+    if (i >= 0 && src.outId) lu[i] = src.outId;
+  }
+  if (!st) return;
+  // nieuwe wissel zetten
+  if (st.when === 'start'){
+    const lu = m.segments[st.b] || [];
+    let j = lu.indexOf(st.outId);
+    if (j < 0) j = (m.segments[st.b - 1] || []).indexOf(st.outId);
+    if (j >= 0){
+      if (st.kp){ const jk = lu.indexOf(st.kp); lu[j] = st.kp; if (jk >= 0) lu[jk] = st.inId; }
+      else lu[j] = st.inId;
+    }
+  } else {
+    const lu = m.segments[st.b] || [], slot = lu.indexOf(st.outId);
+    if (slot >= 0){
+      if (st.kp){ const jk = lu.indexOf(st.kp); lu[slot] = st.kp; if (jk >= 0) lu[jk] = st.inId; }
+      else lu[slot] = st.inId;
+      m.mid.push({id: uid(), blk: st.b, slot, out: st.outId, in: st.kp || st.inId, reason: st.reason, min: st.min, at: Date.now()});
+      if (st.reason === 'blessure'){ m.out = m.out || {}; m.out[st.outId] = st.b + 1; }
+    }
+  }
+}
+// speeltijd in een onderblad
+async function minsSheet(m){
+  const kk = {}, mins = minsOfSegs(m, m.segments, null, kk), ids = (m.present || []).filter(id => player(id));
+  const rows = ids.map(id => ({id, n: pshort(player(id)), v: Math.round(mins[id] || 0), k: Math.round(kk[id] || 0),
+    g: (m.goals || {})[id] || 0, a: (m.assists || {})[id] || 0})).sort((a, b) => b.v - a.v);
+  return liveDialog(() => `<div class="wizhead"><div><small>SPEELTIJD</small><b>${rows.length} spelers</b></div><button class="wizx" data-x="close">Sluiten</button></div>
+    <div class="ovwrap"><table class="ov"><thead><tr><th>Speler</th><th>Min</th><th>%</th><th>⚽</th><th>Ass</th><th>🧤</th></tr></thead>
+    <tbody>${rows.map(r => `<tr><td>${esc(r.n)}</td><td><b>${r.v}'</b></td><td>${Math.round(r.v / Math.max(1, m.settings.matchMinutes) * 100)}%</td>
+      <td>${r.g || ''}</td><td>${r.a || ''}</td><td class="kp">${r.k ? r.k + "'" : ''}</td></tr>`).join('')}</tbody></table></div>
+    <div class="midstats"><span>Eerlijkheid <b>${fairOfMatch(m) == null ? '–' : fairOfMatch(m)}</b></span></div>
+    <button class="btn full sheetbtn" data-x="close">Sluiten</button>`,
+    (a, v, close) => { close(null); return false; });
+}
+
+// kaart na de wedstrijd: het hele verloop, met de schakelaar Aanpassen
 function vloopCard(m, times){
-  const items = vloopItems(m);
+  const ed = !!ui.vedit, items = vloopItems(m);
+  const ids = (m.present || []).filter(id => player(id)), f = fairOfMatch(m);
   return `<div class="card livehead">
-    <div class="lhblk">Verloop</div>
-    <div class="lhsub">Tik op een moment om die opstelling hieronder te zien</div>
-    <div class="vl">${items.map(x => vloopRow(x, m, {pick: true})).join('')}</div>
+    <div class="vhead"><div class="lhblk">Verloop</div>
+      <button class="switch ${ed ? 'on' : ''}" data-act="vedit" role="switch" aria-checked="${ed}" aria-label="Verloop aanpassen"><i></i></button>
+      <span class="vswl">Aanpassen</span></div>
+    <div class="lhsub">${ed ? `Tik op een wissel om hem aan te passen, of op ＋ om er een toe te voegen. Speeltijd rekent direct mee.`
+      : 'Zet Aanpassen aan om wissels te wijzigen of toe te voegen.'}</div>
+    <div class="vl">${items.map(x => vloopRow(x, m, {edit: ed})).join('')}</div>
+    <div class="vfoot"><span>Speeltijd <b>${ids.length}</b> spelers · eerlijkheid <b>${f == null ? '–' : f}</b></span>
+      <button class="btn sm" data-act="minsSheet">Per speler ›</button></div>
+    ${ed ? `<button class="btn pri full" style="margin-top:10px" data-act="vedit">Klaar met aanpassen</button>` : ''}
   </div>`;
 }
 // heel verloop in een onderblad, met de blokken die nog komen
@@ -3577,6 +3812,21 @@ document.addEventListener('click', async e => {
     case 'clearSeg': m.segments[ui.seg] = m.segments[ui.seg].map(() => null); m.edited = true; commit(); break;
     case 'midSub': await midSubPick(m); break;
     case 'vloop': await vloopSheet(m); break;
+    case 'vedit': ui.vedit = !ui.vedit; render(); break;
+    case 'minsSheet': await minsSheet(m); break;
+    case 'goalEdit': {
+      if (m.phase === 'done'){ m.phase = 'post'; commit(); }
+      setTimeout(() => { const c = [...document.querySelectorAll('.card')].find(x => /Doelpuntenmakers/.test(x.textContent));
+        if (c){ c.scrollIntoView({behavior: 'smooth', block: 'center'}); c.classList.add('flash'); setTimeout(() => c.classList.remove('flash'), 1400); } }, 60);
+      break;
+    }
+    case 'subAdd': await subEditSheet(m, {kind: 'new', b: +id}); break;
+    case 'subEdit': {
+      const parts = String(id).split('|');
+      if (parts[0] === 'mid'){ const x = (m.mid || []).find(y => y.id === parts[1]); if (x) await subEditSheet(m, {kind: 'mid', x}); }
+      else await subEditSheet(m, {kind: 'sub', b: +parts[1], inId: parts[2], outId: parts[3]});
+      break;
+    }
     case 'midUndo': {
       const k = (m.mid || []).findIndex(x => x.id === id); if (k < 0) break;
       const x = m.mid[k];
@@ -4447,7 +4697,7 @@ const dash = {tab: 'voetbal', club: '', team: '', trainer: '', season: '', perio
 const DASH_TABS = [['voetbal', '⚽ Voetbaldata'], ['gebruik', '📈 Gebruik'], ['clubs', '🏟 Clubs'], ['trainers', '🧑‍🏫 Per trainer']];
 const FEATURES = [['lineupSave', 'Opstelling opgeslagen'], ['autoAll', 'Automatisch invullen'], ['share', 'Wedstrijdlink gedeeld'],
   ['att', 'Aanwezigheid ingevuld'], ['stats', 'Statistieken bekeken'], ['import', 'Import van wedstrijden'],
-  ['invite', 'Uitnodiging verstuurd'], ['tour', 'Toernooi aangemaakt'], ['subMid', 'Tussendoor gewisseld'], ['replan', 'Rest herverdeeld'], ['blockNext', 'Naar volgend blok'], ['rules', 'Wisselregels gebruikt'], ['survey', 'Posities-enquête']];
+  ['invite', 'Uitnodiging verstuurd'], ['tour', 'Toernooi aangemaakt'], ['subMid', 'Tussendoor gewisseld'], ['replan', 'Rest herverdeeld'], ['blockNext', 'Naar volgend blok'], ['editAfter', 'Verloop achteraf aangepast'], ['rules', 'Wisselregels gebruikt'], ['survey', 'Posities-enquête']];
 const dClub = k => (((adm.data && adm.data.clubs) || []).find(c => c.id === k) || {}).name
   || (((adm.data && adm.data.teams) || []).find(t => (t.club || '') === k) || {}).clubName || k || 'Zonder club';
 const pshortOf = p => p ? shortName(p.name) : '?';
@@ -5633,7 +5883,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-15.8';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-15.9';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
