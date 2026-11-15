@@ -2139,7 +2139,8 @@ function viewMatch(){
     <h2>⚽ Doelpuntenmakers</h2>
     <div class="muted" style="margin-bottom:6px">Doelpunten van <b style="color:var(--txt)">${esc(team().name)}</b> (${m.home === false ? 'uit, rechts in de uitslag' : 'thuis, links in de uitslag'}). Tik + bij wie er scoorde. ${scorerTotal} van ${+m.goalsFor || 0} doelpunt${(+m.goalsFor || 0) === 1 ? '' : 'en'} toegewezen.</div>
     ${played.map(id => `<div class="set"><div class="lbl">${esc(pname(id))} ${'⚽'.repeat(Math.min(goals[id] || 0, 6))}</div><div class="step"><button data-act="goal" data-id="${id}" data-d="-1">−</button><b>${goals[id] || 0}</b><button data-act="goal" data-id="${id}" data-d="1">+</button></div></div>`).join('')}
-    ${scorerTotal !== (+m.goalsFor || 0) ? `<div class="muted" style="color:var(--red);margin-top:8px">Let op: het aantal doelpuntenmakers (${scorerTotal}) klopt niet met de eindstand (${+m.goalsFor || 0}).</div>` : ''}
+    ${scorerTotal !== (+m.goalsFor || 0) ? `<div class="muted" style="color:var(--red);margin-top:8px">Let op: het aantal doelpuntenmakers (${scorerTotal}) klopt niet met de eindstand (${+m.goalsFor || 0}).</div>`
+      : '<div class="muted" style="margin-top:8px">De eindstand loopt mee met de doelpuntenmakers die je hier invult.</div>'}
   </div>
   <div class="card">
     <h2>🤝 Assists</h2>
@@ -3165,6 +3166,17 @@ function newMatch(){
   ui.open = {}; ui.matchId = m.id; ui.seg = 0; ui.sel = null; ui.phaseView = null; ui.lineupAt = Date.now(); commit(); window.scrollTo(0, 0);
   setTimeout(() => { const i = document.querySelector('[data-m="opponent"]'); if (i){ i.focus(); i.scrollIntoView({block: 'center'}); } }, 80);
 }
+// de eindstand loopt mee met de doelpuntenmakers: omhoog altijd, omlaag zolang stand en makers gelijk liepen
+function syncScore(m, was){
+  const tot = Object.values(m.goals || {}).reduce((a, b) => a + b, 0), gf = +m.goalsFor || 0;
+  let nw = gf;
+  if (tot > gf) nw = tot;
+  else if (tot < gf && was === gf) nw = tot;
+  if (nw === gf) return;
+  m.goalsFor = nw;
+  const as = Object.values(m.assists || {}).reduce((a, b) => a + b, 0);
+  toast(`Eindstand aangepast naar ${scoreLine(m)}${as > nw ? ' · let op: meer assists dan doelpunten' : ''}`);
+}
 async function saveDone(m){
   const tot = Object.values(m.goals || {}).reduce((a, b) => a + b, 0);
   if (m.goalsFor === '' || m.goalsFor == null){ m.goalsFor = 0; m.goalsAgainst = m.goalsAgainst || 0; }
@@ -3288,10 +3300,14 @@ document.addEventListener('click', async e => {
         m.assists[aid]--; if (!m.assists[aid]) delete m.assists[aid];
         const g = [...m.events].reverse().find(x => x.as === aid); if (g) g.as = null;
       }
+      const tg = Object.values(m.goals || {}).reduce((x, y) => x + y, 0);
+      const ta = Object.values(m.assists).reduce((x, y) => x + y, 0);
+      if (dd > 0 && ta > tg) toast('Let op: meer assists dan doelpunten');
       commit(); break;
     }
     case 'goal': {
       m.goals = m.goals || {}; m.events = m.events || []; const gid = el.dataset.id, d = +el.dataset.d;
+      const was = Object.values(m.goals).reduce((a, b) => a + b, 0);
       if (d > 0){
         const open = m.events.find(x => x.us && !x.by && !x.og);
         if (open) open.by = gid;
@@ -3302,9 +3318,7 @@ document.addEventListener('click', async e => {
         m.goals[gid]--; if (!m.goals[gid]) delete m.goals[gid];
         const g = [...m.events].reverse().find(x => x.by === gid); if (g) g.by = null;
       }
-      const tot = Object.values(m.goals).reduce((a, b) => a + b, 0);
-      if (tot > (+m.goalsFor || 0)) m.goalsFor = tot;
-      commit(); break;
+      syncScore(m, was); commit(); break;
     }
     case 'saveDone': await saveDone(m); break;
     case 'addGuest': {
@@ -5453,7 +5467,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-15.3';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-15.4';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
