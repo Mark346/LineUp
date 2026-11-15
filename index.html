@@ -141,7 +141,7 @@
   .vcard.mid summary{list-style:none;display:flex;flex-direction:column;gap:2px}
   .vcard.mid summary::-webkit-details-marker{display:none}
   .vcard.goal{background:color-mix(in srgb,var(--g) 9%,var(--surf))}
-  .vln{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:800;min-height:22px}
+  .vln{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:800;min-height:22px;overflow-wrap:anywhere;min-width:0}
   .vcard.r .vln{justify-content:flex-end}
   .vln i{font-style:normal;font-size:14px;color:var(--g);font-weight:900}
   .vln.out i{color:var(--muted)}
@@ -174,6 +174,13 @@
   .fxln b{margin-left:auto;color:var(--txt);font-variant-numeric:tabular-nums}
   .fxln.tot{border-top:1px solid var(--line);margin-top:6px;padding-top:6px}
   .sheetalt .red{color:var(--red)}
+  .gbtns{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:4px}
+  .gbtns.off{opacity:.4;pointer-events:none}
+  .gb{min-height:52px;border-radius:10px;border:2px solid var(--line);background:var(--surf);color:var(--txt);font:inherit;font-size:13px;font-weight:800;cursor:pointer;padding:4px 6px;line-height:1.15}
+  .gb.on{border-color:var(--inc);background:color-mix(in srgb,var(--inc) 14%,var(--surf))}
+  .vass{font-size:11px;font-weight:700;color:var(--muted)}
+  .vln.kies{color:var(--outc)}
+  .vln.kies i{color:var(--outc)}
   .card.flash{animation:flash 1.3s ease}
   @keyframes flash{0%,100%{box-shadow:none}30%{box-shadow:0 0 0 3px var(--y)}}
   .segnow{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px}
@@ -2184,31 +2191,13 @@ function viewMatch(){
     <div class="scores">
       ${m.home === false ? scoreStep('goalsAgainst', esc(m.opponent || 'Tegenstander')) + scoreStep('goalsFor', esc(team().name)) : scoreStep('goalsFor', esc(team().name)) + scoreStep('goalsAgainst', esc(m.opponent || 'Tegenstander'))}
     </div>
-  </div>
-  <div class="card">
-    <h2>⚽ Doelpuntenmakers</h2>
-    <div class="muted" style="margin-bottom:6px">Doelpunten van <b style="color:var(--txt)">${esc(team().name)}</b> (${m.home === false ? 'uit, rechts in de uitslag' : 'thuis, links in de uitslag'}). Tik + bij wie er scoorde. ${scorerTotal} van ${+m.goalsFor || 0} doelpunt${(+m.goalsFor || 0) === 1 ? '' : 'en'} toegewezen.</div>
-    ${played.map(id => `<div class="set"><div class="lbl">${esc(pname(id))} ${'⚽'.repeat(Math.min(goals[id] || 0, 6))}</div><div class="step"><button data-act="goal" data-id="${id}" data-d="-1">−</button><b>${goals[id] || 0}</b><button data-act="goal" data-id="${id}" data-d="1">+</button></div></div>`).join('')}
-    ${scorerTotal !== (+m.goalsFor || 0) ? `<div class="muted" style="color:var(--red);margin-top:8px">Let op: het aantal doelpuntenmakers (${scorerTotal}) klopt niet met de eindstand (${+m.goalsFor || 0}).</div>`
-      : '<div class="muted" style="margin-top:8px">De eindstand loopt mee met de doelpuntenmakers die je hier invult.</div>'}
-  </div>
-  <div class="card">
-    <h2>🤝 Assists</h2>
-    <div class="muted" style="margin-bottom:6px">Niet verplicht. Tik + bij wie de assist gaf. ${assistTotal} van ${+m.goalsFor || 0} doelpunt${(+m.goalsFor || 0) === 1 ? '' : 'en'} met assist.</div>
-    ${played.map(id => `<div class="set"><div class="lbl">${esc(pname(id))} ${'🤝'.repeat(Math.min(assists[id] || 0, 6))}</div><div class="step"><button data-act="assist" data-id="${id}" data-d="-1">−</button><b>${assists[id] || 0}</b><button data-act="assist" data-id="${id}" data-d="1">+</button></div></div>`).join('')}
-    ${assistTotal > (+m.goalsFor || 0) ? `<div class="muted" style="color:var(--red);margin-top:8px">Let op: er staan meer assists (${assistTotal}) dan doelpunten (${+m.goalsFor || 0}).</div>` : ''}
+    <div class="muted" style="margin-top:8px">${scorerTotal !== (+m.goalsFor || 0)
+      ? `<span style="color:var(--red)">Nog ${Math.abs((+m.goalsFor || 0) - scorerTotal)} doelpunt${Math.abs((+m.goalsFor || 0) - scorerTotal) === 1 ? '' : 'en'} zonder maker.</span> Vul ze hieronder in het verloop in.`
+      : 'Doelpuntenmakers en assists vul je hieronder in het verloop in.'}</div>
   </div>
   <button class="btn pri full big" data-act="saveDone">✅ Opslaan als gespeeld</button>`;
 
-  const doneCard = `
-  <div class="card">
-    <h2>⚽ Doelpuntenmakers</h2>
-    ${Object.entries(goals).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]).map(([id, n]) => `<div class="set"><div class="lbl">${esc(pname(id))}</div><b>${'⚽'.repeat(Math.min(n, 6))} ${n}</b></div>`).join('') || '<div class="muted">Geen doelpuntenmakers ingevuld.</div>'}
-  </div>
-  ${assistTotal ? `<div class="card">
-    <h2>🤝 Assists</h2>
-    ${Object.entries(assists).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]).map(([id, n]) => `<div class="set"><div class="lbl">${esc(pname(id))}</div><b>${'🤝'.repeat(Math.min(n, 6))} ${n}</b></div>`).join('')}
-  </div>` : ''}`;
+  const doneCard = '';
 
   let body;
   if (ph === 'prep') body = `${tourCard}${knvbCard}${infoCard}${attCard(m)}${guestCard}${rulesCard}${attWarn}${lineupCard}${minutesCard}
@@ -2321,12 +2310,17 @@ function vloopRow(it, m, opts){
   if (it.t === 'goal'){
     const e = it.e, s = scoreUpto(m, it.b);
     const who = e.us ? (e.og ? 'Eigen doelpunt' : (e.by ? pname(e.by) : 'Onbekend')) : (teamOpp(m) || 'Tegenstander');
-    const gt = o.edit ? ' data-act="goalEdit" role="button" tabindex="0"' : tap(it.b);
+    const gt = o.edit ? ` data-act="goalEdit" data-id="${esc(e.id || '')}" role="button" tabindex="0"` : tap(it.b);
+    const leeg = e.us && !e.by && !e.og;
+    const naam = leeg ? `<span class="vln kies"><i class="ball" aria-hidden="true">⚽</i>Kies de maker<em>doelpunt</em></span>`
+      : `<span class="vln"><i class="ball" aria-hidden="true">⚽</i>${esc(who)}<em>doelpunt</em></span>`;
+    const ass = e.us && e.as && player(e.as) ? `<span class="vass">assist ${esc(pshort(player(e.as)))}</span>` : '';
+    const pen = o.edit ? '<i class="pen" aria-hidden="true">✎</i>' : '';
     return `<div class="vrow">${e.us
-      ? `<div class="vcard l goal"${gt}><small>DOELPUNT</small><span class="vln"><i class="ball" aria-hidden="true">⚽</i>${esc(who)}<em>doelpunt</em></span><span class="vsc">${s.us} – ${s.them}</span></div>
+      ? `<div class="vcard l goal"${gt}><small>DOELPUNT</small><span class="vpl">${naam}${ass}</span><span class="vsc">${s.us} – ${s.them}</span>${pen}</div>
          <span class="vdot">${esc(shortBlock(m, it.b))}</span><div></div>`
       : `<div></div><span class="vdot">${esc(shortBlock(m, it.b))}</span>
-         <div class="vcard r goal"${gt}><small>TEGENDOELPUNT</small><span class="vln"><i class="ball" aria-hidden="true">⚽</i>${esc(who)}<em>doelpunt</em></span><span class="vsc">${s.us} – ${s.them}</span></div>`}</div>`;
+         <div class="vcard r goal"${gt}><small>TEGENDOELPUNT</small><span class="vln"><i class="ball" aria-hidden="true">⚽</i>${esc(who)}<em>doelpunt</em></span><span class="vsc">${s.us} – ${s.them}</span>${pen}</div>`}</div>`;
   }
   return '';
 }
@@ -2529,6 +2523,81 @@ function applyEdit(m, src, st){
     }
   }
 }
+/* ---- doelpunt aanpassen: maker, assist en kwart ---- */
+// spelers die in dit blok op het veld stonden (beide kanten van een tussendoor-wissel)
+function playersInBlock(m, b){
+  const set = new Set();
+  (startLineup(m, b) || []).forEach(id => { if (id) set.add(id); });
+  ((m.segments || [])[b] || []).forEach(id => { if (id) set.add(id); });
+  (m.mid || []).filter(x => x.blk === b).forEach(x => { if (x.out) set.add(x.out); if (x.in) set.add(x.in); });
+  return [...set].filter(id => player(id));
+}
+const bump = (o, k, d) => { if (!k) return; o[k] = (o[k] || 0) + d; if (o[k] <= 0) delete o[k]; };
+async function goalEditSheet(m, gid){
+  const g = (m.events || []).find(x => x.id === gid); if (!g) return false;
+  const times = segTimes(m.settings), nB = m.segments.length;
+  const st = {blk: Math.min(g.blk || 0, nB - 1), by: g.by || null, as: g.as || '', og: !!g.og};
+  const before = {events: JSON.parse(JSON.stringify(m.events || [])), goals: {...(m.goals || {})}, assists: {...(m.assists || {})}};
+  const idx = m.events.indexOf(g);
+  let us = 0, them = 0;
+  m.events.slice(0, idx + 1).forEach(e => e.us ? us++ : them++);
+  const stand = m.home === false ? `${them} – ${us}` : `${us} – ${them}`;
+  const nm = id => esc(pshort(player(id)) || '?');
+  const lijst = () => playersInBlock(m, st.blk);
+  const draw = () => {
+    const pl = lijst(), weg = st.by && !pl.includes(st.by) && !st.og;
+    const gb = (v, label, on, act) => `<button class="gb ${on ? 'on' : ''}" data-x="${act}" data-v="${esc(v)}">${label}</button>`;
+    return `<div class="wizhead"><div><small>DOELPUNT AANPASSEN</small><b>${g.us ? esc(team().name) : esc(m.opponent || 'Tegenstander')}</b></div>
+      <button class="wizx" data-x="close" aria-label="Sluiten">Sluiten</button></div>
+    <div class="lhsub" style="text-align:left">${esc(blockLabel(m, st.blk))} · maakt het ${stand}</div>
+    ${g.us ? `<div class="midlbl">Wie scoorde?</div>
+    <div class="gbtns">
+      ${pl.map(id => gb(id, nm(id), !st.og && st.by === id, 'by')).join('')}
+      ${st.by && weg ? gb(st.by, nm(st.by), true, 'by') : ''}
+      ${gb('og', 'Eigen goal tgst.', st.og, 'og')}
+      ${gb('', 'Onbekend', !st.og && !st.by, 'by')}
+      <button class="gb" data-x="other">Andere speler…</button>
+    </div>
+    ${weg ? `<div class="midnote">${nm(st.by)} stond niet op het veld in dit ${esc(blockWord(m))}. Opslaan mag gewoon.</div>` : ''}
+    <div class="midlbl">Assist</div>
+    <div class="gbtns ${st.og ? 'off' : ''}">
+      ${gb('', 'Geen assist', !st.as, 'as')}
+      ${pl.filter(id => id !== st.by).map(id => gb(id, nm(id), st.as === id, 'as')).join('')}
+    </div>` : '<div class="midnote">Een tegendoelpunt heeft geen maker. Je kunt wel het ' + esc(blockWord(m)) + ' aanpassen.</div>'}
+    <div class="midlbl">In welk ${esc(blockWord(m))}?</div>
+    <div class="qrow" style="grid-template-columns:repeat(${nB},1fr)">
+      ${times.map((t, b) => `<button class="qb ${b === st.blk ? 'on' : ''}" data-x="blk" data-v="${b}">${b + 1}e</button>`).join('')}</div>
+    <div class="fxbox" style="margin-top:12px"><div class="fxln tot" style="border:0;margin:0;padding:0">
+      <span>${g.us ? (st.og ? 'Eigen doelpunt tegenstander' : st.by ? nm(st.by) : 'Onbekend') + (st.as && !st.og ? ' · assist ' + nm(st.as) : '') : esc(m.opponent || 'Tegenstander')}</span>
+      <b>${esc(blockLabel(m, st.blk))}</b></div></div>
+    <div class="muted" style="font-size:12px;margin-top:8px">Een doelpunt toevoegen of weghalen gaat met de scoreknoppen, zoals nu.</div>
+    <button class="btn pri full sheetbtn" data-x="save">Opslaan</button>
+    <div class="sheetalt"><button data-x="close">Annuleer</button></div>`;
+  };
+  const r = await liveDialog(draw, async (a, v, close) => {
+    if (a === 'close'){ close(null); return false; }
+    if (a === 'by'){ st.by = v || null; st.og = false; if (st.as === st.by) st.as = ''; return; }
+    if (a === 'og'){ st.og = !st.og; if (st.og){ st.by = null; st.as = ''; } return; }
+    if (a === 'as'){ st.as = v || ''; return; }
+    if (a === 'blk'){ st.blk = +v; return; }
+    if (a === 'other'){
+      const all = (m.present || []).filter(id => player(id));
+      const p2 = await chooseDialog('Wie scoorde?', all.map(id => ({v: id, n: pshort(player(id)), cls: ''})));
+      if (p2){ st.by = p2; st.og = false; if (st.as === p2) st.as = ''; }
+      return;
+    }
+    if (a === 'save'){ close('save'); return false; }
+  });
+  if (r !== 'save') return false;
+  m.goals = m.goals || {}; m.assists = m.assists || {};
+  if (g.us){ bump(m.goals, g.by, -1); bump(m.assists, g.as, -1); }
+  g.og = !!st.og; g.by = st.og ? null : st.by; g.as = st.og ? '' : st.as;
+  g.blk = st.blk; g.blkName = blockLabel(m, st.blk);
+  if (g.us){ bump(m.goals, g.by, 1); bump(m.assists, g.as, 1); }
+  commit(); logMet('editAfter', 0, 'goal');
+  toastUndo('Doelpunt aangepast', () => { m.events = before.events; m.goals = before.goals; m.assists = before.assists; commit(); toast('Teruggedraaid'); });
+  return true;
+}
 // speeltijd in een onderblad
 async function minsSheet(m){
   const kk = {}, mins = minsOfSegs(m, m.segments, null, kk), ids = (m.present || []).filter(id => player(id));
@@ -2551,7 +2620,7 @@ function vloopCard(m, times){
     <div class="vhead"><div class="lhblk">Verloop</div>
       <button class="switch ${ed ? 'on' : ''}" data-act="vedit" role="switch" aria-checked="${ed}" aria-label="Verloop aanpassen"><i></i></button>
       <span class="vswl">Aanpassen</span></div>
-    <div class="lhsub">${ed ? `Tik op een wissel om hem aan te passen, of op ＋ om er een toe te voegen. Speeltijd rekent direct mee.`
+    <div class="lhsub">${ed ? `Tik op een wissel of doelpunt om het aan te passen, of op ＋ om er een toe te voegen. Speeltijd rekent direct mee.`
       : 'Zet Aanpassen aan om wissels te wijzigen of toe te voegen.'}</div>
     <div class="vl">${items.map(x => vloopRow(x, m, {edit: ed})).join('')}</div>
     <div class="vfoot"><span>Speeltijd <b>${ids.length}</b> spelers · eerlijkheid <b>${f == null ? '–' : f}</b></span>
@@ -3681,7 +3750,7 @@ document.addEventListener('click', async e => {
       else { const g = [...m.events].reverse().find(x => !!x.us === us);
         if (g) delGoal(m, g.id); else { m[k] = now - 1; commit(); } }
       break; }
-    case 'assist': {
+    case 'assistOud': {
       m.assists = m.assists || {}; m.events = m.events || []; const aid = el.dataset.id, dd = +el.dataset.d;
       if (dd > 0){
         m.assists[aid] = (m.assists[aid] || 0) + 1;
@@ -3696,7 +3765,7 @@ document.addEventListener('click', async e => {
       if (dd > 0 && ta > tg) toast('Let op: meer assists dan doelpunten');
       commit(); break;
     }
-    case 'goal': {
+    case 'goalOud': {
       m.goals = m.goals || {}; m.events = m.events || []; const gid = el.dataset.id, d = +el.dataset.d;
       const was = Object.values(m.goals).reduce((a, b) => a + b, 0);
       if (d > 0){
@@ -3814,12 +3883,7 @@ document.addEventListener('click', async e => {
     case 'vloop': await vloopSheet(m); break;
     case 'vedit': ui.vedit = !ui.vedit; render(); break;
     case 'minsSheet': await minsSheet(m); break;
-    case 'goalEdit': {
-      if (m.phase === 'done'){ m.phase = 'post'; commit(); }
-      setTimeout(() => { const c = [...document.querySelectorAll('.card')].find(x => /Doelpuntenmakers/.test(x.textContent));
-        if (c){ c.scrollIntoView({behavior: 'smooth', block: 'center'}); c.classList.add('flash'); setTimeout(() => c.classList.remove('flash'), 1400); } }, 60);
-      break;
-    }
+    case 'goalEdit': await goalEditSheet(m, id); break;
     case 'subAdd': await subEditSheet(m, {kind: 'new', b: +id}); break;
     case 'subEdit': {
       const parts = String(id).split('|');
@@ -5883,7 +5947,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-15.9';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-16.1';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
