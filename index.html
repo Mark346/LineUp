@@ -2198,6 +2198,16 @@ function viewMatch(){
   <button class="btn pri full big" data-act="saveDone">✅ Opslaan als gespeeld</button>`;
 
   const doneCard = '';
+  const scoreCard = `
+  <div class="card">
+    <h2>🏁 Eindstand</h2>
+    <div class="scores">
+      ${m.home === false ? scoreStep('goalsAgainst', esc(m.opponent || 'Tegenstander')) + scoreStep('goalsFor', esc(team().name)) : scoreStep('goalsFor', esc(team().name)) + scoreStep('goalsAgainst', esc(m.opponent || 'Tegenstander'))}
+    </div>
+    <div class="muted" style="margin-top:8px">${scorerTotal !== (+m.goalsFor || 0)
+      ? `<span style="color:var(--red)">Nog ${Math.abs((+m.goalsFor || 0) - scorerTotal)} doelpunt${Math.abs((+m.goalsFor || 0) - scorerTotal) === 1 ? '' : 'en'} zonder maker.</span> Vul ze hieronder in het verloop in.`
+      : 'Doelpuntenmakers en assists vul je hieronder in het verloop in.'}</div>
+  </div>`;
 
   let body;
   if (ph === 'prep') body = `${tourCard}${knvbCard}${infoCard}${attCard(m)}${guestCard}${rulesCard}${attWarn}${lineupCard}${minutesCard}
@@ -2206,7 +2216,7 @@ function viewMatch(){
   else if (ph === 'live') body = tourCard + scoreBar(m, cur) + liveHead(m, times, cur, last)
     + lineupCard + minutesCard + rulesCard;
   else if (ph === 'post') body = `${tourCard}${postCard}<div style="height:12px"></div>${vloopCard(m, times)}`;
-  else body = `${tourCard}${doneCard}${vloopCard(m, times)}
+  else body = `${tourCard}${scoreCard}${vloopCard(m, times)}
     <div class="grid2" style="margin-bottom:12px"><button class="btn" data-act="share">📤 Delen</button><button class="btn" data-act="print">🖨️ Printen</button></div>
     <button class="btn full" style="margin-bottom:12px" data-act="phase" data-v="post">✏️ Uitslag, doelpunten of assists aanpassen</button>`;
 
@@ -2262,7 +2272,8 @@ const vloopLast = m => ((m.mid || []).length ? (m.mid || [])[m.mid.length - 1].i
 function vloopRow(it, m, opts){
   const o = opts || {}, times = segTimes(m.settings);
   const tap = b => o.pick ? ` data-act="seg" data-i="${b}" role="button" tabindex="0"` : '';
-  if (it.t === 'start') return `<div class="vrow c"><span class="vpill">AFTRAP</span></div>`;
+  if (it.t === 'start') return `<div class="vrow c"><span class="vpill">AFTRAP</span>${o.edit
+    ? `<button class="vplus" data-act="subAdd" data-id="0" aria-label="Toevoegen in ${esc(blockLabel(m, 0))}">＋</button>` : ''}</div>`;
   if (it.t === 'edge'){
     const s = it.end && hasScore(m) ? {us: +m.goalsFor || 0, them: +m.goalsAgainst || 0} : scoreUpto(m, it.b);
     const plus = o.edit && !it.end && it.b + 1 < m.segments.length
@@ -2523,6 +2534,17 @@ function applyEdit(m, src, st){
     }
   }
 }
+// een doelpunt toevoegen in een bepaald blok (na de wedstrijd, via het ＋ in het verloop)
+async function addGoalIn(m, b, us){
+  m.events = m.events || [];
+  const g = {id: uid(), blk: b, blkName: blockLabel(m, b), us, by: null};
+  m.events.push(g);
+  const k = us ? 'goalsFor' : 'goalsAgainst';
+  m[k] = (+m[k] || 0) + 1;
+  commit(); logMet('editAfter', 0, 'goal');
+  if (us) await goalEditSheet(m, g.id);
+  else toastUndo(`Tegendoelpunt in ${blockLabel(m, b)}`, () => { delGoal(m, g.id); toast('Teruggedraaid'); });
+}
 /* ---- doelpunt aanpassen: maker, assist en kwart ---- */
 // spelers die in dit blok op het veld stonden (beide kanten van een tussendoor-wissel)
 function playersInBlock(m, b){
@@ -2572,7 +2594,7 @@ async function goalEditSheet(m, gid){
       <b>${esc(blockLabel(m, st.blk))}</b></div></div>
     <div class="muted" style="font-size:12px;margin-top:8px">Een doelpunt toevoegen of weghalen gaat met de scoreknoppen, zoals nu.</div>
     <button class="btn pri full sheetbtn" data-x="save">Opslaan</button>
-    <div class="sheetalt"><button data-x="close">Annuleer</button></div>`;
+    <div class="sheetalt"><button class="red" data-x="del">Doelpunt weghalen</button><button data-x="close">Annuleer</button></div>`;
   };
   const r = await liveDialog(draw, async (a, v, close) => {
     if (a === 'close'){ close(null); return false; }
@@ -2587,7 +2609,14 @@ async function goalEditSheet(m, gid){
       return;
     }
     if (a === 'save'){ close('save'); return false; }
+    if (a === 'del'){ close('del'); return false; }
   });
+  if (r === 'del'){
+    const snap = {events: JSON.parse(JSON.stringify(m.events || [])), goals: {...(m.goals || {})}, assists: {...(m.assists || {})}, gf: m.goalsFor, ga: m.goalsAgainst};
+    delGoal(m, gid); logMet('editAfter', 0, 'goal');
+    toastUndo('Doelpunt weggehaald', () => { m.events = snap.events; m.goals = snap.goals; m.assists = snap.assists; m.goalsFor = snap.gf; m.goalsAgainst = snap.ga; commit(); toast('Teruggedraaid'); });
+    return true;
+  }
   if (r !== 'save') return false;
   m.goals = m.goals || {}; m.assists = m.assists || {};
   if (g.us){ bump(m.goals, g.by, -1); bump(m.assists, g.as, -1); }
@@ -3884,7 +3913,17 @@ document.addEventListener('click', async e => {
     case 'vedit': ui.vedit = !ui.vedit; render(); break;
     case 'minsSheet': await minsSheet(m); break;
     case 'goalEdit': await goalEditSheet(m, id); break;
-    case 'subAdd': await subEditSheet(m, {kind: 'new', b: +id}); break;
+    case 'subAdd': {
+      const b = +id, nm = team().name, tg = m.opponent || 'Tegenstander';
+      const r = await sheetPick(`<p>Toevoegen in ${esc(blockLabel(m, b))}</p>
+        <button class="wmenu" data-r="sub"><span class="wmnm"><b>Wissel</b><small>iemand erin en iemand eruit</small></span><span class="wmar">›</span></button>
+        <button class="wmenu" data-r="us"><span class="wmnm"><b>Doelpunt ${esc(nm)}</b><small>daarna kies je de maker en de assist</small></span><span class="wmar">›</span></button>
+        <button class="wmenu" data-r="them"><span class="wmnm"><b>Tegendoelpunt</b><small>voor ${esc(tg)}</small></span><span class="wmar">›</span></button>
+        <div class="sheetalt"><button data-r="no">Sluiten</button></div>`);
+      if (r === 'sub') await subEditSheet(m, {kind: 'new', b});
+      else if (r === 'us' || r === 'them') await addGoalIn(m, b, r === 'us');
+      break;
+    }
     case 'subEdit': {
       const parts = String(id).split('|');
       if (parts[0] === 'mid'){ const x = (m.mid || []).find(y => y.id === parts[1]); if (x) await subEditSheet(m, {kind: 'mid', x}); }
@@ -5947,7 +5986,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-16.1';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-16.2';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
