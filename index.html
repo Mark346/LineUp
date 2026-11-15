@@ -2164,43 +2164,20 @@ function viewMatch(){
     <button class="btn pri full big" data-act="phase" data-v="live">▶️ Start wedstrijd</button>
     <div class="grid2" style="margin-bottom:12px"><button class="btn" data-act="share">📤 Delen</button><button class="btn" data-act="print">🖨️ Printen</button></div>`;
   else if (ph === 'live') body = tourCard + scoreBar(m, cur) + liveHead(m, times, cur, last)
-    + (fontLevel() === 3 ? `${listCard(m, times, cur, last)}${minutesCard}` : `${lineupCard}${minutesCard}`) + rulesCard;
+    + lineupCard + minutesCard + rulesCard;
   else if (ph === 'post') body = `${tourCard}${postCard}<div style="height:12px"></div>${lineupCard}${minutesCard}`;
   else body = `${tourCard}${doneCard}${minutesCard}${lineupCard}
     <div class="grid2" style="margin-bottom:12px"><button class="btn" data-act="share">📤 Delen</button><button class="btn" data-act="print">🖨️ Printen</button></div>
     <button class="btn full" style="margin-bottom:12px" data-act="phase" data-v="post">✏️ Uitslag, doelpunten of assists aanpassen</button>`;
 
   const fs = ph === 'live' ? fontLevel() : 0;
-  return `<div class="fsz fs${fs}${fs === 3 ? ' fs2' : ''}">
+  return `<div class="fsz fs${fs}">
   ${phaseBar}${header}${body}
   <div style="text-align:center;margin:28px 0 24px"><button class="linkred" data-act="delMatch" aria-label="Wedstrijd ${esc(matchTitle(m))} verwijderen">Wedstrijd verwijderen</button></div></div>`;
 }
 
 const FS_KEY = 'opstellingmaker.fs';
-const fontLevel = () => { const v = +localStorage.getItem(FS_KEY); return [1, 2, 3].includes(v) ? v : 0; };
-function listCard(m, times, cur, last){
-  const s = ui.seg, lu = m.segments[s], pos = matchPositions(m);
-  const rows = pos.map((p, i) => ({p, id: lu[i]})).sort((a, b) => (b.p.y - a.p.y) || (a.p.x - b.p.x));
-  const bench = benchIds(m, s);
-  let wissel = '';
-  if (s > 0){
-    const prev = m.segments[s - 1];
-    const ins = lu.filter(id => id && !prev.includes(id)), outs = prev.filter(id => id && !lu.includes(id));
-    if (ins.length || outs.length) wissel = `<div class="hcw"><div><b class="out">ERUIT</b>${outs.map(id => esc(pname(id))).join(', ') || '–'}</div><div><b class="in">ERIN</b>${ins.map(id => esc(pname(id))).join(', ') || '–'}</div></div>`;
-  }
-  return `
-  <div class="card hc">
-    <div class="hcnav">
-      <button class="hcarrow" data-act="seg" data-i="${Math.max(0, s - 1)}" ${s === 0 ? 'disabled' : ''} aria-label="Vorig blok">‹</button>
-      <div class="hcblk"><b>${esc(blockLabel(m, s))}</b><span>${times[s][0]}'–${times[s][1]}'${m.phase === 'live' ? '' : s === cur ? ' · nu' : s > cur ? ' · straks' : ' · geweest'}</span></div>
-      <button class="hcarrow" data-act="seg" data-i="${Math.min(last, s + 1)}" ${s === last ? 'disabled' : ''} aria-label="Volgend blok">›</button>
-    </div>
-    ${wissel}
-    <div class="hclist">${rows.map(r => `<div class="hcrow"><span class="hcpos">${r.p.line === 'K' ? 'K' : esc(r.p.code)}</span><span class="hcnm">${r.id ? esc(pname(r.id)) : '—'}</span></div>`).join('')}</div>
-    <div class="hcbank"><span>RESERVE</span><b>${bench.map(id => esc(pname(id))).join(' · ') || '–'}</b></div>
-    <div style="margin-top:14px">${liveControls(m, times, cur, last, 'hc')}${liveMore(m, last)}</div>
-  </div>`;
-}
+const fontLevel = () => { const v = +localStorage.getItem(FS_KEY); return v === 3 ? 2 : ([1, 2].includes(v) ? v : 0); };
 // kop tijdens de wedstrijd: welk blok loopt er, met de bloktabs eronder
 function liveHead(m, times, cur, last){
   const len = Math.round((times[cur][1] - times[cur][0]));
@@ -2278,12 +2255,11 @@ function sheetPick(html){
 async function goLiveBlock(m, to){
   const cur = m.cur || 0; if (to < 0 || to >= m.segments.length) return;
   if (to === cur){ ui.peek = null; render(); return; }
-  if (to > cur + 1){
+  if (to > cur + 1 && m.phase === 'live'){
     const n = to - cur - 1, skip = Array.from({length: n}, (_, i) => blockLabel(m, cur + 1 + i)).join(', ');
     const r = await chooseDialog(`Je slaat ${n === 1 ? '1 wisselmoment' : n + ' wisselmomenten'} over (${skip}). Nu loopt ${blockLabel(m, cur)}.`, [
-      {v: 'back', n: '‹ Ga terug', cls: ''},
       {v: 'peek', n: `👁️ Alleen kijken naar ${blockLabel(m, to)}`, cls: ''},
-      {v: 'go', n: `Toch door naar ${blockLabel(m, to)}`}]);
+      {v: 'go', n: `Door naar ${blockLabel(m, to)} · wissels samengevoegd`}]);
     if (r === 'peek'){ ui.peek = {m: m.id, i: to}; ui.sel = null; render(); return; }
     if (r !== 'go') return;
   }
@@ -2292,7 +2268,7 @@ async function goLiveBlock(m, to){
     const before = m.segments.map(x => x.slice());
     for (let i = cur + 1; i <= to; i++) if (isEmptySeg(m.segments[i])) m.segments[i] = m.segments[i - 1].slice();
     let dev = 0;
-    if (to === cur + 1){
+    {
       const r = await nextBlockSheet(m, to);
       if (!r) return;
       if (r !== 'go' && r.steps){
@@ -2300,7 +2276,6 @@ async function goLiveBlock(m, to){
         if (dev) m.segments[to] = workLineup(m, cur, r.steps, r.steps.length);
       }
     }
-    if (to > cur + 1 && !await confirmWissel(m, to)) return;
     const back = cur;
     m.cur = to; ui.seg = to; ui.sel = null; commit(); logMet('blockNext', 0, String(dev));
     toastUndo(`${blockLabel(m, to)} loopt`, () => { m.cur = back; ui.seg = back; m.segments = before; commit(); toast(`Terug naar ${blockLabel(m, back)}`); });
@@ -2568,7 +2543,7 @@ async function midSubFlow(m, slot){
   if (!bench.length){ await tell('Er staat niemand op de bank die erin kan.'); return; }
   const t0 = times[cur][0], t1 = times[cur][1];
   const st = {step: 1, reason: 'tact', inId: bench[0], mode: 'plek', view: 'na', min: Math.round((t0 + t1) / 2)};
-  const half = () => [st.min - t0, t1 - st.min];
+
   const cand = id => { const p2 = player(id), prefs = (prefsOf(p2) || []).filter(Boolean);
     let hit = 0, via = ''; prefs.forEach(c => { const q = prefQuality(c, P); if (q >= .8 && q > hit){ hit = q; via = prefName(c); } });
     return {id, mins: up[id] || 0, why: hit ? `past op ${esc(P.code)} (voorkeur ${esc(via)})` : (prefs.length ? 'voorkeur ' + prefs.map(prefName).join(', ') : 'voorkeur niet ingevuld')}; };
@@ -2599,7 +2574,6 @@ async function midSubFlow(m, slot){
         <button class="minb" data-x="min" data-v="1" aria-label="Een minuut later">+</button>
       </div>
       <input class="minsl" type="range" min="${t0 + 1}" max="${t1 - 1}" value="${st.min}" data-x="minsl" aria-label="Minuut van de wissel">
-      <div class="midsplit"><span style="flex:${Math.max(1, half()[0])}">${esc(pshort(player(outId)))} ${half()[0]}'</span><span style="flex:${Math.max(1, half()[1])}" class="b">${esc(pshort(player(st.inId)))} ${half()[1]}'</span></div>
       ${showSubCounter(m) && subMoments(m) >= maxSubMoments(m) ? `<div class="midnote red">Je hebt alle ${maxSubMoments(m)} wisselmomenten gebruikt. Deze wissel telt er nog een bij.</div>` : ''}
       ${isK ? `<div class="midnote">🧤 Je wisselt de keeper. ${esc(pshort(player(st.inId)))} staat na de wissel op goal.</div>` : ''}
       ${sug ? `<div class="midnote">Tip: ${esc(pshort(player(sug.id)))} past beter op ${esc(P.code)}. Je kunt op het volgende scherm kiezen om door te schuiven.</div>` : ''}
@@ -2631,15 +2605,7 @@ async function midSubFlow(m, slot){
     if (a === 'min'){ st.min = Math.max(t0 + 1, Math.min(t1 - 1, st.min + (+v))); }
     if (a === 'minsl'){
       st.min = Math.max(t0 + 1, Math.min(t1 - 1, +v));
-      const box = document.querySelector('.modal.sheetup .midbox');
-      if (box){
-        const bb = box.querySelector('.minv b'); if (bb) bb.textContent = st.min + "'";
-        const sp = box.querySelectorAll('.midsplit span'), h = half();
-        if (sp.length === 2){
-          sp[0].style.flex = Math.max(1, h[0]); sp[0].textContent = `${pshort(player(outId))} ${h[0]}'`;
-          sp[1].style.flex = Math.max(1, h[1]); sp[1].textContent = `${pshort(player(st.inId))} ${h[1]}'`;
-        }
-      }
+      const bb = document.querySelector('.modal.sheetup .minv b'); if (bb) bb.textContent = st.min + "'";
       return false;
     }
     if (a === 'in') st.inId = v;
@@ -2742,7 +2708,7 @@ async function nextBlockSheet(m, to){
     const w = workLineup(m, cur, steps, st.i), i = w.indexOf(s.planned);
     return i >= 0 && isIn(m, s.planned) ? {id: s.planned, i, code: pos[i].line === 'K' ? 'K' : pos[i].code, mins: up[s.planned] || 0, keeper: pos[i].line === 'K'} : null; };
 
-  const head = () => `<div class="wizhead"><div><small>${esc(blockLabel(m, cur)).toUpperCase()} KLAAR · NAAR ${esc(blockLabel(m, to)).toUpperCase()}</small>
+  const head = () => `<div class="wizhead"><div><small>${esc(blockLabel(m, cur)).toUpperCase()} KLAAR · NAAR ${esc(blockLabel(m, to)).toUpperCase()}${to > cur + 1 ? ' · SAMENGEVOEGD' : ''}</small>
       <b>Wissel ${Math.min(st.i + 1, n)} van ${n}</b></div><button class="wizx" data-x="close" aria-label="Sluiten">Sluiten</button></div>
     <div class="wiztabs" style="grid-template-columns:repeat(${n},1fr)">
       ${steps.map((s, k) => `<button class="wtab ${k < st.i ? 'done' : ''} ${k === st.i ? 'on' : ''}" data-x="step" data-v="${k}">Wissel ${k + 1}</button>`).join('')}</div>`;
@@ -2887,7 +2853,7 @@ function fontDialog(){
   return new Promise(res => {
     const d = document.createElement('div'); d.className = 'modal';
     const cur = fontLevel();
-    const opts = [[0, 'Normaal', 18], [1, 'Groot', 26], [2, 'Extra groot', 34], [3, 'Lijst · hoog contrast', 30]];
+    const opts = [[0, 'Normaal', 18], [1, 'Groot', 26], [2, 'Extra groot', 34]];
     d.innerHTML = iconize(`<div class="box"><p>Lettergrootte tijdens de wedstrijd</p>
       <div class="muted" style="margin:-4px 0 12px">Handig als je zonder bril langs de lijn staat. Je keuze blijft bewaard op deze telefoon.</div>
       <div class="fsopts">${opts.map(([v, n, px]) => `<button class="${v === cur ? 'on' : ''}" data-r="${v}"><b style="font-size:${px}px">Aa</b><span>${n}</span></button>`).join('')}</div>
@@ -5487,7 +5453,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-15.1';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-15.3';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
