@@ -4784,7 +4784,7 @@ function adminTrainers(){
     const p = t.people[u] || {};
     const x = map[u] = map[u] || {uid: u, name: p.name || '', email: p.email || '', teams: []};
     if (!x.name && p.name) x.name = p.name; if (!x.email && p.email) x.email = p.email;
-    x.teams.push({id: t.id, label: t.label, clubName: t.clubName, role});
+    x.teams.push({id: t.id, label: t.label, club: t.club, clubName: t.clubName, role});
   }));
   (d.users || []).forEach(us => { const x = map[us.id] = map[us.id] || {uid: us.id, teams: []}; Object.assign(x, {name: us.name || x.name, email: us.email || x.email, provider: us.provider, created: us.created, lastActive: us.lastActive}); });
   Object.values(map).forEach(x => { x.blocked = (d.blocked || []).includes(x.uid); x.clubAdmin = (d.clubs || []).filter(c => c.uids && c.uids[x.uid]).map(c => c.name || c.id); x.isOwner = x.email === (cloud.user && adm.owner ? cloud.user.email : '#'); });
@@ -5314,7 +5314,7 @@ function admMyClubCard(){
   const admins = Object.entries(c.uids || {});
   return `<div class="card"><h2>🛡️ Clubbeheer</h2>
     ${admins.map(([u, x]) => arow(x.name || x.email, esc(x.name || x.email || 'Beheerder') + (u === myUid() ? ' (jij)' : ''), esc(x.email || ''))).join('') || '<div class="muted">–</div>'}
-    <button class="btn full" style="margin-top:10px" data-act="admInviteAdmin" data-id="${esc(adm.club || '')}">📤 Clubbeheerder uitnodigen (link via WhatsApp)</button>
+    <button class="btn full" style="margin-top:10px" data-act="admAddAdmin" data-id="${esc(adm.club || '')}">＋ Clubbeheerder toevoegen</button>
     <button class="btn full" style="margin-top:10px" data-act="admTransfer">🔁 Beheer overdragen aan een andere trainer</button>
     <div class="muted" style="margin-top:6px;font-size:12px">Na het overdragen ben jij geen clubbeheerder meer. Je teams als trainer houd je gewoon.</div></div>`;
 }
@@ -5326,7 +5326,7 @@ function admClubsList(compact){
     const cnt = clubCounts(k);
     return {name, html: arow(name, esc(name), `${cnt.teamsTxt} · ${cnt.trainersTxt} · beheer: ${esc(admins || 'nog niemand')}`, achip('›'), 'admClub', k || '-', `Open club ${name}`)};
   }).sort((a, b) => a.name.localeCompare(b.name, 'nl', {sensitivity: 'base'}));
-  return `<div class="card"><div class="ahead"><h2>Clubs</h2><button class="btn sm" data-act="admNewClub" aria-label="Nieuwe club aanmaken">＋ Club</button></div>${rows.map(r => r.html).join('') || '<div class="muted">Nog geen clubs.</div>'}</div>`;
+  return `<div class="card"><div class="ahead"><h2>Clubs</h2><button class="btn sm" data-act="admNewClub" aria-label="Nieuwe club aanmaken">＋ Club</button></div>${rows.map(r => r.html).join('') || '<div class="muted">Nog geen clubs.</div>'}<button class="btn full" style="margin-top:10px" data-act="admAddAdmin" data-id="">＋ Clubbeheerder toevoegen</button></div>`;
 }
 function admTeamsCard(teams, club){
   const pend = adm.data.pending.filter(p => (!club || p.club === club) && p.kind !== 'clublink' && !(adm.hide || []).includes(p.id));
@@ -5396,7 +5396,7 @@ function admClubView(k){
       <div style="margin-top:8px">${admins.map(([u, x]) => arow(x.name, esc(x.name || x.email), esc(x.email || ''), `<button class="btn sm" data-act="admReplaceClubAdmin" data-id="${esc(k + '|' + u)}">🔁 Overnemen</button> <button class="x" data-act="admRemoveClubAdmin" data-id="${esc(k + '|' + u)}" title="Clubbeheerder weghalen" aria-label="Clubbeheerder ${esc(x.name || x.email || '')} weghalen">×</button>`)).join('') || '<div class="muted">Nog geen beheerders.</div>'}
       <div class="row" style="margin-top:10px"><input id="admAdminMail" type="email" placeholder="E-mailadres nieuwe beheerder" style="flex:3" aria-label="E-mailadres nieuwe clubbeheerder"><button class="btn pri sm" style="flex:none" data-act="admAddClubAdmin" data-id="${esc(k)}">Toevoegen</button></div>
       <div class="muted" style="margin-top:6px;font-size:12px">De persoon moet al een keer in LineMeUp hebben ingelogd.</div>
-      <button class="btn full" style="margin-top:12px" data-act="admInviteAdmin" data-id="${esc(k)}">📤 Clubbeheerder uitnodigen (link via WhatsApp)</button></details></div>`;
+      <button class="btn full" style="margin-top:12px" data-act="admAddAdmin" data-id="${esc(k)}">＋ Clubbeheerder toevoegen</button></details></div>`;
   return `<div class="card"><div style="display:flex;align-items:center;gap:12px">${ck ? `<span class="logo clublogo" style="box-shadow:none">${clubLogo(name)}</span>` : ''}<h2 style="margin:0;font-size:24px">${esc(name)}</h2></div>
       <div class="atiles" style="margin-top:10px">${tile(cnt.teams, `teams${cnt.waitTeams ? ` (${cnt.waitTeams} wachten)` : ''}`)}${tile(cnt.trainers, `trainers${cnt.waitTrainers ? ` (${cnt.waitTrainers} wachten)` : ''}`)}${tile(cnt.players, 'spelers')}</div></div>
     ${admTeamsCard(ts, k === '-' ? '' : k)}
@@ -5471,6 +5471,56 @@ async function admAction(act, id){
       { const live = ((adm.data && adm.data.links) || []).find(x => x.id === iid);
         linkSheet(`⚽ Hoi trainers van ${cname}! We gebruiken LineMeUp voor de opstellingen en wissels. Open deze link, log in en kies je team of maak je team aan: ${inviteUrl(iid)}`, inviteUrl(iid),
           `Geldig tot ${fmtD((live && live.expires) || Date.now() + 30 * 864e5)}`); }
+      return;
+    }
+    if (act === 'admAddAdmin'){
+      const clubName = c2 => (d.clubs.find(x => x.id === c2) || {}).name || (d.teams.find(t => t.club === c2) || {}).clubName || c2;
+      let club = id;
+      if (!club){
+        const lijst = [...new Set([...(d.clubs || []).map(x => x.id), ...(d.teams || []).map(t => t.club).filter(Boolean)])].sort();
+        if (!lijst.length){ await tell('Er zijn nog geen clubs.'); return; }
+        club = await chooseDialog('Van welke club?', lijst.map(c2 => ({v: c2, n: clubName(c2), cls: ''})));
+        if (!club) return;
+      }
+      const cname = clubName(club);
+      const hoe = await sheetPick(`<p>Clubbeheerder toevoegen · ${esc(cname)}</p>
+        <button class="wmenu" data-r="mail"><span class="wmnm"><b>Nieuw · uitnodigen per e-mail</b><small>opent je mailprogramma met de uitnodiging erin</small></span><span class="wmar">›</span></button>
+        <button class="wmenu" data-r="wa"><span class="wmnm"><b>Link delen via WhatsApp</b><small>werkt voor een nieuw én een bestaand account</small></span><span class="wmar">›</span></button>
+        <button class="wmenu" data-r="tr"><span class="wmnm"><b>Een trainer uit de lijst</b><small>iemand die al in LineMeUp zit, meteen beheerder</small></span><span class="wmar">›</span></button>
+        <div class="sheetalt"><button data-r="no">Sluiten</button></div>`);
+      if (!hoe || hoe === 'no') return;
+
+      if (hoe === 'tr'){
+        const eigen = adminTrainers().filter(x => x.teams.some(t => t.club === club) && !((d.clubs.find(y => y.id === club) || {}).uids || {})[x.uid]);
+        const rest = adminTrainers().filter(x => !eigen.includes(x) && !((d.clubs.find(y => y.id === club) || {}).uids || {})[x.uid]);
+        const opts = [...eigen.map(x => ({v: x.uid, n: `${x.name || x.email || 'Trainer'} · ${x.teams.filter(t => t.club === club).map(t => t.label).join(', ')}`, cls: ''})),
+          ...(rest.length ? [{v: '__alle', n: `Andere trainer (${rest.length}) …`, cls: ''}] : [])];
+        if (!opts.length){ await tell(`Er zijn nog geen trainers bij ${cname} die nog geen beheerder zijn.`); return; }
+        let pick = await chooseDialog(`Welke trainer van ${cname}?`, opts);
+        if (pick === '__alle') pick = await chooseDialog('Welke trainer?', rest.map(x => ({v: x.uid, n: `${x.name || x.email || 'Trainer'}${x.teams.length ? ' · ' + x.teams.map(t => t.label).join(', ') : ''}`, cls: ''})));
+        if (!pick) return;
+        const x = adminTrainers().find(y => y.uid === pick); if (!x) return;
+        if (!await ask(`${x.name || x.email || 'Deze trainer'} clubbeheerder maken van ${cname}? Diegene ziet dan alle teams, trainers, spelers en opstellingen van ${cname} en kan trainers uitnodigen en verwijderen.`, 'Clubbeheerder maken')) return;
+        await api.clubAdminsSet(club, {name: cname, uids: {[pick]: {name: x.name || '', email: x.email || ''}}});
+        return reload(`${x.name || x.email || 'Trainer'} is nu clubbeheerder`);
+      }
+
+      const nm = await askText(`Naam van de nieuwe clubbeheerder van ${cname}`, ''); if (!nm || !nm.trim()) return;
+      let mail = '';
+      if (hoe === 'mail'){
+        mail = ((await askText(`E-mailadres van ${nm.trim()}`, '')) || '').trim();
+        if (!mail || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)){ await tell('Dat lijkt geen geldig e-mailadres.'); return; }
+      }
+      const iid = randId(24);
+      await api.inviteCreate(iid, {kind: 'clubadmin', club, clubName: cname, name: nm.trim(), byName: myName(), by: myUid(), created: Date.now(), usedBy: null});
+      const url = inviteUrl(iid);
+      const tekst = `🛡️ Hoi ${nm.trim()}! Je bent uitgenodigd als clubbeheerder van ${cname} in LineMeUp. Open deze link, log in en je ziet bovenin de knop Beheerder: ${url}`;
+      if (hoe === 'mail'){
+        const onderwerp = `Clubbeheerder van ${cname} in LineMeUp`;
+        const body = `Hoi ${nm.trim()},\n\n${myName() || 'De eigenaar'} nodigt je uit om clubbeheerder te worden van ${cname} in LineMeUp.\n\nOpen deze link, log in (of maak een account aan) en je ziet bovenin de knop Beheerder:\n${url}\n\nAls clubbeheerder zie je alle teams, trainers en opstellingen van ${cname} en kun je trainers uitnodigen.\n\nGroet,\n${myName() || ''}`;
+        try { window.location.href = `mailto:${encodeURIComponent(mail)}?subject=${encodeURIComponent(onderwerp)}&body=${encodeURIComponent(body)}`; } catch(e){}
+        linkSheet(tekst, url, `Uitnodiging voor ${esc(mail)} · je mailprogramma opent met de tekst erin. Komt dat niet op, gebruik dan de knoppen hieronder.`);
+      } else linkSheet(tekst, url);
       return;
     }
     if (act === 'admInviteAdmin'){
@@ -5986,7 +6036,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-16.2';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-17.2';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
