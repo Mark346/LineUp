@@ -208,6 +208,14 @@
   .lvbtns{display:grid;grid-template-columns:1fr 122px;gap:8px;align-items:stretch}
   .lvbtns .btn{margin:0;width:100%}
   .lvbtns .prim{font-size:16px;line-height:1.15}
+  .lvbtns .prim.col{flex-direction:column;gap:0;padding:8px 10px}
+  .lvbtns .prim.col b{font-size:17px;font-weight:900;line-height:1.15}
+  .lvbtns .prim.col small{font-size:13px;font-weight:800;opacity:.85}
+  .fs1 .lvbtns .prim.col b{font-size:19px}.fs1 .lvbtns .prim.col small{font-size:14px}
+  .fs2 .lvbtns .prim.col b{font-size:21px}.fs2 .lvbtns .prim.col small{font-size:15px}
+  .fs1 .lvbtns .sec,.fs2 .lvbtns .sec{font-size:15px}
+  .fsz.fs2 .pitch.lvp.sm .pl{width:82px}.fsz.fs2 .pitch.lvp.sm .pl .nm{font-size:14px;max-width:82px}
+  .fsz.fs2 .pitch.lvp.sm .pl .dot{width:42px;height:42px;font-size:13px}
   .lvbtns .sec{background:var(--solid);color:var(--txt);border:1.5px solid var(--line);font-size:13.5px;font-weight:800;line-height:1.15;min-height:56px}
   .midsub{margin:-4px 0 8px;font-size:12.5px}
   .livectl.stick .btn{box-shadow:0 8px 24px rgba(0,0,0,.3)}
@@ -233,8 +241,10 @@
   .kws{font-size:12px;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .kwgo{font-size:13px;font-weight:800;color:var(--acc2);white-space:nowrap}
   .lvcard{padding:8px}
-  .lvtabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--surf2);border-radius:12px;padding:4px;margin-bottom:8px}
-  .lvtabs button{min-height:48px;border:0;border-radius:9px;background:none;color:var(--muted);font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+  .lvtabs{display:flex;gap:4px;background:var(--surf2);border-radius:12px;padding:4px;margin-bottom:8px;overflow-x:auto;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .lvtabs::-webkit-scrollbar{display:none}
+  .lvtabs button{flex:0 0 auto;min-width:30%;padding:0 10px;scroll-snap-align:center;min-height:48px;border:0;border-radius:9px;background:none;color:var(--muted);font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;white-space:nowrap}
+  .lvtabs button.wide{min-width:44%}
   .lvtabs button b{font-size:14px;font-weight:900}
   .lvtabs button small{font-size:11px;font-weight:700;opacity:.9}
   .lvtabs button.on{background:var(--acc2);color:#fff}
@@ -2073,6 +2083,8 @@ function render(){
   if (watching && ui.tab === 'beheer') ui.tab = 'matches';
   app.innerHTML = iconize(ban + ({matches: ui.matchId ? viewMatch : (ui.tourId ? viewTour : viewMatches), stats: viewStats, settings: viewSettings, beheer: viewBeheer}[ui.tab] || viewMatches)());
   try { flipRun(); } catch(e){}
+  try { const t = app.querySelector('.lvtabs .on'), st = t && t.parentNode;
+    if (st && st.scrollWidth > st.clientWidth + 4) st.scrollLeft = Math.max(0, t.offsetLeft - (st.clientWidth - t.offsetWidth) / 2); } catch(e){}
   try { maybeOnbPopup(); } catch(e){}
   try { renderHelpFab(); helpLoad(); } catch(e){}
   const phb = document.querySelector('.phases'); if (phb) document.documentElement.style.setProperty('--phh', phb.offsetHeight + 'px');
@@ -2381,7 +2393,11 @@ function viewMatch(){
 }
 
 const FS_KEY = 'opstellingmaker.fs';
-const fontLevel = () => { const v = +localStorage.getItem(FS_KEY); return v === 3 ? 2 : ([1, 2].includes(v) ? v : 0); };
+const fontLevel = () => {                                  // tijdens de wedstrijd standaard groot
+  let v = null; try { v = localStorage.getItem(FS_KEY); } catch(e){}
+  if (v == null || v === '') return 1;
+  const n = +v; return n === 3 ? 2 : ([0, 1, 2].includes(n) ? n : 1);
+};
 /* ===================== WEDSTRIJDVERLOOP ALS TIJDLIJN ===================== */
 // stand na blok b (op basis van de bestaande doelpunt-gebeurtenissen)
 function scoreUpto(m, b){
@@ -2538,12 +2554,13 @@ function lvPitch(m, lu, bench, mark, lab, rowOf, tap){
   const pos = matchPositions(m);
   const size = pos.length <= 7 ? 'lg' : pos.length <= 9 ? 'md' : 'sm';
   // elke linie krijgt een eigen rij, zodat de bolletjes elkaar nooit overlappen (maten in ontwerp-pixels, breedte 350)
+  const fl = m.phase === 'live' ? fontLevel() : 0;           // grotere letters = meer ruimte nodig
   const ys = [...new Set(pos.map(p => Math.round(p.y)))].sort((a, b) => a - b);
-  const rowH = size === 'sm' ? 70 : 84;
-  const G = 42 + (ys.length - 1) * rowH + 44;
-  const cols = Math.max(1, Math.min(4, bench.length));
+  const rowH = (size === 'sm' ? 70 : 84) + fl * (size === 'sm' ? 20 : 22);
+  const G = 42 + (ys.length - 1) * rowH + 44 + fl * 10;
+  const cols = Math.max(1, Math.min(size === 'sm' ? [4, 4, 3][fl] : [4, 3, 2][fl], bench.length));
   const rows = Math.max(1, Math.ceil(bench.length / cols));
-  const bh = size === 'sm' ? 74 : 84;
+  const bh = (size === 'sm' ? 74 : 84) + fl * (size === 'sm' ? 20 : 24);
   const H = G + 22 + rows * bh;
   const topF = y => (42 + ys.indexOf(Math.round(y)) * rowH) / H * 100;
   const topB = r => (G + 22 + bh / 2 + r * bh) / H * 100;
@@ -2591,15 +2608,24 @@ function liveOpCard(m, times, cur, last){
     .sort((a, b) => up[a] - up[b]);
   const rowOf = {}; steps.forEach((s, k) => { if (s.inId) rowOf[s.inId] = k; if (s.outId) rowOf[s.outId] = k; });
 
+  const viewB = typeof lv.tab === 'number' && lv.tab !== cur ? Math.max(0, Math.min(last, lv.tab)) : null;
   const straks = lv.tab === 'straks' && toB != null;
   const einde = lv.tab === 'straks' && toB == null;
   const mark = {}, lab = {};
-  const lijst = straks || einde ? nextLu.concat(nextBench) : nowLu.concat(nowBench);
+  const viewLu = viewB != null ? (m.segments[viewB] || []).slice() : [];
+  const viewBench = viewB != null ? (m.present || []).filter(id => player(id) && !viewLu.includes(id)) : [];
+  const upV = viewB != null ? playedUpTo(m, viewB) : up;
+  const lijst = viewB != null ? viewLu.concat(viewBench) : (straks || einde ? nextLu.concat(nextBench) : nowLu.concat(nowBench));
   lijst.forEach(id => { if (!id) return;
+    if (viewB != null){ lab[id] = Math.round(upV[id] || 0) + "'"; return; }
     const opVeld = (straks || einde ? nextLu : nowLu).includes(id);
     lab[id] = Math.round((up[id] || 0) + (straks && opVeld ? lenNext : 0)) + "'";
   });
-  if (!straks && !einde){
+  if (viewB != null && viewB > 0){                            // wat er aan het begin van dat blok veranderde
+    const vorige = m.segments[viewB - 1] || [];
+    viewLu.forEach(id => { if (id && !vorige.includes(id)){ mark[id] = 'in'; lab[id] = 'erin'; } });
+    vorige.forEach(id => { if (id && !viewLu.includes(id) && viewBench.includes(id)){ mark[id] = 'out'; lab[id] = 'eruit'; } });
+  } else if (!straks && !einde && viewB == null){
     outs.forEach(id => { mark[id] = 'out'; lab[id] = 'straks eruit'; });
     ins.forEach(id => { mark[id] = 'in'; lab[id] = 'straks erin'; });
   } else if (straks){
@@ -2610,27 +2636,39 @@ function liveOpCard(m, times, cur, last){
 
   const tapNow = (id, slot) => slot != null ? `data-act="tapField" data-i="${slot}" role="button" tabindex="0"` : '';
   const tapNext = id => rowOf[id] != null ? `data-act="lvOpen" data-i="${rowOf[id]}" role="button" tabindex="0"` : '';
-  const veld = (straks || einde)
+  const veld = viewB != null
+    ? lvPitch(m, viewLu, viewBench, mark, lab, {}, () => '')
+    : (straks || einde)
     ? lvPitch(m, nextLu, nextBench, mark, lab, rowOf, id => tapNext(id))
     : lvPitch(m, nowLu, nowBench, mark, lab, rowOf, (id, slot) => tapNow(id, slot));
 
-  const tab2 = toB != null
-    ? `<b>Straks</b><small>${esc(blockLabel(m, toB))} · ${actief.length} wissel${actief.length === 1 ? '' : 's'}</small>`
-    : `<b>Einde</b><small>eindminuten</small>`;
-  const tabs = `<div class="lvtabs">
-    <button class="${!straks && !einde ? 'on' : ''}" data-act="lvTab" data-v="nu"><b>Nu</b><small>${esc(blockLabel(m, cur))}</small></button>
-    <button class="${straks || einde ? 'on' : ''}" data-act="lvTab" data-v="straks">${tab2}</button></div>`;
+  // strook met alle blokken: vorige, nu, straks en de rest gewoon bij hun naam
+  const chip = (v, on, big, sub, cls) => `<button class="${on ? 'on' : ''} ${cls || ''}" data-act="lvTab" data-v="${v}"><b>${big}</b><small>${sub}</small></button>`;
+  const chips = times.map((t, i) => {
+    if (i === cur) return chip('nu', !straks && !einde && viewB == null, 'Nu', esc(blockLabel(m, i)), 'wide');
+    if (i === cur + 1) return chip('straks', straks, 'Straks', `${esc(blockLabel(m, i))} · ${actief.length} wissel${actief.length === 1 ? '' : 's'}`, 'wide');
+    return chip(String(i), viewB === i, esc(blockLabel(m, i)), i === cur - 1 ? 'vorige' : `${t[0]}'–${t[1]}'`);
+  });
+  if (toB == null) chips.push(chip('straks', einde, 'Einde', 'eindminuten', 'wide'));
+  const tabs = `<div class="lvtabs">${chips.join('')}</div>`;
 
   const samen = actief.map(s => `${esc(pshort(player(s.inId)))} ⇄ ${esc(pshort(player(s.outId)))}`).join(' · ');
-  const onder = (!straks && !einde)
+  const vSub = viewB != null && viewB > 0
+    ? (m.segments[viewB - 1] || []).filter(id => id && !viewLu.includes(id)).map(id => esc(pshort(player(id)))).join(', ')
+    : '';
+  const onder = viewB != null
+    ? `<div class="lvna"><small>${viewB < cur ? 'GESPEELD' : 'LATER'}</small><span>${esc(blockLabel(m, viewB))} · ${times[viewB][0]}'–${times[viewB][1]}'${vSub ? ' · eruit ' + vSub : ''}</span></div>`
+    : (!straks && !einde)
     ? `<div class="lvna"><small>NA DIT ${esc(blockWord(m)).toUpperCase()}</small><span>${toB == null ? 'Dit is het laatste ' + esc(blockWord(m)) + '.' : (samen || 'geen wissels gepland')}</span></div>`
     : einde ? ''
     : `<div class="lvrows">${steps.map((s, k) => lvRow(m, lv, k, up)).join('') || '<div class="muted" style="padding:4px 2px">Geen wissels gepland: iedereen blijft staan.</div>'}</div>`;
 
   const used = subMoments(m), maxS = maxSubMoments(m);
-  const cnt = showSubCounter(m) ? `<div class="submcnt ${used >= maxS ? 'full' : ''}">Wisselmomenten gebruikt: <b>${used}</b> van ${maxS}${used >= maxS ? ' · op' : ''}</div>` : '';
-  const knoppen = (!straks && !einde)
-    ? `<div class="lvbtns"><button class="btn pri prim" data-act="lvTab" data-v="straks">${esc(blockLabel(m, cur))} klaar → bekijk ${toB != null ? 'straks' : 'einde'}</button>
+  const cnt = showSubCounter(m) && viewB == null ? `<div class="submcnt ${used >= maxS ? 'full' : ''}">Wisselmomenten gebruikt: <b>${used}</b> van ${maxS}${used >= maxS ? ' · op' : ''}</div>` : '';
+  const knoppen = viewB != null
+    ? `<button class="btn pri full prim" data-act="lvTab" data-v="nu">‹ Terug naar ${esc(blockLabel(m, cur))}</button>`
+    : (!straks && !einde)
+    ? `<div class="lvbtns"><button class="btn pri prim col" data-act="lvTab" data-v="straks"><b>${esc(blockLabel(m, cur))} klaar</b><small>${toB != null ? 'wissels kiezen ›' : 'wedstrijd afsluiten ›'}</small></button>
        <button class="btn sec" data-act="lvMid">Tussendoor wisselen</button></div>`
     : einde
     ? `<button class="btn pri full prim" data-act="phase" data-v="post">Wedstrijd afsluiten</button>`
@@ -4299,7 +4337,8 @@ document.addEventListener('click', async e => {
       m.mid.splice(k, 1); commit(); toast('Wissel teruggedraaid'); break;
     }
     case 'wisselMenu': await wisselMenu(m); break;
-    case 'lvTab': { const lv = ui.lv; if (lv){ flipPrep(); lv.tab = el.dataset.v; lv.open = null; lv.more = false; render(); } break; }
+    case 'lvTab': { const lv = ui.lv; if (lv){ const v = el.dataset.v; flipPrep();
+      lv.tab = (v === 'nu' || v === 'straks') ? v : +v; lv.open = null; lv.more = false; render(); } break; }
     case 'lvOpen': { const lv = ui.lv; if (lv){ const k = +el.dataset.i; if (lv.tab !== 'straks'){ lv.tab = 'straks'; flipPrep(); } lv.open = lv.open === k ? null : k; lv.more = false; render(); } break; }
     case 'lvMore': { const lv = ui.lv; if (lv){ lv.more = true; render(); } break; }
     case 'lvPick': { const lv = ui.lv; if (lv){ const st = lv.steps[+el.dataset.i]; if (st){ st.outId = id; st.skip = false; }
@@ -6407,7 +6446,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-22.2';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-22.3';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
