@@ -214,14 +214,6 @@
   .fs1 .lvbtns .prim.col b{font-size:19px}.fs1 .lvbtns .prim.col small{font-size:14px}
   .fs2 .lvbtns .prim.col b{font-size:21px}.fs2 .lvbtns .prim.col small{font-size:15px}
   .fs1 .lvbtns .sec,.fs2 .lvbtns .sec{font-size:15px}
-  .fsz.fs1 .pitch.lvp.lg .pl,.fsz.fs1 .pitch.lvp.md .pl,.fsz.fs1 .pitch.lvp.sm .pl{width:68px}
-  .fsz.fs1 .pitch.lvp.lg .pl .dot,.fsz.fs1 .pitch.lvp.md .pl .dot,.fsz.fs1 .pitch.lvp.sm .pl .dot{width:32px;height:32px;font-size:11px}
-  .fsz.fs1 .pitch.lvp.lg .pl .nm,.fsz.fs1 .pitch.lvp.md .pl .nm,.fsz.fs1 .pitch.lvp.sm .pl .nm{font-size:11.5px;line-height:1.2;margin-top:2px;padding:0 5px;max-width:68px}
-  .fsz.fs1 .pitch.lvp.lg .pl .pmin,.fsz.fs1 .pitch.lvp.md .pl .pmin,.fsz.fs1 .pitch.lvp.sm .pl .pmin{font-size:10px;line-height:1.2;margin-top:1px;padding:0 5px}
-  .fsz.fs2 .pitch.lvp.lg .pl,.fsz.fs2 .pitch.lvp.md .pl,.fsz.fs2 .pitch.lvp.sm .pl{width:68px}
-  .fsz.fs2 .pitch.lvp.lg .pl .dot,.fsz.fs2 .pitch.lvp.md .pl .dot,.fsz.fs2 .pitch.lvp.sm .pl .dot{width:34px;height:34px;font-size:12px}
-  .fsz.fs2 .pitch.lvp.lg .pl .nm,.fsz.fs2 .pitch.lvp.md .pl .nm,.fsz.fs2 .pitch.lvp.sm .pl .nm{font-size:13px;line-height:1.2;margin-top:2px;padding:0 5px;max-width:68px}
-  .fsz.fs2 .pitch.lvp.lg .pl .pmin,.fsz.fs2 .pitch.lvp.md .pl .pmin,.fsz.fs2 .pitch.lvp.sm .pl .pmin{font-size:11px;line-height:1.2;margin-top:1px;padding:0 5px}
   .wizhead .wizb{border:0;background:none;font:inherit;font-weight:800;font-size:14px;color:var(--acc2);cursor:pointer;min-height:44px;padding:0 6px 0 0;flex:0 0 auto}
   .wizhead .wizt{min-width:0}
   .lvbtns .sec{background:var(--solid);color:var(--txt);border:1.5px solid var(--line);font-size:13.5px;font-weight:800;line-height:1.15;min-height:56px}
@@ -264,10 +256,6 @@
   .pitch.lvp .ln.box.b{top:calc(var(--g) - 11%);bottom:auto;height:11%;border-width:2px 2px 0}
   .lvbank{position:absolute;left:0;right:0;bottom:0;background:var(--solid);border-top:1px solid var(--line)}
   .lvbank small{position:absolute;left:10px;top:5px;font-size:10px;font-weight:900;letter-spacing:.6px;color:var(--muted)}
-  .pitch.lvp.lg .pl,.pitch.lvp.md .pl,.pitch.lvp.sm .pl{width:68px}
-  .pitch.lvp.lg .pl .dot,.pitch.lvp.md .pl .dot,.pitch.lvp.sm .pl .dot{width:28px;height:28px;font-size:10px}
-  .pitch.lvp.lg .pl .nm,.pitch.lvp.md .pl .nm,.pitch.lvp.sm .pl .nm{font-size:10px;font-weight:800;line-height:1.2;margin-top:2px;padding:0 5px;border-radius:8px;max-width:68px}
-  .pitch.lvp.lg .pl .pmin,.pitch.lvp.md .pl .pmin,.pitch.lvp.sm .pl .pmin{font-size:9px;line-height:1.2;margin-top:1px;padding:0 5px}
   .pitch.lvp .pl.bch .dot{background:var(--solid);color:var(--txt);box-shadow:0 2px 6px rgba(0,0,0,.18),0 0 0 1.5px var(--line)}
   .pitch.lvp .pl.bch .nm{background:none;color:var(--txt);padding:1px 2px}
   .pitch.lvp .pl.bch .pmin{background:none;color:var(--muted)}
@@ -762,6 +750,14 @@
   .fs2 table.ov td,.fs2 table.ov th{font-size:18px}
   .fs2 .whop{font-size:21px;padding:11px 15px}
   .fs2 .phases button{font-size:16px}
+  /* het live-veld bepaalt zijn eigen maten (zie lvPitch), dus na de fs-regels */
+  .fsz .pitch.lvp.lg .pl,.fsz .pitch.lvp.md .pl,.fsz .pitch.lvp.sm .pl{width:var(--tw,68px)}
+  .fsz .pitch.lvp.lg .pl .dot,.fsz .pitch.lvp.md .pl .dot,.fsz .pitch.lvp.sm .pl .dot{width:var(--td,28px);height:var(--td,28px);font-size:calc(var(--td,28px) * .36)}
+  .fsz .pitch.lvp.lg .pl .nm,.fsz .pitch.lvp.md .pl .nm,.fsz .pitch.lvp.sm .pl .nm{font-size:var(--tf,10px);font-weight:800;line-height:1.2;margin-top:2px;padding:0 5px;border-radius:8px;max-width:var(--tw,68px)}
+  .fsz .pitch.lvp.lg .pl .pmin,.fsz .pitch.lvp.md .pl .pmin,.fsz .pitch.lvp.sm .pl .pmin{font-size:var(--tm,9px);line-height:1.2;margin-top:1px;padding:0 5px}
+  .fsz .pitch.lvp .pl.bch .dot{width:calc(var(--td,28px) * .82);height:calc(var(--td,28px) * .82);font-size:calc(var(--td,28px) * .3)}
+  .fsz .pitch.lvp .pl.bch .nm{font-size:calc(var(--tf,10px) * .92)}
+  .fsz .pitch.lvp .pl.bch .pmin{font-size:calc(var(--tm,9px) * .92)}
   .attgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
   .attb{min-height:56px;border-radius:16px;font-family:var(--disp);font-size:17px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;padding:6px 8px;line-height:1.1}
   .attb .ic{width:18px;height:18px;flex:none}
@@ -2557,17 +2553,29 @@ function lvGet(m, cur, to){
 function lvPitch(m, lu, bench, mark, lab, rowOf, tap){
   const pos = matchPositions(m);
   const size = pos.length <= 7 ? 'lg' : pos.length <= 9 ? 'md' : 'sm';
-  // elke linie krijgt een eigen rij, zodat de bolletjes elkaar nooit overlappen (maten in ontwerp-pixels, breedte 350)
-  const fl = m.phase === 'live' ? fontLevel() : 0;           // grotere letters = meer ruimte nodig
+  // de bolletjes worden zo groot als er naast elkaar past; elke linie krijgt een eigen rij
+  // (maten in ontwerp-pixels, veldbreedte 350)
+  const fl = m.phase === 'live' ? fontLevel() : 0;
   const ys = [...new Set(pos.map(p => Math.round(p.y)))].sort((a, b) => a - b);
-  const rowH = [62, 70, 78][fl];                              // hoogte van één linie; ook 5 linies passen
-  const G = 36 + (ys.length - 1) * rowH + 38;
-  const cols = Math.max(1, Math.min(4, bench.length));
+  const perRow = Math.max(1, ...Object.values(pos.reduce((a, p) => { const k = Math.round(p.y); a[k] = (a[k] || 0) + 1; return a; }, {})));
+  const tw = Math.round(Math.max(62, Math.min(118, 350 / perRow - 6)));      // breedte van één bolletje met naam
+  const tf = Math.round(Math.max(10, Math.min(15, tw * .145)) * [1, 1.22, 1.45][fl] * 10) / 10;
+  const tm = Math.round(tf * .85 * 10) / 10;
+  const tekst = 8 + 1.25 * (tf + tm);                                        // naam + minuten onder het bolletje
+  const dWens = Math.min(tw * .58, Math.max(30, Math.min(54, tw * .46)) * [1, 1.14, 1.26][fl]);
+  const L = ys.length;
+  const gMax = [380, 420, 460][fl] + Math.max(0, L - 4) * 65;                // het veld mag niet eindeloos hoog worden
+  const td = Math.round(Math.max(26, Math.min(dWens, (gMax - 10 * (L - 1) - 22) / L - tekst)));
+  const tokenH = td + tekst;
+  const rowH = Math.round(tokenH + 10);
+  const G = Math.round(tokenH / 2 + 10 + (ys.length - 1) * rowH + tokenH / 2 + 12);
+  const cols = Math.max(1, Math.min(Math.floor(350 / tw), bench.length));
   const rows = Math.max(1, Math.ceil(bench.length / cols));
-  const bh = [68, 76, 84][fl];
+  const bh = Math.round(tokenH * .85 + 14);
   const H = G + 22 + rows * bh;
-  const topF = y => (36 + ys.indexOf(Math.round(y)) * rowH) / H * 100;
+  const topF = y => (tokenH / 2 + 10 + ys.indexOf(Math.round(y)) * rowH) / H * 100;
   const topB = r => (G + 22 + bh / 2 + r * bh) / H * 100;
+  const vars = `--tw:${tw}px;--td:${td}px;--tf:${tf}px;--tm:${tm}px`;
   const cls = id => mark[id] ? ' r' + mark[id] : '';
   const tok = (id, left, top, extra, slot) => {
     const p = player(id);
@@ -2584,10 +2592,10 @@ function lvPitch(m, lu, bench, mark, lab, rowOf, tap){
     return tok(id, p.x, topF(p.y), p.line === 'K' ? ' k' : '', i);
   }).join('');
   const bank = bench.map((id, i) => tok(id, ((i % cols) + .5) / cols * 100, topB(Math.floor(i / cols)), ' bch', null)).join('');
-  if (!bench.length) return `<div class="pitch ${size} livebig lvp" style="aspect-ratio:350/${H};--g:${(G / H * 100).toFixed(2)}%">
+  if (!bench.length) return `<div class="pitch ${size} livebig lvp" style="aspect-ratio:350/${H};--g:${(G / H * 100).toFixed(2)}%;${vars}">
     <div class="ln mid"></div><div class="ln circ"></div><div class="ln box t"></div><div class="ln box b"></div>
     <div class="lvbank" style="height:${((H - G) / H * 100).toFixed(2)}%"><small>GEEN RESERVES</small></div>${veld}</div>`;
-  return `<div class="pitch ${size} livebig lvp" style="aspect-ratio:350/${H};--g:${(G / H * 100).toFixed(2)}%">
+  return `<div class="pitch ${size} livebig lvp" style="aspect-ratio:350/${H};--g:${(G / H * 100).toFixed(2)}%;${vars}">
     <div class="ln mid"></div><div class="ln circ"></div>
     <div class="ln box t"></div><div class="ln box b"></div>
     <div class="lvbank" style="height:${((H - G) / H * 100).toFixed(2)}%"><small>RESERVES</small></div>
@@ -6456,7 +6464,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-22.5';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-23.1';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
