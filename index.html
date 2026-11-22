@@ -214,8 +214,16 @@
   .fs1 .lvbtns .prim.col b{font-size:19px}.fs1 .lvbtns .prim.col small{font-size:14px}
   .fs2 .lvbtns .prim.col b{font-size:21px}.fs2 .lvbtns .prim.col small{font-size:15px}
   .fs1 .lvbtns .sec,.fs2 .lvbtns .sec{font-size:15px}
-  .fsz.fs2 .pitch.lvp.sm .pl{width:82px}.fsz.fs2 .pitch.lvp.sm .pl .nm{font-size:14px;max-width:82px}
-  .fsz.fs2 .pitch.lvp.sm .pl .dot{width:42px;height:42px;font-size:13px}
+  .fsz.fs1 .pitch.lvp.lg .pl,.fsz.fs1 .pitch.lvp.md .pl,.fsz.fs1 .pitch.lvp.sm .pl{width:68px}
+  .fsz.fs1 .pitch.lvp.lg .pl .dot,.fsz.fs1 .pitch.lvp.md .pl .dot,.fsz.fs1 .pitch.lvp.sm .pl .dot{width:32px;height:32px;font-size:11px}
+  .fsz.fs1 .pitch.lvp.lg .pl .nm,.fsz.fs1 .pitch.lvp.md .pl .nm,.fsz.fs1 .pitch.lvp.sm .pl .nm{font-size:11.5px;line-height:1.2;margin-top:2px;padding:0 5px;max-width:68px}
+  .fsz.fs1 .pitch.lvp.lg .pl .pmin,.fsz.fs1 .pitch.lvp.md .pl .pmin,.fsz.fs1 .pitch.lvp.sm .pl .pmin{font-size:10px;line-height:1.2;margin-top:1px;padding:0 5px}
+  .fsz.fs2 .pitch.lvp.lg .pl,.fsz.fs2 .pitch.lvp.md .pl,.fsz.fs2 .pitch.lvp.sm .pl{width:68px}
+  .fsz.fs2 .pitch.lvp.lg .pl .dot,.fsz.fs2 .pitch.lvp.md .pl .dot,.fsz.fs2 .pitch.lvp.sm .pl .dot{width:34px;height:34px;font-size:12px}
+  .fsz.fs2 .pitch.lvp.lg .pl .nm,.fsz.fs2 .pitch.lvp.md .pl .nm,.fsz.fs2 .pitch.lvp.sm .pl .nm{font-size:13px;line-height:1.2;margin-top:2px;padding:0 5px;max-width:68px}
+  .fsz.fs2 .pitch.lvp.lg .pl .pmin,.fsz.fs2 .pitch.lvp.md .pl .pmin,.fsz.fs2 .pitch.lvp.sm .pl .pmin{font-size:11px;line-height:1.2;margin-top:1px;padding:0 5px}
+  .wizhead .wizb{border:0;background:none;font:inherit;font-weight:800;font-size:14px;color:var(--acc2);cursor:pointer;min-height:44px;padding:0 6px 0 0;flex:0 0 auto}
+  .wizhead .wizt{min-width:0}
   .lvbtns .sec{background:var(--solid);color:var(--txt);border:1.5px solid var(--line);font-size:13.5px;font-weight:800;line-height:1.15;min-height:56px}
   .midsub{margin:-4px 0 8px;font-size:12.5px}
   .livectl.stick .btn{box-shadow:0 8px 24px rgba(0,0,0,.3)}
@@ -256,14 +264,10 @@
   .pitch.lvp .ln.box.b{top:calc(var(--g) - 11%);bottom:auto;height:11%;border-width:2px 2px 0}
   .lvbank{position:absolute;left:0;right:0;bottom:0;background:var(--solid);border-top:1px solid var(--line)}
   .lvbank small{position:absolute;left:10px;top:5px;font-size:10px;font-weight:900;letter-spacing:.6px;color:var(--muted)}
-  .pitch.lvp .pl{width:82px}
-  .pitch.lvp .pl .dot{width:34px;height:34px;font-size:12px}
-  .pitch.lvp .pl .nm{font-size:11px;font-weight:800;line-height:1.25;margin-top:2px;padding:1px 6px;max-width:82px}
-  .pitch.lvp .pl .pmin{font-size:10px;line-height:1.2;margin-top:1px}
-  .pitch.lvp.sm .pl{width:64px}
-  .pitch.lvp.sm .pl .dot{width:28px;height:28px;font-size:10px}
-  .pitch.lvp.sm .pl .nm{font-size:10px;max-width:64px;padding:1px 5px}
-  .pitch.lvp.sm .pl .pmin{font-size:9px;padding:1px 5px}
+  .pitch.lvp.lg .pl,.pitch.lvp.md .pl,.pitch.lvp.sm .pl{width:68px}
+  .pitch.lvp.lg .pl .dot,.pitch.lvp.md .pl .dot,.pitch.lvp.sm .pl .dot{width:28px;height:28px;font-size:10px}
+  .pitch.lvp.lg .pl .nm,.pitch.lvp.md .pl .nm,.pitch.lvp.sm .pl .nm{font-size:10px;font-weight:800;line-height:1.2;margin-top:2px;padding:0 5px;border-radius:8px;max-width:68px}
+  .pitch.lvp.lg .pl .pmin,.pitch.lvp.md .pl .pmin,.pitch.lvp.sm .pl .pmin{font-size:9px;line-height:1.2;margin-top:1px;padding:0 5px}
   .pitch.lvp .pl.bch .dot{background:var(--solid);color:var(--txt);box-shadow:0 2px 6px rgba(0,0,0,.18),0 0 0 1.5px var(--line)}
   .pitch.lvp .pl.bch .nm{background:none;color:var(--txt);padding:1px 2px}
   .pitch.lvp .pl.bch .pmin{background:none;color:var(--muted)}
@@ -2556,13 +2560,13 @@ function lvPitch(m, lu, bench, mark, lab, rowOf, tap){
   // elke linie krijgt een eigen rij, zodat de bolletjes elkaar nooit overlappen (maten in ontwerp-pixels, breedte 350)
   const fl = m.phase === 'live' ? fontLevel() : 0;           // grotere letters = meer ruimte nodig
   const ys = [...new Set(pos.map(p => Math.round(p.y)))].sort((a, b) => a - b);
-  const rowH = (size === 'sm' ? 70 : 84) + fl * (size === 'sm' ? 20 : 22);
-  const G = 42 + (ys.length - 1) * rowH + 44 + fl * 10;
-  const cols = Math.max(1, Math.min(size === 'sm' ? [4, 4, 3][fl] : [4, 3, 2][fl], bench.length));
+  const rowH = [62, 70, 78][fl];                              // hoogte van één linie; ook 5 linies passen
+  const G = 36 + (ys.length - 1) * rowH + 38;
+  const cols = Math.max(1, Math.min(4, bench.length));
   const rows = Math.max(1, Math.ceil(bench.length / cols));
-  const bh = (size === 'sm' ? 74 : 84) + fl * (size === 'sm' ? 20 : 24);
+  const bh = [68, 76, 84][fl];
   const H = G + 22 + rows * bh;
-  const topF = y => (42 + ys.indexOf(Math.round(y)) * rowH) / H * 100;
+  const topF = y => (36 + ys.indexOf(Math.round(y)) * rowH) / H * 100;
   const topB = r => (G + 22 + bh / 2 + r * bh) / H * 100;
   const cls = id => mark[id] ? ' r' + mark[id] : '';
   const tok = (id, left, top, extra, slot) => {
@@ -3083,13 +3087,17 @@ async function midSubPick(m){
   const lab = {}, mark = {};
   lu.concat(bench).forEach(id => { if (id) lab[id] = Math.round(up[id] || 0) + "'"; });
   bench.forEach(id => { if (!isIn(m, id)) mark[id] = 'hurt'; });
-  const r = await liveDialog(
-    () => `<p class="midt">Wie gaat eruit?</p>
-      <div class="muted midsub">Tik op de speler die van het veld gaat. Daaronder staan de reserves met hun minuten.</div>
-      ${lvPitch(m, lu, bench, mark, lab, {}, (id, slot) => slot != null ? `data-x="${slot}" role="button" tabindex="0"` : '')}
-      <div class="sheetalt"><button data-x="no">Sluiten</button></div>`,
-    (x, v, close) => { close(x === 'no' ? null : x); return false; });
-  if (r != null) await midSubFlow(m, +r);
+  for (;;){
+    const r = await liveDialog(
+      () => `<div class="wizhead"><button class="wizb" data-x="no" aria-label="Terug">‹ Terug</button>
+        <div class="wizt"><small>EXTRA WISSEL · ${esc(blockLabel(m, cur)).toUpperCase()}</small><b>Wie gaat eruit?</b></div></div>
+        <div class="muted midsub">Tik op de speler die van het veld gaat. Daaronder staan de reserves met hun minuten.</div>
+        ${lvPitch(m, lu, bench, mark, lab, {}, (id, slot) => slot != null ? `data-x="${slot}" role="button" tabindex="0"` : '')}
+        <div class="sheetalt"><button data-x="no">Sluiten</button></div>`,
+      (x, v, close) => { close(x === 'no' ? null : x); return false; });
+    if (r == null) return;
+    if (await midSubFlow(m, +r) !== 'back') return;
+  }
 }
 async function addSubFlow(m){
   const times = segTimes(m.settings), b = m.phase === 'live' ? (m.cur || 0) : ui.seg;
@@ -3447,7 +3455,7 @@ async function midSubFlow(m, slot){
   const draw = () => {
     if (st.step === 1){
       const sug = shiftSuggest(m, slot, st.inId);
-      return `<div class="wizhead"><div><small>EXTRA WISSEL · ${esc(blockLabel(m, cur)).toUpperCase()}</small><b>Wie komt erin?</b></div><button class="wizx" data-x="close" aria-label="Sluiten">Sluiten</button></div>
+      return `<div class="wizhead"><button class="wizb" data-x="back" aria-label="Terug naar wie gaat eruit">‹ Terug</button><div class="wizt"><small>EXTRA WISSEL · ${esc(blockLabel(m, cur)).toUpperCase()}</small><b>Wie komt erin?</b></div><button class="wizx" data-x="close" aria-label="Sluiten">Sluiten</button></div>
       <div class="incard out"><span class="indot">${esc(initials(player(outId)))}</span>
         <span class="innm"><small>ERUIT</small><b>${esc(pshort(player(outId)))}</b><i>${esc(isK ? 'Keeper' : (POS_NAMES[P.code] || P.code))} · ${Math.round(up[outId] || 0)}' gespeeld</i></span></div>
       <div class="midlbl">Erin · minst gespeeld eerst</div>
@@ -3497,12 +3505,14 @@ async function midSubFlow(m, slot){
       const bb = document.querySelector('.modal.sheetup .minv b'); if (bb) bb.textContent = st.min + "'";
       return false;
     }
+    if (a === 'back'){ close('back'); return false; }
     if (a === 'in') st.inId = v;
     if (a === 'mode') st.mode = v;
     if (a === 'view') st.view = v;
     if (a === 'step') st.step = +v;
     if (a === 'ok'){ close({inId: st.inId, reason: st.reason, lu: after(), min: st.min}); return false; }
   });
+  if (res === 'back') return 'back';
   if (!res) return;
 
   // vastleggen
@@ -6446,7 +6456,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-22.3';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-22.4';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
