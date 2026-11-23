@@ -202,9 +202,7 @@
   body.livenow nav{display:none}
   body.livenow header{display:none}                 /* tijdens de wedstrijd alleen de wedstrijd */
   body.livenow .hfab{display:none}
-  body.livenow .livectl.stick{padding-right:72px}
-  .aafab{position:fixed;right:14px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:40;width:50px;height:50px;border-radius:16px;border:0;background:var(--y);color:var(--on-y);font-family:var(--disp);font-weight:900;font-size:21px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:11px;gap:1px;cursor:pointer;box-shadow:0 0 0 3px var(--g),0 8px 22px rgba(0,0,0,.35)}
-  .aafab small{font-size:15px}
+
   .lvbtns{display:grid;grid-template-columns:1fr 122px;gap:8px;align-items:stretch}
   .lvbtns .btn{margin:0;width:100%}
   .lvbtns .prim{font-size:16px;line-height:1.15}
@@ -296,8 +294,6 @@
   @keyframes lvkom{to{opacity:1}}
   .lvrw.af{opacity:.6}
   .lvrw.af .lvnum{background:var(--inc)}
-  .lvstap{font-size:14px;font-weight:800;color:var(--txt);text-align:center;background:var(--solid);border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-bottom:8px;box-shadow:0 4px 14px rgba(12,61,31,.12)}
-  .lvstap b{font-weight:900}
   /* ---- wissel voor wissel ---- */
   .wizhead{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
   .wizhead small{display:block;font-size:10px;font-weight:800;letter-spacing:.08em;color:var(--muted)}
@@ -2699,14 +2695,12 @@ async function lvRunAnim(m, cur){
   const stappen = (lv.steps || []).filter(x => !x.skip && x.outId && x.inId);
   if (!pitchEl || !stappen.length){ klaar(); return; }
   lvBusy = true;
-  const tekst = h => { const e = app.querySelector('.lvstap'); if (e) e.innerHTML = h; };
   const rij = (i, cls) => { const e = app.querySelectorAll('.lvrw')[i]; if (e) e.className = 'lvrw ' + cls; };
   for (let i = 0; i < stappen.length && lvBusy; i++){
     const st = stappen[i];
     const inEl = pitchEl.querySelector(`[data-pid="${st.inId}"]`), uitEl = pitchEl.querySelector(`[data-pid="${st.outId}"]`);
     if (!inEl || !uitEl) continue;
     const k = (lv.steps || []).indexOf(st);
-    tekst(`Wissel <b>${i + 1}</b> van ${stappen.length} · ${esc(pshort(player(st.inId)))} komt voor ${esc(pshort(player(st.outId)))}`);
     rij(k, 'bezig');
     pitchEl.querySelectorAll('.pl').forEach(e => { if (e !== inEl && e !== uitEl) e.classList.add('dim'); });
     inEl.classList.add('act', 'rin', 'pulsein'); uitEl.classList.add('act', 'rout', 'pulseout');
@@ -2805,10 +2799,9 @@ function liveOpCard(m, times, cur, last){
     : einde ? ''
     : `<div class="lvrows">${steps.map((s, k) => lvRow(m, lv, k, up)).join('') || '<div class="muted" style="padding:4px 2px">Geen wissels gepland: iedereen blijft staan.</div>'}</div>`;
 
-  const used = subMoments(m), maxS = maxSubMoments(m);
-  const cnt = showSubCounter(m) && viewB == null && !bezig ? `<div class="submcnt ${used >= maxS ? 'full' : ''}">Wisselmomenten gebruikt: <b>${used}</b> van ${maxS}${used >= maxS ? ' · op' : ''}</div>` : '';
+  const cnt = '';
   const knoppen = bezig && straks
-    ? `<div class="lvstap">Zo gaat het straks worden…</div><button class="btn sec full" data-act="lvSkipAnim">Overslaan</button>`
+    ? ''
     : viewB != null
     ? `<button class="btn pri full prim" data-act="lvTab" data-v="nu">‹ Terug naar ${esc(blockLabel(m, cur))}</button>`
     : (!straks && !einde)
@@ -2818,8 +2811,7 @@ function liveOpCard(m, times, cur, last){
     : `<button class="btn pri full prim" data-act="lvGo">✓ ${actief.length ? `Bevestig ${actief.length} wissel${actief.length === 1 ? '' : 's'} · start ${esc(blockLabel(m, toB))}` : `Start ${esc(blockLabel(m, toB))} zonder wissels`}</button>`;
 
   return `<div class="card lvcard">${tabs}${veld}${onder}</div>
-    <div class="livectl stick">${cnt}${knoppen}</div>
-    <button class="aafab" data-act="fontSize" aria-label="Lettergrootte tijdens de wedstrijd">A<small>a</small></button>`;
+    ${knoppen ? `<div class="livectl stick">${cnt}${knoppen}</div>` : ''}`;
 }
 // één regel in Straks: wie erin komt voor wie, met de knop Andere
 function lvRow(m, lv, k, up){
@@ -4495,7 +4487,6 @@ document.addEventListener('click', async e => {
       if (spelen){ lv.anim = 'bezig'; render(); lvRunAnim(m, m.cur || 0); }
       else { if (naarStraks) lv.anim = 'klaar'; flipPrep(); render(); }
     } break; }
-    case 'lvSkipAnim': lvBusy = false; break;
     case 'lvOpen': { const lv = ui.lv; if (lv && !lvBusy){ const k = +el.dataset.i;
       if (lv.tab !== 'straks'){ lv.tab = 'straks'; flipPrep(); } lv.anim = 'klaar';
       lv.open = lv.open === k ? null : k; lv.more = false; render(); } break; }
@@ -6605,7 +6596,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-23.3';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-23.4';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
