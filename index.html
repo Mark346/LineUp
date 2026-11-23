@@ -215,6 +215,7 @@
   .wizhead .wizb{border:0;background:none;font:inherit;font-weight:800;font-size:14px;color:var(--acc2);cursor:pointer;min-height:44px;padding:0 6px 0 0;flex:0 0 auto}
   .wizhead .wizt{min-width:0}
   .lvbtns .sec{background:var(--solid);color:var(--txt);border:1.5px solid var(--line);font-size:13.5px;font-weight:800;line-height:1.15;min-height:56px}
+  .livectl .btn.sec{background:var(--solid);color:var(--txt);border:1.5px solid var(--line);font-weight:800;box-shadow:0 4px 14px rgba(12,61,31,.12)}
   .midsub{margin:-4px 0 8px;font-size:12.5px}
   .livectl.stick .btn{box-shadow:0 8px 24px rgba(0,0,0,.3)}
   .livectl .prim{min-height:56px;font-size:17px;font-weight:900}
@@ -2554,12 +2555,26 @@ function kwartCard(m, times, cur){
     <span class="kwgo">Verloop ›</span>
   </div>`;
 }
+// de reserves van links naar rechts, zoals ze op de reservestrook staan
+function lvBench(m, cur, up){
+  const hurt = id => m.out && m.out[id] != null;
+  const lu = m.segments[cur] || [];
+  return benchIds(m, cur)
+    .concat((m.present || []).filter(id => player(id) && hurt(id) && !lu.includes(id)))
+    .filter((id, i, a) => a.indexOf(id) === i)
+    .sort((a, b) => (up[a] || 0) - (up[b] || 0));
+}
 // stand van het nu-en-straks-scherm; bouwt opnieuw op zodra het schema verandert
 function lvGet(m, cur, to){
   const sig = JSON.stringify([m.segments[cur], to != null ? m.segments[to] : null, (m.mid || []).length, m.out || {}]);
   if (!ui.lv || ui.lv.mid !== m.id || ui.lv.b !== cur || ui.lv.sig !== sig){
     const up = playedUpTo(m, cur);
-    const steps = (to != null && !isEmptySeg(m.segments[to])) ? subSteps(m, cur, to, up) : [];
+    let steps = (to != null && !isEmptySeg(m.segments[to])) ? subSteps(m, cur, to, up) : [];
+    const bank = lvBench(m, cur, up);                          // volgorde van de wissels = volgorde op de bank
+    steps = steps.slice().sort((a, b) => {
+      const ia = bank.indexOf(a.inId), ib = bank.indexOf(b.inId);
+      return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+    });
     ui.lv = {mid: m.id, b: cur, sig, tab: 'nu', steps, open: null, more: false, anim: 'nieuw', stap: null};
   }
   return ui.lv;
@@ -2735,8 +2750,7 @@ function liveOpCard(m, times, cur, last){
   const actief = steps.filter(s => !s.skip && s.outId);
   const outs = actief.map(s => s.outId), ins = actief.map(s => s.inId);
   const nextLu = toB != null ? workLineup(m, cur, steps, steps.length) : nowLu;
-  const nowBench = benchIds(m, cur).concat((m.present || []).filter(id => player(id) && hurt(id) && !nowLu.includes(id)))
-    .filter((id, i, a) => a.indexOf(id) === i).sort((a, b) => up[a] - up[b]);
+  const nowBench = lvBench(m, cur, up);
   const nextBench = (m.present || []).filter(id => player(id) && !nextLu.includes(id))
     .sort((a, b) => up[a] - up[b]);
   const rowOf = {}; steps.forEach((s, k) => { if (s.inId) rowOf[s.inId] = k; if (s.outId) rowOf[s.outId] = k; });
@@ -6596,7 +6610,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-23.4';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-23.5';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
