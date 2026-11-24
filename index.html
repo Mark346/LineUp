@@ -267,6 +267,7 @@
   .lvna small{font-size:11px;font-weight:900;letter-spacing:.5px;color:var(--muted);white-space:nowrap}
   .lvna span{flex:1 1 auto;font-size:13px;font-weight:700}
   .lvrows{display:flex;flex-direction:column;gap:6px;padding-top:8px}
+  .lvcard .lvrows + .pitch{margin-top:10px}
   .lvrw{border-radius:12px;background:var(--surf2);border:1.5px solid transparent}
   .lvrw.open{background:color-mix(in srgb,var(--acc2) 12%,transparent);border-color:var(--acc2)}
   .lvrh{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 10px}
@@ -2648,30 +2649,6 @@ async function lvPauze(ms){
   for (let over = ms; over > 0; over -= 50){ if (lvHalt) throw new Error('stop'); await lvSleep(Math.min(50, over)); }
   if (lvHalt) throw new Error('stop');
 }
-// beide spelers in beeld brengen, onder de scorebalk en boven de knoppen
-function lvSafe(){
-  let top = 0, bot = 0;
-  document.querySelectorAll('.phases, .sbar').forEach(e => {
-    const st = getComputedStyle(e).position, r = e.getBoundingClientRect();
-    if ((st === 'sticky' || st === 'fixed') && r.top < innerHeight / 3 && r.bottom > top) top = r.bottom;
-  });
-  const c = document.querySelector('.livectl.stick');
-  if (c){ const r = c.getBoundingClientRect(); if (r.top < innerHeight) bot = innerHeight - r.top; }
-  return {top: top + 10, bot: bot + 10};
-}
-async function lvInView(a, b){
-  const s = lvSafe();
-  const r1 = a.getBoundingClientRect(), r2 = b.getBoundingClientRect();
-  const boven = Math.min(r1.top, r2.top) + window.scrollY;
-  const onder = Math.max(r1.bottom, r2.bottom) + window.scrollY;
-  const ruimte = Math.max(120, innerHeight - s.top - s.bot);
-  let doel = (onder - boven) > ruimte ? boven - s.top : (boven + onder) / 2 - s.top - ruimte / 2;
-  doel = Math.max(0, Math.min(Math.max(0, document.documentElement.scrollHeight - innerHeight), doel));
-  if (Math.abs(doel - window.scrollY) > 16){
-    try { window.scrollTo({top: doel, behavior: 'smooth'}); } catch(e){ window.scrollTo(0, doel); }
-    await lvPauze(560);
-  }
-}
 // pijl van de invaller naar de speler die eruit gaat
 function lvArrow(pitchEl, a, b, aan){
   let sv = pitchEl.querySelector('.lvarrow');
@@ -2743,8 +2720,7 @@ async function lvAnimOne(m, cur, st){
   pitchEl.querySelectorAll('.pl').forEach(e => { if (e !== inEl && e !== uitEl) e.classList.add('dim'); });
   inEl.classList.add('act', 'rin', 'pulsein'); uitEl.classList.add('act', 'rout', 'pulseout');
   try {
-    await lvInView(inEl, uitEl);
-    await lvPauze(200);
+    await lvPauze(260);
     lvArrow(pitchEl, inEl, uitEl, true);
     await lvPauze(640);
     lvArrow(pitchEl, inEl, uitEl, false);
@@ -2886,7 +2862,7 @@ function liveOpCard(m, times, cur, last){
     ? `<button class="btn pri full prim" data-act="phase" data-v="post">Wedstrijd afsluiten</button>`
     : `<button class="btn pri full prim" data-act="lvGo">✓ ${actief.length ? `Bevestig ${actief.length} wissel${actief.length === 1 ? '' : 's'} · start ${esc(blockLabel(m, toB))}` : `Start ${esc(blockLabel(m, toB))} zonder wissels`}</button>`;
 
-  return `<div class="card lvcard">${tabs}${veld}${onder}</div>
+  return `<div class="card lvcard">${tabs}${straks ? onder + veld : veld + onder}</div>
     ${knoppen ? `<div class="livectl stick">${cnt}${knoppen}</div>` : ''}${ctrl}`;
 }
 // één regel in Straks: wie erin komt voor wie, met de knop Andere
@@ -6679,7 +6655,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-24.3';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-24.4';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
