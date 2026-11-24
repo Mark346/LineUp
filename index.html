@@ -1319,8 +1319,15 @@ function ruleClash(se){
   (se.rules || []).forEach(r => { cnt[r.a] = (cnt[r.a] || 0) + 1; cnt[r.b] = (cnt[r.b] || 0) + 1; });
   return Object.keys(cnt).filter(id => cnt[id] > 1 && player(id));
 }
+// de wisselregels van deze wedstrijd; de eerste keer overgenomen van het team
+function matchRules(m){
+  if (!m) return [];
+  if (!Array.isArray(m.rules)) m.rules = (season().rules || []).map(r => ({id: r.id, a: r.a, b: r.b, type: r.type}));
+  return m.rules;
+}
 function activeRules(m){ const off = m.ruleOff || [];
-  return (season().rules || []).filter(r => r.a && !off.includes(r.id) && (m.present || []).includes(r.a)
+  if (m.rulesOff) return [];
+  return matchRules(m).filter(r => r.a && !off.includes(r.id) && (m.present || []).includes(r.a)
     && (!isPairRule(r.type) || (r.b && (m.present || []).includes(r.b)))); }
 // minuten die in eerdere wedstrijden van hetzelfde toernooi al gespeeld zijn
 function tourCarry(m){
@@ -1643,34 +1650,42 @@ async function importSheet(file, rid){
   logMet('import');
   toast(`${nieuw.length} wedstrijd${nieuw.length === 1 ? '' : 'en'} geïmporteerd bij ${tg.label}`);
 }
-function addRule(se, ty, a, b){
+function addRuleTo(lijst, ty, a, b){
   if (!a) return 'Kies een speler.';
   if (isPairRule(ty)){
     if (!b || a === b) return 'Kies twee verschillende spelers.';
-    if ((se.rules || []).some(r => r.type === ty && ((r.a === a && r.b === b) || (r.a === b && r.b === a)))) return 'Die regel staat er al.';
-  } else { b = ''; if ((se.rules || []).some(r => r.type === ty && r.a === a)) return 'Die regel staat er al.'; }
-  (se.rules = se.rules || []).push({id: uid(), a, b, type: ty});
+    if (lijst.some(r => r.type === ty && ((r.a === a && r.b === b) || (r.a === b && r.b === a)))) return 'Die regel staat er al.';
+  } else { b = ''; if (lijst.some(r => r.type === ty && r.a === a)) return 'Die regel staat er al.'; }
+  lijst.push({id: uid(), a, b, type: ty});
   return '';
 }
+function addRule(se, ty, a, b){ return addRuleTo(se.rules = se.rules || [], ty, a, b); }
 function autoSheet(m){
   return new Promise(res => {
     const d = document.createElement('div'); d.className = 'modal';
     const draw = () => {
-      const se = season(), rules = se.rules || [], ty = ui.ruleType || 'samen';
+      const se = season(), rules = matchRules(m), ty = ui.ruleType || 'samen', uit = !!m.rulesOff;
+      const warn = m.phase === 'done' ? [] : ruleCheck(m);
+      const aanw = se.players.filter(p => (m.present || []).includes(p.id));
       d.innerHTML = iconize(`<div class="box">
         <h3>🔁 Wisselregels</h3>
-        <p class="muted" style="margin-top:-4px">Hier zet je regels voor deze wedstrijd aan of uit. De app houdt er rekening mee bij het verdelen.</p>
-        ${rules.length ? rules.map(r => { const off = (m.ruleOff || []).includes(r.id), mis = !(m.present || []).includes(r.a) || (isPairRule(r.type) && !(m.present || []).includes(r.b));
-          return `<div class="item"><div class="grow"><div class="name">${esc(ruleLabel(r))}</div><div class="muted">${esc(ruleKindName(r.type))}${mis ? ' · niet (allebei) aanwezig' : off ? ' · uit voor deze wedstrijd' : ''}</div></div>
-            <button class="btn sm" data-x="off" data-id="${r.id}">${off ? 'Aanzetten' : 'Uitzetten'}</button>
+        <p class="muted" style="margin-top:-4px">Deze regels gelden alleen voor <b>deze wedstrijd</b>. De app houdt er rekening mee bij het verdelen.</p>
+        ${rules.length ? `<div class="item"><div class="grow"><div class="name">Regels gebruiken</div><div class="muted">${uit ? 'Staan allemaal uit voor deze wedstrijd' : 'Worden meegenomen bij het verdelen'}</div></div>
+          <button class="btn sm ${uit ? 'pri' : ''}" data-x="all">${uit ? 'Aanzetten' : 'Alles uit'}</button></div>` : ''}
+        ${!uit && warn.length ? `<div class="card pend" style="margin:8px 0">${warn.map(w => `<div><b>⚠️ ${esc(ruleLabel(w.r))}</b> – ${esc(ruleKindName(w.r.type))} lukt niet in ${w.n} blok${w.n === 1 ? '' : 'ken'}.</div>`).join('')}
+          <div class="muted" style="margin-top:6px">Er zijn te weinig spelers, of twee regels botsen. Zet een regel uit, of pas de opstelling met de hand aan.</div></div>` : ''}
+        ${rules.length ? rules.map(r => { const off = uit || (m.ruleOff || []).includes(r.id), mis = !(m.present || []).includes(r.a) || (isPairRule(r.type) && !(m.present || []).includes(r.b));
+          return `<div class="item"><div class="grow"><div class="name">${esc(ruleLabel(r))}</div><div class="muted">${esc(ruleKindName(r.type))}${mis ? ' · niet (allebei) aanwezig' : off ? ' · uit' : ''}</div></div>
+            ${uit ? '' : `<button class="btn sm" data-x="off" data-id="${r.id}">${off ? 'Aanzetten' : 'Uitzetten'}</button>`}
             <button class="x" data-x="del" data-id="${r.id}" aria-label="Regel verwijderen">×</button></div>`; }).join('')
-          : '<div class="muted">Nog geen regels.</div>'}
+          : '<div class="muted">Nog geen regels voor deze wedstrijd.</div>'}
         <div class="row" style="margin-top:10px"><select style="flex:1" data-x="ty">${RULE_KINDS.map(([v, l]) => `<option value="${v}" ${ty === v ? 'selected' : ''}>${l[0].toUpperCase() + l.slice(1)}</option>`).join('')}</select></div>
         <div class="row" style="margin-top:8px">
-          <select style="flex:1" data-f="a"><option value="">${isPairRule(ty) ? 'Speler 1' : 'Speler'}</option>${se.players.filter(p => (m.present || []).includes(p.id)).map(p => `<option value="${p.id}">${esc(pshort(p))}</option>`).join('')}</select>
-          ${isPairRule(ty) ? `<select style="flex:1" data-f="b"><option value="">Speler 2</option>${se.players.filter(p => (m.present || []).includes(p.id)).map(p => `<option value="${p.id}">${esc(pshort(p))}</option>`).join('')}</select>` : ''}
+          <select style="flex:1" data-f="a"><option value="">${isPairRule(ty) ? 'Speler 1' : 'Speler'}</option>${aanw.map(p => `<option value="${p.id}">${esc(pshort(p))}</option>`).join('')}</select>
+          ${isPairRule(ty) ? `<select style="flex:1" data-f="b"><option value="">Speler 2</option>${aanw.map(p => `<option value="${p.id}">${esc(pshort(p))}</option>`).join('')}</select>` : ''}
           <button class="btn sm" style="flex:none" data-x="add">＋ Regel</button></div>
-        <div class="muted" style="margin:8px 0 12px;font-size:12px">Een nieuwe regel geldt voor alle wedstrijden van dit team. Uitzetten geldt alleen voor deze wedstrijd.</div>
+        <div class="muted" style="margin:8px 0 12px;font-size:12px">Toevoegen en weghalen geldt alleen voor deze wedstrijd. De vaste regels van het team staan bij Instellingen → Wisselregels; die worden overgenomen in een nieuwe wedstrijd.</div>
+        ${m.phase === 'prep' || m.phase === 'live' ? `<button class="btn full" style="margin-bottom:8px" data-x="${m.phase === 'live' ? 'regen' : 'auto'}">⚡ ${m.phase === 'live' ? 'Rest opnieuw verdelen met deze regels' : 'Opnieuw verdelen met deze regels'}</button>` : ''}
         <button class="btn pri full" data-x="no">Klaar</button>
       </div>`);
     };
@@ -1678,11 +1693,12 @@ function autoSheet(m){
     d.addEventListener('click', async e => {
       e.stopPropagation();
       const b = e.target.closest('[data-x]'); if (!b){ if (e.target === d){ d.remove(); res(null); } return; }
-      const x = b.dataset.x, se = season();
+      const x = b.dataset.x;
+      if (x === 'all'){ m.rulesOff = !m.rulesOff; save(); draw(); return; }
       if (x === 'off'){ const off = m.ruleOff = m.ruleOff || [], i = off.indexOf(b.dataset.id); i >= 0 ? off.splice(i, 1) : off.push(b.dataset.id); save(); draw(); return; }
-      if (x === 'del'){ se.rules = (se.rules || []).filter(r => r.id !== b.dataset.id); save(); draw(); return; }
+      if (x === 'del'){ m.rules = matchRules(m).filter(r => r.id !== b.dataset.id); save(); draw(); return; }
       if (x === 'add'){ const a = (d.querySelector('[data-f=a]') || {}).value, bb = (d.querySelector('[data-f=b]') || {}).value;
-        const err = addRule(se, ui.ruleType || 'samen', a, bb); if (err) toast(err); else { save(); draw(); } return; }
+        const err = addRuleTo(matchRules(m), ui.ruleType || 'samen', a, bb); if (err) toast(err); else { logMet('rules'); save(); draw(); } return; }
       if (x === 'ty') return;
       d.remove(); res(x);
     });
@@ -2255,18 +2271,10 @@ function viewMatch(){
   const minUp = Math.min(...bench.map(id => up[id]));
   const warn = ph === 'done' ? [] : ruleCheck(m);
   const nRules = ph === 'done' ? 0 : activeRules(m).length;
-  const rulesCard = (season().rules || []).length && ph !== 'done' ? `<div class="card">
-    <details data-key="rules" ${(ui.open.rules ?? !!warn.length) ? 'open' : ''}>
-    <summary>🔁 Wisselregels <span class="muted" style="font-weight:400">${activeRules(m).length} actief${warn.length ? ' · ⚠️ komt niet uit' : ''}</span></summary>
-    ${warn.length ? `<div class="card pend" style="margin:8px 0">${warn.map(w => `<div><b>⚠️ ${esc(ruleLabel(w.r))}</b> – ${esc(ruleKindName(w.r.type))} lukt niet in ${w.n} blok${w.n === 1 ? '' : 'ken'}.</div>`).join('')}
-      <div class="muted" style="margin-top:6px">Er zijn te weinig spelers, of twee regels botsen. Zet een regel uit, of pas de opstelling met de hand aan.</div></div>` : ''}
-    ${(season().rules || []).map(r => { const off = (m.ruleOff || []).includes(r.id), mis = !(m.present || []).includes(r.a) || (isPairRule(r.type) && !(m.present || []).includes(r.b));
-      return `<div class="item"><div class="grow"><div class="name">${esc(ruleLabel(r))}</div>
-        <div class="muted">${esc(ruleKindName(r.type))}${mis ? ' · niet (allebei) aanwezig' : ''}</div></div>
-        <button class="btn sm" data-act="ruleOff" data-id="${r.id}">${off ? 'Aanzetten' : 'Uitzetten'}</button></div>`; }).join('')}
-    <div class="muted" style="margin-top:6px">Uitzetten geldt alleen voor deze wedstrijd. Regels maken en weghalen doe je bij Instellingen → Opstelling &amp; wedstrijd.</div>
-    <button class="btn full" style="margin-top:8px" data-act="${ph === 'live' ? 'regenRest' : 'autoAll'}">⚡ ${ph === 'live' ? 'Rest opnieuw verdelen met deze regels' : 'Opnieuw verdelen met deze regels'}</button>
-    </details></div>` : '';
+  const nAll = ph === 'done' ? 0 : matchRules(m).length;
+  const rulesTxt = m.rulesOff ? 'uit voor deze wedstrijd' : !nAll ? 'nog geen regels' : nRules === nAll ? `${nAll} regel${nAll === 1 ? '' : 's'} aan` : `${nRules} van ${nAll} aan`;
+  const rulesCard = ph === 'done' ? '' : `<div class="summary" data-act="rulesSheet">
+    <div>🔁 <b>Wisselregels</b> · ${rulesTxt}${!m.rulesOff && warn.length ? ' · ⚠️ komt niet uit' : ''}</div><span>instellen</span></div>`;
   const tourCard = tourOf(m) ? `<div class="summary" data-act="tourOpen" data-id="${m.tourId}"><div>🏆 <b>${esc(tourOf(m).name || 'Toernooi')}</b> · ${esc(roundName(m.round))}</div><span>terug</span></div>` : '';
   const need = m.settings.fieldPlayers, haveN = (m.present || []).filter(id => player(id)).length;
   const noAns = Object.keys(m.att || {}).length ? se.players.filter(p => !(m.att || {})[p.id]).length : 0;
@@ -2280,7 +2288,6 @@ function viewMatch(){
       ${ph === 'prep' ? (true
         ? `<div class="muted" style="margin-bottom:10px">Laat de app alle blokken en wissels invullen${usePos() ? ' op basis van de voorkeursposities en eerlijke speeltijd' : ' met een eerlijke speeltijd voor iedereen'}${nRules ? ' en met je ' + nRules + ' wisselregel' + (nRules === 1 ? '' : 's') : ''}, of sleep zelf.</div>
            <div class="grid2" style="margin-bottom:6px"><button class="btn" data-act="autoAll">⚡ Alles automatisch</button><button class="btn" data-act="autoMix">🔀 Andere verdeling</button></div>
-           <button class="btn sm full" style="margin-bottom:12px" data-act="rulesSheet">${nRules ? `${nRules} wisselregel${nRules === 1 ? '' : 's'} actief · aanpassen` : 'Geen wisselregels · instellen'}</button>
            ${usePos() ? '' : '<div class="muted" style="margin:-6px 0 12px;font-size:12px">Tip: zet bij Instellingen de voorkeursposities aan, dan kiest de app ook de plekken.</div>'}`
         : `<div class="muted" style="margin-bottom:10px">Zet per blok je spelers neer: eerst de start, dan de volgende wissels. Bij een nieuw blok wordt het vorige overgenomen. Tip: zet bij Instellingen de voorkeursposities aan, dan kan de app alles automatisch opstellen.</div>`) : ''}
       ${ph === 'live' || ph === 'post' ? '' : `<div class="segs">${times.map((t, i) => `<button class="pill ${i === ui.seg ? 'on' : ''}" data-act="seg" data-i="${i}"><span>${blockLabel(m, i)}</span><span>${t[0]}'–${t[1]}'</span></button>`).join('')}</div>`}
@@ -4152,7 +4159,7 @@ function viewSettings(){
   ${se.players.length > 1 ? `<div class="card list">
     <h2>🔁 Wisselregels <span class="muted" style="font-weight:400">(${(se.rules || []).length})</span></h2>
     ${ruleClash(se).length ? `<div class="card pend" style="margin:0 0 10px"><b>⚠️ Let op</b><div>${ruleClash(se).map(id => esc(pshort(player(id)))).join(', ')} ${ruleClash(se).length === 1 ? 'zit' : 'zitten'} in meer dan één regel. Dat kan botsen; de app meldt het bij de wedstrijd als het niet uitkomt.</div></div>` : ''}
-    <div class="muted" style="margin-bottom:8px">Twee spelers die samen wisselen of nooit samen reserve zijn, of een speler die als reserve begint of eindigt. Geldt bij "eerlijk verdelen" in elke wedstrijd en elk toernooi; per wedstrijd kun je een regel uitzetten.</div>
+    <div class="muted" style="margin-bottom:8px">Twee spelers die samen wisselen of nooit samen reserve zijn, of een speler die als reserve begint of eindigt. Dit zijn de vaste regels van het team. Ze worden overgenomen in elke nieuwe wedstrijd; per wedstrijd kun je ze daarna aan- en uitzetten, toevoegen en weghalen bij de voorbereiding.</div>
     ${(se.rules || []).map(r => `<div class="item"><div class="grow"><div class="name">${esc(ruleLabel(r))}</div><div class="muted">${esc(ruleKindName(r.type))}</div></div><button class="x" data-act="ruleDel" data-id="${r.id}" aria-label="Regel verwijderen">×</button></div>`).join('') || '<div class="muted">Nog geen regels.</div>'}
     <div class="row" style="margin-top:10px"><select id="rlT" style="flex:1" data-sel="ruleType">${RULE_KINDS.map(([v, l]) => `<option value="${v}" ${(ui.ruleType || 'samen') === v ? 'selected' : ''}>${l[0].toUpperCase() + l.slice(1)}</option>`).join('')}</select></div>
     <div class="row" style="margin-top:8px"><select id="rlA" style="flex:1"><option value="">${isPairRule(ui.ruleType || 'samen') ? 'Speler 1' : 'Speler'}</option>${se.players.map(p => `<option value="${p.id}">${esc(pshort(p))}</option>`).join('')}</select>
@@ -4688,7 +4695,14 @@ document.addEventListener('click', async e => {
     case 'goalThem': addGoal(m, {us: false}); break;
     case 'goalDel': delGoal(m, id); break;
     case 'togglePos': se.usePositions = !se.usePositions; commit(); toast(se.usePositions ? 'Voorkeursposities aan' : 'Voorkeursposities uit'); break;
-    case 'rulesSheet': await autoSheet(m); render(); break;
+    case 'rulesSheet': { const r = await autoSheet(m);
+      if (r === 'auto'){
+        const filled = m.segments.some(lu => !isEmptySeg(lu));
+        if (filled && !await ask('Alle blokken opnieuw invullen? Wat je zelf hebt neergezet wordt vervangen.', 'Invullen')){ render(); break; }
+        generate(m, false, 0); m.edited = true; ui.autoAt = Date.now(); ui.seg = 0; ui.sel = null; commit(); logMet('autoAll'); toast('Hele wedstrijd opgesteld ⚡'); break; }
+      if (r === 'regen'){ generate(m, false, ui.seg + 1); m.edited = true; commit(); toast('De rest van de wedstrijd is opnieuw eerlijk verdeeld'); break; }
+      if (m.phase === 'prep') regenIfNeeded(m);
+      commit(); break; }
     case 'autoAll': case 'autoMix': {
       const mix = act === 'autoMix';
       const filled = m.segments.some(lu => !isEmptySeg(lu));
@@ -6655,7 +6669,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-24.4';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-24.5';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
