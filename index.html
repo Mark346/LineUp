@@ -199,18 +199,9 @@
   .livectl.stick{position:fixed;left:14px;right:14px;max-width:520px;margin:0 auto;bottom:calc(16px + env(safe-area-inset-bottom));z-index:35;display:flex;flex-direction:column;gap:8px;padding-right:62px}
   body:not(.hashelp) .livectl.stick{padding-right:0}
   body.livenow .livectl.stick{padding-right:0}
-  /* bedieningsknoppen van de animatie: halve bolletjes aan de rechterrand */
-  .lvctrl{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:45;display:flex;flex-direction:column;gap:8px}
   .step.vast{border:0;background:none;padding:0;justify-content:center}
   .step.vast b{font-size:34px;font-weight:900;min-width:0}
   .vslot{margin-left:auto;font-size:12px;font-weight:800;color:var(--muted);white-space:nowrap}
-  .lvctrl button.geel{background:var(--y);color:var(--on-y)}
-  .lvctrl button.geel:active{background:var(--ybd)}
-  .lvctrl button{width:58px;height:58px;margin-right:-25px;padding-right:25px;border:0;border-radius:50%;
-    background:var(--g);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;
-    box-shadow:0 6px 20px rgba(0,0,0,.3),0 0 0 2px rgba(255,255,255,.55)}
-  .lvctrl button:active{background:var(--g2)}
-  .lvctrl svg{width:21px;height:21px;fill:currentColor}
   body.livenow #app{padding-bottom:calc(150px + env(safe-area-inset-bottom))}
   body.livenow nav{display:none}
   body.livenow header{display:none}                 /* tijdens de wedstrijd alleen de wedstrijd */
@@ -285,6 +276,10 @@
   .lvtx b.uit{color:var(--red)}
   .lvtx b.dim{color:var(--muted)}
   .lvtx small{display:block;font-size:11px;color:var(--muted);font-weight:600}
+  .lvok{min-height:40px;padding:0 10px;border-radius:10px;border:1.5px solid var(--line);background:var(--solid);
+    color:var(--muted);font:inherit;font-size:13px;font-weight:900;cursor:pointer;flex:0 0 auto}
+  .lvok.on{border-color:var(--inc);background:color-mix(in srgb,var(--inc) 16%,transparent);color:var(--ok)}
+  .lvrw.af .lvtx{opacity:.7}
   .lvand{min-height:40px;padding:0 12px;border-radius:10px;border:1.5px solid var(--acc2);background:var(--solid);color:var(--acc2);font:inherit;font-size:13px;font-weight:900;cursor:pointer;flex:0 0 auto}
   .lvpills{display:flex;flex-wrap:wrap;gap:6px;padding:0 8px 8px}
   .lvpill{min-height:40px;padding:0 12px;border-radius:999px;border:1.5px solid var(--line);background:var(--solid);color:var(--txt);font:inherit;font-size:13px;font-weight:700;cursor:pointer}
@@ -2112,6 +2107,7 @@ function render(){
   if (watching && ui.tab === 'beheer') ui.tab = 'matches';
   app.innerHTML = iconize(ban + ({matches: ui.matchId ? viewMatch : (ui.tourId ? viewTour : viewMatches), stats: viewStats, settings: viewSettings, beheer: viewBeheer}[ui.tab] || viewMatches)());
   try { flipRun(); } catch(e){}
+  try { lvMaybeStart(); } catch(e){}
   try { const t = app.querySelector('.lvtabs .on'), st = t && t.parentNode;
     if (st && st.scrollWidth > st.clientWidth + 4) st.scrollLeft = Math.max(0, t.offsetLeft - (st.clientWidth - t.offsetWidth) / 2); } catch(e){}
   try { maybeOnbPopup(); } catch(e){}
@@ -2587,7 +2583,7 @@ function lvGet(m, cur, to){
       const ia = bank.indexOf(a.inId), ib = bank.indexOf(b.inId);
       return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
     });
-    ui.lv = {mid: m.id, b: cur, sig, tab: 'nu', steps, open: null, more: false, anim: 'nieuw', stap: null};
+    ui.lv = {mid: m.id, b: cur, sig, tab: 'nu', steps, open: null, more: false};
   }
   return ui.lv;
 }
@@ -2644,10 +2640,15 @@ function lvPitch(m, lu, bench, mark, lab, rowOf, tap){
     ${veld}${bank}
   </div>`;
 }
-// ---- wissel voor wissel laten zien ----
-let lvBusy = false;
-const lvWait = ms => new Promise(r => setTimeout(r, ms));
-// hoeveel van het scherm wordt afgedekt door de vaste balken boven en onder
+// ---- wissel voor wissel laten zien, net zolang tot de wissels gedaan zijn ----
+let lvBusy = false, lvHalt = false;
+const lvSleep = ms => new Promise(r => setTimeout(r, ms));
+// wacht in stukjes, zodat we meteen kunnen stoppen als er iets anders gebeurt
+async function lvPauze(ms){
+  for (let over = ms; over > 0; over -= 50){ if (lvHalt) throw new Error('stop'); await lvSleep(Math.min(50, over)); }
+  if (lvHalt) throw new Error('stop');
+}
+// beide spelers in beeld brengen, onder de scorebalk en boven de knoppen
 function lvSafe(){
   let top = 0, bot = 0;
   document.querySelectorAll('.phases, .sbar').forEach(e => {
@@ -2658,20 +2659,17 @@ function lvSafe(){
   if (c){ const r = c.getBoundingClientRect(); if (r.top < innerHeight) bot = innerHeight - r.top; }
   return {top: top + 10, bot: bot + 10};
 }
-// beide spelers in beeld brengen, onder de scorebalk en boven de knoppen
 async function lvInView(a, b){
   const s = lvSafe();
   const r1 = a.getBoundingClientRect(), r2 = b.getBoundingClientRect();
   const boven = Math.min(r1.top, r2.top) + window.scrollY;
   const onder = Math.max(r1.bottom, r2.bottom) + window.scrollY;
   const ruimte = Math.max(120, innerHeight - s.top - s.bot);
-  let doel = (onder - boven) > ruimte
-    ? boven - s.top                                             // past niet samen: bovenste speler net onder de balk
-    : (boven + onder) / 2 - s.top - ruimte / 2;
+  let doel = (onder - boven) > ruimte ? boven - s.top : (boven + onder) / 2 - s.top - ruimte / 2;
   doel = Math.max(0, Math.min(Math.max(0, document.documentElement.scrollHeight - innerHeight), doel));
   if (Math.abs(doel - window.scrollY) > 16){
     try { window.scrollTo({top: doel, behavior: 'smooth'}); } catch(e){ window.scrollTo(0, doel); }
-    await lvWait(560);
+    await lvPauze(560);
   }
 }
 // pijl van de invaller naar de speler die eruit gaat
@@ -2699,7 +2697,7 @@ function lvArrow(pitchEl, a, b, aan){
   sv.classList.remove('on'); void sv.offsetWidth; sv.classList.add('on');
 }
 // één speler in een boogje naar een nieuwe plek
-function lvMove(pitchEl, el, naar, dur, bocht, handvat){
+function lvMove(pitchEl, el, naar, dur, bocht){
   const p = pitchEl.getBoundingClientRect();
   const vanX = parseFloat(el.style.left) / 100 * p.width, vanY = parseFloat(el.style.top) / 100 * p.height;
   const dx = parseFloat(naar.left) / 100 * p.width - vanX, dy = parseFloat(naar.top) / 100 * p.height - vanY;
@@ -2709,136 +2707,97 @@ function lvMove(pitchEl, el, naar, dur, bocht, handvat){
     {transform: `translate(-50%,-50%) translate(${mx}px,${my}px) scale(1.14)`, offset: .5},
     {transform: `translate(-50%,-50%) translate(${dx}px,${dy}px) scale(1)`}
   ], {duration: dur, easing: 'cubic-bezier(.42,0,.26,1)', fill: 'forwards'});
-  const done = (a.finished || Promise.resolve()).then(() => {
+  return (a.finished || Promise.resolve()).then(() => {
     try { a.cancel(); } catch(e){}
     el.style.left = naar.left; el.style.top = naar.top;
   }).catch(() => {});
-  return handvat ? {anim: a, done} : done;
 }
-// de hele overgang: wissel voor wissel, met de rest op de achtergrond
-let lvAnim = null;                                            // {i, paused, stop, jump, running}
-// wachten dat op pauze blijft staan en afbreekt bij terugspoelen
-async function lvHold(ms){
-  let over = ms;
-  for (;;){
-    if (!lvAnim || lvAnim.stop) throw new Error('stop');
-    if (lvAnim.jump != null) throw new Error('jump');
-    if (over <= 0 && !lvAnim.paused) return;
-    await new Promise(r => setTimeout(r, 50));
-    if (!lvAnim.paused) over -= 50;
-  }
-}
-// de opstelling zoals die is na de eerste n wissels
-function lvStateAt(steps, n, nowLu, nowBench, m, cur){
-  const lu = workLineup(m, cur, steps, n), bench = nowBench.slice();
-  for (let k = 0; k < n; k++){
-    const st = steps[k]; if (!st || st.skip || !st.outId) continue;
-    const j2 = bench.indexOf(st.inId); if (j2 >= 0) bench[j2] = st.outId;
-  }
+// de opstelling met een stel wissels al uitgevoerd
+function lvApply(m, cur, gedaan, up){
+  const lu = (m.segments[cur] || []).slice(), bench = lvBench(m, cur, up);
+  (gedaan || []).forEach(st => {
+    if (!st || st.skip || !st.outId || !st.inId) return;
+    const i = lu.indexOf(st.outId); if (i < 0) return;
+    lu[i] = st.inId;
+    const j = bench.indexOf(st.inId); if (j >= 0) bench[j] = st.outId;
+  });
   return {lu, bench};
 }
-// het veld opnieuw tekenen op dat punt in de reeks
-function lvRepaint(m, cur, steps, n, up, nowLu, nowBench){
-  const {lu, bench} = lvStateAt(steps, n, nowLu, nowBench, m, cur);
+// het veld opnieuw tekenen met die stand van zaken
+function lvDraw(m, cur, gedaan, up){
+  const {lu, bench} = lvApply(m, cur, gedaan, up);
   const lab = {};
   lu.concat(bench).forEach(id => { if (id) lab[id] = Math.round(up[id] || 0) + "'"; });
   const oud = app.querySelector('.pitch.lvp');
   if (oud) oud.outerHTML = lvPitch(m, lu, bench, {}, lab, {}, () => '');
-  const lv = ui.lv;
-  app.querySelectorAll('.lvrw').forEach((e, k) => {
-    const idx = lv ? (lv.steps || []).indexOf(steps[n]) : -1;
-    e.className = 'lvrw' + (lv && (lv.steps || []).indexOf(steps[n]) === k ? ' bezig' : (lvRowDone(lv, steps, n, k) ? ' af' : ''));
-  });
+  return !!oud;
 }
-function lvRowDone(lv, steps, n, k){
-  if (!lv) return false;
-  for (let q = 0; q < n; q++) if ((lv.steps || []).indexOf(steps[q]) === k) return true;
-  return false;
-}
-// twee spelers tegelijk van plek laten ruilen, met pauze- en stopknop
-async function lvMoveBoth(pitchEl, a, pa, b, pb){
-  const an = [lvMove(pitchEl, a, pa, 1150, 20, true), lvMove(pitchEl, b, pb, 1150, -20, true)];
-  lvAnim.running = an.map(x => x.anim).filter(Boolean);
-  if (lvAnim.paused) lvAnim.running.forEach(x => { try { x.pause(); } catch(e){} });
-  const wacht = Promise.all(an.map(x => x.done));
-  for (;;){
-    if (!lvAnim || lvAnim.stop || lvAnim.jump != null){
-      lvAnim && lvAnim.running.forEach(x => { try { x.cancel(); } catch(e){} });
-      lvAnim && (lvAnim.running = []);
-      throw new Error(lvAnim && lvAnim.jump != null ? 'jump' : 'stop');
-    }
-    const klaar = await Promise.race([wacht.then(() => true), new Promise(r => setTimeout(() => r(false), 60))]);
-    if (klaar) break;
-  }
-  lvAnim.running = [];
-}
-async function lvStep(m, cur, steps, up, nowLu, nowBench){
-  const i = lvAnim.i, st = steps[i], lv = ui.lv;
+// één wissel laten zien
+async function lvAnimOne(m, cur, st){
   const pitchEl = app.querySelector('.pitch.lvp'); if (!pitchEl) throw new Error('stop');
   const inEl = pitchEl.querySelector(`[data-pid="${st.inId}"]`), uitEl = pitchEl.querySelector(`[data-pid="${st.outId}"]`);
   if (!inEl || !uitEl) return;
-  const k = lv ? (lv.steps || []).indexOf(st) : -1;
-  app.querySelectorAll('.lvrw').forEach((e, q) => { if (q === k) e.className = 'lvrw bezig'; });
+  const lv = ui.lv, k = lv ? (lv.steps || []).indexOf(st) : -1;
+  const rij = k >= 0 ? app.querySelectorAll('.lvrw')[k] : null;
+  if (rij) rij.classList.add('bezig');
   pitchEl.querySelectorAll('.pl').forEach(e => { if (e !== inEl && e !== uitEl) e.classList.add('dim'); });
   inEl.classList.add('act', 'rin', 'pulsein'); uitEl.classList.add('act', 'rout', 'pulseout');
-  await lvInView(inEl, uitEl);
-  await lvHold(200);
-  lvArrow(pitchEl, inEl, uitEl, true);
-  await lvHold(640);
-  lvArrow(pitchEl, inEl, uitEl, false);
-  inEl.classList.remove('pulsein'); uitEl.classList.remove('pulseout');
-  const pa = {left: inEl.style.left, top: inEl.style.top}, pb = {left: uitEl.style.left, top: uitEl.style.top};
-  inEl.classList.remove('bch'); uitEl.classList.add('bch');
-  await lvMoveBoth(pitchEl, inEl, pb, uitEl, pa);
-  if (k >= 0){ const e = app.querySelectorAll('.lvrw')[k]; if (e) e.className = 'lvrw af'; }
-  await lvHold(400);
-  pitchEl.querySelectorAll('.pl').forEach(e => e.classList.remove('dim'));
-  inEl.classList.remove('act', 'rin'); uitEl.classList.remove('act', 'rout');
-  await lvHold(280);
-}
-const lvAantalWissels = () => ((ui.lv && ui.lv.steps) || []).filter(x => !x.skip && x.outId && x.inId).length;
-// de animatie stoppen en wachten tot de lus echt klaar is
-async function lvStop(){
-  if (lvAnim){ lvAnim.stop = true; lvAnim.paused = false; }
-  for (let i = 0; i < 60 && lvBusy; i++) await new Promise(r => setTimeout(r, 25));
-  lvBusy = false; lvAnim = null;
-}
-// de reeks (opnieuw) afspelen vanaf wissel n
-function lvPlay(m, n){
-  const lv = ui.lv; if (!lv) return;
-  lv.anim = 'bezig'; lv.open = null; lv.more = false;
-  render();
-  lvRunAnim(m, m.cur || 0, n);
-}
-function lvPlayIcon(gepauzeerd){
-  const b = document.getElementById('lvPlay'); if (!b) return;
-  b.innerHTML = gepauzeerd
-    ? '<svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg>'
-    : '<svg viewBox="0 0 24 24"><path d="M7 4h3.5v16H7zM13.5 4H17v16h-3.5z"/></svg>';
-  b.setAttribute('aria-label', gepauzeerd ? 'Verder afspelen' : 'Pauze');
-}
-async function lvRunAnim(m, cur, start){
-  const lv = ui.lv; if (!lv) return;
-  const klaar = () => { lvBusy = false; lvAnim = null; if (ui.lv){ ui.lv.anim = 'klaar'; } flipPrep(); render(); };
-  const steps = (lv.steps || []).filter(x => !x.skip && x.outId && x.inId);
-  if (!app.querySelector('.pitch.lvp') || !steps.length){ klaar(); return; }
-  lvBusy = true;
-  lvAnim = {i: Math.max(0, Math.min(steps.length - 1, start || 0)), paused: false, stop: false, jump: null, running: []};
-  const up = playedUpTo(m, cur);
-  const nowLu = (m.segments[cur] || []).slice(), nowBench = lvBench(m, cur, up);
-  if (lvAnim.i > 0){ lvRepaint(m, cur, steps, lvAnim.i, up, nowLu, nowBench); await new Promise(r => setTimeout(r, 260)); }
-  while (lvAnim && !lvAnim.stop && lvAnim.i < steps.length){
-    try { await lvStep(m, cur, steps, up, nowLu, nowBench); if (lvAnim) lvAnim.i++; }
-    catch(e){
-      if (!lvAnim || lvAnim.stop) break;
-      if (lvAnim.jump != null){
-        lvAnim.i = Math.max(0, Math.min(steps.length - 1, lvAnim.jump)); lvAnim.jump = null;
-        lvRepaint(m, cur, steps, lvAnim.i, up, nowLu, nowBench);
-        await new Promise(r => setTimeout(r, 320));
-      } else break;
-    }
+  try {
+    await lvInView(inEl, uitEl);
+    await lvPauze(200);
+    lvArrow(pitchEl, inEl, uitEl, true);
+    await lvPauze(640);
+    lvArrow(pitchEl, inEl, uitEl, false);
+    inEl.classList.remove('pulsein'); uitEl.classList.remove('pulseout');
+    const pa = {left: inEl.style.left, top: inEl.style.top}, pb = {left: uitEl.style.left, top: uitEl.style.top};
+    inEl.classList.remove('bch'); uitEl.classList.add('bch');
+    await Promise.all([lvMove(pitchEl, inEl, pb, 1150, 20), lvMove(pitchEl, uitEl, pa, 1150, -20)]);
+    await lvPauze(360);
+  } finally {
+    if (rij) rij.classList.remove('bezig');
+    pitchEl.querySelectorAll('.pl').forEach(e => e.classList.remove('dim', 'act', 'rin', 'rout', 'pulsein', 'pulseout'));
   }
-  klaar();
+}
+// blijft rondgaan zolang er wissels zijn die nog niet gedaan zijn
+async function lvRunLoop(m){
+  if (lvBusy) return;
+  lvBusy = true; lvHalt = false;
+  const cur = m.cur || 0, up = playedUpTo(m, cur);
+  try {
+    for (;;){
+      const lv = ui.lv;
+      if (!lv || lvHalt || lv.tab !== 'straks' || lv.b !== cur) break;
+      const alle = (lv.steps || []).filter(x => !x.skip && x.outId && x.inId);
+      const gedaan = alle.filter(x => x.ok), rest = alle.filter(x => !x.ok);
+      if (!rest.length) break;
+      const bezig = [];
+      for (const st of rest){
+        if (lvHalt || !ui.lv || ui.lv.tab !== 'straks') throw new Error('stop');
+        if (!lvDraw(m, cur, gedaan.concat(bezig), up)) throw new Error('stop');
+        await lvAnimOne(m, cur, st);
+        bezig.push(st);
+        await lvPauze(420);
+      }
+      await lvPauze(900);
+    }
+  } catch(e){}
+  lvBusy = false;
+  if (!lvHalt && ui.lv && ui.lv.tab === 'straks'){ flipPrep(); render(); }
+  else setTimeout(() => { try { lvMaybeStart(); } catch(e){} }, 60);   // onderbroken? kijk of hij weer moet lopen
+}
+// de lopende animatie afbreken (bij elke andere handeling)
+function lvStop(){ lvHalt = true; }
+// na elke render: loopt er nog iets wat getoond moet worden?
+function lvMaybeStart(){
+  if (lvBusy || !ui.matchId || ui.tab !== 'matches') return;
+  let m = null; try { m = match(); } catch(e){ return; }
+  if (!m || m.phase !== 'live' || ui.peek) return;
+  const lv = ui.lv;
+  if (!lv || lv.tab !== 'straks' || lv.b !== (m.cur || 0)) return;
+  if (!app.querySelector('.pitch.lvp')) return;
+  if (!(lv.steps || []).some(x => !x.skip && x.outId && x.inId && !x.ok)) return;
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  lvRunLoop(m);
 }
 // de opstellingskaart met de tabs Nu en Straks (of Einde in het laatste blok)
 function liveOpCard(m, times, cur, last){
@@ -2858,7 +2817,8 @@ function liveOpCard(m, times, cur, last){
   const rowOf = {}; steps.forEach((s, k) => { if (s.inId) rowOf[s.inId] = k; if (s.outId) rowOf[s.outId] = k; });
 
   const viewB = typeof lv.tab === 'number' && lv.tab !== cur ? Math.max(0, Math.min(last, lv.tab)) : null;
-  const bezig = lv.anim === 'bezig';                           // de wissels worden nu één voor één getoond
+  const open2 = (lv.steps || []).filter(x => !x.skip && x.outId && x.inId && !x.ok);
+  const bezig = lv.tab === 'straks' && toB != null && open2.length > 0;   // de wissels lopen nog rond
   const straks = lv.tab === 'straks' && toB != null;
   const einde = lv.tab === 'straks' && toB == null;
   const mark = {}, lab = {};
@@ -2887,7 +2847,8 @@ function liveOpCard(m, times, cur, last){
   const tapNow = (id, slot) => slot != null ? `data-act="tapField" data-i="${slot}" role="button" tabindex="0"` : '';
   const tapNext = id => rowOf[id] != null ? `data-act="lvOpen" data-i="${rowOf[id]}" role="button" tabindex="0"` : '';
   const veld = bezig && straks
-    ? lvPitch(m, nowLu, nowBench, {}, Object.fromEntries(nowLu.concat(nowBench).filter(Boolean).map(id => [id, Math.round(up[id] || 0) + "'"])), {}, () => '')
+    ? (() => { const g = (lv.steps || []).filter(x => x.ok && !x.skip && x.outId && x.inId), st2 = lvApply(m, cur, g, up);
+        return lvPitch(m, st2.lu, st2.bench, {}, Object.fromEntries(st2.lu.concat(st2.bench).filter(Boolean).map(id => [id, Math.round(up[id] || 0) + "'"])), {}, () => ''); })()
     : viewB != null
     ? lvPitch(m, viewLu, viewBench, mark, lab, {}, () => '')
     : (straks || einde)
@@ -2916,18 +2877,8 @@ function liveOpCard(m, times, cur, last){
     : `<div class="lvrows">${steps.map((s, k) => lvRow(m, lv, k, up)).join('') || '<div class="muted" style="padding:4px 2px">Geen wissels gepland: iedereen blijft staan.</div>'}</div>`;
 
   const cnt = '';
-  const ctrl = straks && actief.length ? `<div class="lvctrl">
-    <button data-act="lvAnimFirst" aria-label="Terug naar het begin"><svg viewBox="0 0 24 24"><path d="M7 5h2.5v14H7zM20 5v14l-10-7z"/></svg></button>
-    <button data-act="lvAnimBack" aria-label="Eén wissel terug"><svg viewBox="0 0 24 24"><path d="M11 5v14l-8-7zM21 5v14l-8-7z"/></svg></button>
-    <button data-act="lvAnimPlay" aria-label="${bezig ? 'Pauze' : 'Opnieuw afspelen'}" id="lvPlay">${bezig
-      ? '<svg viewBox="0 0 24 24"><path d="M7 4h3.5v16H7zM13.5 4H17v16h-3.5z"/></svg>'
-      : '<svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg>'}</button>
-    <button class="geel" data-act="lvAnimFwd" aria-label="Eén wissel vooruit"><svg viewBox="0 0 24 24"><path d="M3 5v14l8-7zM13 5v14l8-7z"/></svg></button>
-    <button class="geel" data-act="lvAnimEnd" aria-label="Naar het einde"><svg viewBox="0 0 24 24"><path d="M17 5h-2.5v14H17zM4 5v14l10-7z"/></svg></button>
-  </div>` : '';
-  const knoppen = bezig && straks
-    ? ''
-    : viewB != null
+  const ctrl = '';
+  const knoppen = viewB != null
     ? `<button class="btn pri full prim" data-act="lvTab" data-v="nu">‹ Terug naar ${esc(blockLabel(m, cur))}</button>`
     : (!straks && !einde)
     ? `<button class="btn sec full" data-act="lvMid">Tussendoor wisselen</button>`
@@ -2961,10 +2912,11 @@ function lvRow(m, lv, k, up){
       <button class="lvpill ${s.skip ? 'on' : ''} geen" data-act="lvSkip" data-i="${k}">Geen wissel</button>
     </div>`;
   }
-  return `<div class="lvrw ${open ? 'open' : ''}">
+  return `<div class="lvrw ${open ? 'open' : ''} ${s.ok ? 'af' : ''}">
     <div class="lvrh">
       <span class="lvnum">${k + 1}</span>
       <span class="lvtx"><b>${esc(pshort(player(s.inId)))}</b> erin voor <b class="${s.skip || !s.outId ? 'dim' : 'uit'}">${s.skip || !s.outId ? 'niemand' : esc(pshort(player(s.outId)))}</b><small>${sub}</small></span>
+      ${s.skip || !s.outId ? '' : `<button class="lvok ${s.ok ? 'on' : ''}" data-act="lvDone" data-i="${k}" aria-pressed="${!!s.ok}">✓ ${s.ok ? 'Gedaan' : 'Doen'}</button>`}
       <button class="lvand" data-act="lvOpen" data-i="${k}">${open ? 'Sluit' : 'Andere'}</button>
     </div>${pillen}</div>`;
 }
@@ -2986,7 +2938,7 @@ async function lvConfirm(m, to){
   const dev = steps.filter(x => x.skip || x.outId !== x.planned).length;
   if (dev) m.segments[to] = workLineup(m, cur, steps, steps.length);
   const back = cur;
-  m.cur = to; ui.seg = to; ui.sel = null; ui.lv = null; lvBusy = false; commit(); logMet('blockNext', 0, String(dev));
+  m.cur = to; ui.seg = to; ui.sel = null; ui.lv = null; lvStop(); commit(); logMet('blockNext', 0, String(dev));
   toastUndo(`${blockLabel(m, to)} loopt`, () => {
     m.cur = back; ui.seg = back; m.segments = before; ui.lv = null; commit(); toast(`Terug naar ${blockLabel(m, back)}`);
   });
@@ -4610,41 +4562,25 @@ document.addEventListener('click', async e => {
       m.mid.splice(k, 1); commit(); toast('Wissel teruggedraaid'); break;
     }
     case 'wisselMenu': await wisselMenu(m); break;
-    case 'lvTab': { const lv = ui.lv; if (lv && !lvBusy){ const v = el.dataset.v, vorige = lv.tab;
-      const naarStraks = v === 'straks', spelen = naarStraks && vorige !== 'straks'
-        && (m.cur || 0) < segTimes(m.settings).length - 1
-        && (lv.steps || []).some(x => !x.skip && x.outId && x.inId)
-        && !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+    case 'lvTab': { const lv = ui.lv; if (lv){ lvStop(); const v = el.dataset.v;
       lv.tab = (v === 'nu' || v === 'straks') ? v : +v; lv.open = null; lv.more = false;
-      if (spelen){ lv.anim = 'bezig'; render(); lvRunAnim(m, m.cur || 0); }
-      else { if (naarStraks) lv.anim = 'klaar'; flipPrep(); render(); }
-    } break; }
-    case 'lvAnimFirst': if (lvAnim){ lvAnim.jump = 0; lvAnim.paused = false; lvPlayIcon(false); } else lvPlay(m, 0); break;
-    case 'lvAnimBack': { const n = lvAantalWissels();
-      if (lvAnim){ lvAnim.jump = Math.max(0, lvAnim.i - 1); lvAnim.paused = false; lvPlayIcon(false); }
-      else lvPlay(m, Math.max(0, n - 1)); break; }
-    case 'lvAnimFwd': { const n = lvAantalWissels();
-      if (lvAnim){ if (lvAnim.i + 1 >= n){ lvAnim.stop = true; } else { lvAnim.jump = lvAnim.i + 1; lvAnim.paused = false; lvPlayIcon(false); } } break; }
-    case 'lvAnimEnd': if (lvAnim) lvAnim.stop = true; break;
-    case 'lvAnimPlay': if (lvAnim){ lvAnim.paused = !lvAnim.paused;
-      lvAnim.running.forEach(x => { try { lvAnim.paused ? x.pause() : x.play(); } catch(e){} });
-      lvPlayIcon(lvAnim.paused); } else lvPlay(m, 0); break;
-    case 'lvOpen': { const lv = ui.lv; if (lv){ const k = +el.dataset.i;
-      await lvStop();
-      if (lv.tab !== 'straks'){ lv.tab = 'straks'; flipPrep(); } lv.anim = 'klaar';
+      flipPrep(); render(); } break; }
+    case 'lvDone': { const lv = ui.lv; if (lv){ lvStop(); const st = lv.steps[+el.dataset.i];
+      if (st) st.ok = !st.ok;
+      lv.open = null; lv.more = false; flipPrep(); render(); } break; }
+    case 'lvOpen': { const lv = ui.lv; if (lv){ lvStop(); const k = +el.dataset.i;
+      if (lv.tab !== 'straks'){ lv.tab = 'straks'; flipPrep(); }
       lv.open = lv.open === k ? null : k; lv.more = false; render(); } break; }
-    case 'lvMore': { const lv = ui.lv; if (lv){ lv.more = true; render(); } break; }
-    case 'lvPick': { const lv = ui.lv; if (lv){ await lvStop();
-      const st = lv.steps[+el.dataset.i]; if (st){ st.outId = id; st.skip = false; }
-      lvNormalize(m, lv); lv.open = null; lv.more = false;
-      if (lvAantalWissels()) lvPlay(m, 0); else { lv.anim = 'klaar'; flipPrep(); render(); } } break; }
-    case 'lvSkip': { const lv = ui.lv; if (lv){ await lvStop();
+    case 'lvMore': { const lv = ui.lv; if (lv){ lvStop(); lv.more = true; render(); } break; }
+    case 'lvPick': { const lv = ui.lv; if (lv){ lvStop();
+      const st = lv.steps[+el.dataset.i]; if (st){ st.outId = id; st.skip = false; st.ok = false; }
+      lvNormalize(m, lv); lv.open = null; lv.more = false; flipPrep(); render(); } break; }
+    case 'lvSkip': { const lv = ui.lv; if (lv){ lvStop();
       const st = lv.steps[+el.dataset.i];
-      if (st){ st.skip = !st.skip; if (!st.skip && !st.outId) st.outId = st.planned; }
-      lvNormalize(m, lv); lv.open = null; lv.more = false;
-      if (lvAantalWissels()) lvPlay(m, 0); else { lv.anim = 'klaar'; flipPrep(); render(); } } break; }
-    case 'lvMid': if (!lvBusy) await midSubPick(m); break;
-    case 'lvGo': if (!lvBusy) await lvConfirm(m, (m.cur || 0) + 1); break;
+      if (st){ st.skip = !st.skip; st.ok = false; if (!st.skip && !st.outId) st.outId = st.planned; }
+      lvNormalize(m, lv); lv.open = null; lv.more = false; flipPrep(); render(); } break; }
+    case 'lvMid': lvStop(); await midSubPick(m); break;
+    case 'lvGo': lvStop(); await lvConfirm(m, (m.cur || 0) + 1); break;
     case 'regenRest': generate(m, false, ui.seg + 1); m.edited = true; commit(); toast('De rest van de wedstrijd is opnieuw eerlijk verdeeld'); break;
     case 'resetPos': delete m.posOverride; commit(); break;
     case 'addSub': await addSubFlow(m); break;
@@ -6743,7 +6679,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-24.2';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-24.3';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
