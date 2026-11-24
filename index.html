@@ -201,6 +201,9 @@
   body.livenow .livectl.stick{padding-right:0}
   /* bedieningsknoppen van de animatie: halve bolletjes aan de rechterrand */
   .lvctrl{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:45;display:flex;flex-direction:column;gap:8px}
+  .step.vast{border:0;background:none;padding:0;justify-content:center}
+  .step.vast b{font-size:34px;font-weight:900;min-width:0}
+  .vslot{margin-left:auto;font-size:12px;font-weight:800;color:var(--muted);white-space:nowrap}
   .lvctrl button.geel{background:var(--y);color:var(--on-y)}
   .lvctrl button.geel:active{background:var(--ybd)}
   .lvctrl button{width:58px;height:58px;margin-right:-25px;padding-right:25px;border:0;border-radius:50%;
@@ -2389,15 +2392,14 @@ function viewMatch(){
   <button class="btn pri full big" data-act="saveDone">✅ Opslaan als gespeeld</button>`;
 
   const doneCard = '';
+  const scoreVast = (k, label) => `<div class="sc"><div class="scl">${label}</div><div class="step vast"><b>${m[k] === '' || m[k] == null ? 0 : m[k]}</b></div></div>`;
   const scoreCard = `
   <div class="card">
     <h2>🏁 Eindstand</h2>
     <div class="scores">
-      ${m.home === false ? scoreStep('goalsAgainst', esc(m.opponent || 'Tegenstander')) + scoreStep('goalsFor', esc(team().name)) : scoreStep('goalsFor', esc(team().name)) + scoreStep('goalsAgainst', esc(m.opponent || 'Tegenstander'))}
+      ${m.home === false ? scoreVast('goalsAgainst', esc(m.opponent || 'Tegenstander')) + scoreVast('goalsFor', esc(team().name)) : scoreVast('goalsFor', esc(team().name)) + scoreVast('goalsAgainst', esc(m.opponent || 'Tegenstander'))}
     </div>
-    <div class="muted" style="margin-top:8px">${scorerTotal !== (+m.goalsFor || 0)
-      ? `<span style="color:var(--red)">Nog ${Math.abs((+m.goalsFor || 0) - scorerTotal)} doelpunt${Math.abs((+m.goalsFor || 0) - scorerTotal) === 1 ? '' : 'en'} zonder maker.</span> Vul ze hieronder in het verloop in.`
-      : 'Doelpuntenmakers en assists vul je hieronder in het verloop in.'}</div>
+    <div class="muted" style="margin-top:8px">Deze wedstrijd staat op Klaar en ligt vast. Wil je nog iets wijzigen, gebruik dan de knop onderaan.</div>
   </div>`;
 
   let body;
@@ -3293,13 +3295,15 @@ async function minsSheet(m){
 
 // kaart na de wedstrijd: het hele verloop, met de schakelaar Aanpassen
 function vloopCard(m, times){
-  const ed = !!ui.vedit, items = vloopItems(m);
+  const slot = m.phase === 'done';                           // op Klaar ligt alles vast
+  const ed = !slot && !!ui.vedit, items = vloopItems(m);
   const ids = (m.present || []).filter(id => player(id)), f = fairOfMatch(m);
   return `<div class="card livehead">
     <div class="vhead"><div class="lhblk">Verloop</div>
-      <button class="switch ${ed ? 'on' : ''}" data-act="vedit" role="switch" aria-checked="${ed}" aria-label="Verloop aanpassen"><i></i></button>
-      <span class="vswl">Aanpassen</span></div>
-    <div class="lhsub">${ed ? `Tik op een wissel of doelpunt om het aan te passen, of op ＋ om er een toe te voegen. Speeltijd rekent direct mee.`
+      ${slot ? '<span class="vslot">🔒 vastgelegd</span>' : `<button class="switch ${ed ? 'on' : ''}" data-act="vedit" role="switch" aria-checked="${ed}" aria-label="Verloop aanpassen"><i></i></button>
+      <span class="vswl">Aanpassen</span>`}</div>
+    <div class="lhsub">${slot ? 'De wedstrijd staat op Klaar. Zet hem terug op Na wedstrijd om nog iets te wijzigen.'
+      : ed ? `Tik op een wissel of doelpunt om het aan te passen, of op ＋ om er een toe te voegen. Speeltijd rekent direct mee.`
       : 'Zet Aanpassen aan om wissels te wijzigen of toe te voegen.'}</div>
     <div class="vl">${items.map(x => vloopRow(x, m, {edit: ed})).join('')}</div>
     <div class="vfoot"><span>Speeltijd <b>${ids.length}</b> spelers · eerlijkheid <b>${f == null ? '–' : f}</b></span>
@@ -4377,6 +4381,11 @@ document.addEventListener('click', async e => {
   if (act === 'verifyMail'){ try { await cloud.api.sendVerify(); tell('We hebben je een e-mail gestuurd. Klik op de link erin en log daarna opnieuw in.'); } catch(e){ tell('Versturen lukt niet: ' + (e.message || e)); } return; }
   if (act === 'voStop'){ stopWatching(); return; }
   const tgt = el.dataset.scope === 'match' ? m && m.settings : se;
+  // een wedstrijd op Klaar ligt vast: niets aan de stand of het verloop wijzigen
+  if (m && m.phase === 'done' && /^(score|goalUs|goalThem|vedit|subAdd|subEdit|goalEdit|midUndo|saveDone)$/.test(act)){
+    toast('Deze wedstrijd staat op Klaar. Zet hem op Na wedstrijd om nog iets te wijzigen.');
+    return;
+  }
   switch (act){
     case 'team': S.active.team = id; ui.matchId = null; ui.sel = null; ui.tab = 'matches'; commit(); window.scrollTo(0, 0); break;
     case 'goSettings': { const r = await newTeamDialog(); if (r && r.join) await pasteInvite(); else if (r) createTeam(r.name, r.club, r.season); break; }
@@ -4573,7 +4582,7 @@ document.addEventListener('click', async e => {
     case 'clearSeg': m.segments[ui.seg] = m.segments[ui.seg].map(() => null); m.edited = true; commit(); break;
     case 'midSub': await midSubPick(m); break;
     case 'vloop': await vloopSheet(m); break;
-    case 'vedit': ui.vedit = !ui.vedit; render(); break;
+    case 'vedit': if (m.phase !== 'done'){ ui.vedit = !ui.vedit; render(); } break;
     case 'minsSheet': await minsSheet(m); break;
     case 'goalEdit': await goalEditSheet(m, id); break;
     case 'subAdd': {
@@ -6734,7 +6743,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-24.1';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-24.2';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
