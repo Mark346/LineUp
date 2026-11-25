@@ -1003,8 +1003,8 @@
   .svopt i{position:absolute;top:-8px;right:-6px;width:24px;height:24px;border-radius:50%;background:var(--txt);color:var(--bg);font-style:normal;font-weight:900;font-size:13px;display:flex;align-items:center;justify-content:center}
   @media print{
     body{background:#fff;color:#000;padding:0}
-    header,nav,main,.toast{display:none!important}
-    #print{display:block;font-family:Arial,sans-serif;color:#000}
+    body > *:not(#print){display:none!important}
+    #print{display:block!important;font-family:Arial,sans-serif;color:#000}
     #print h2{margin:0 0 4px}
     #print .pg{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:10px}
     #print .pitch{print-color-adjust:exact;-webkit-print-color-adjust:exact}
@@ -1012,6 +1012,8 @@
     #print .seg{break-inside:avoid}
     #print table{border-collapse:collapse;width:100%;font-size:12px;margin-top:14px}
     #print td,#print th{border:1px solid #999;padding:4px;text-align:center}
+    #print thead{display:table-header-group}
+    #print tr{break-inside:avoid}
   }
   #print{display:none}
 
@@ -6669,7 +6671,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-24.5';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-25.1';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
@@ -7981,8 +7983,8 @@ function buildPrint(m){
     <div style="display:flex;align-items:center;gap:12px">${logoSrc ? `<img src="${logoSrc}" style="width:54px;height:54px;object-fit:contain">` : ''}<div><div style="font-weight:800;letter-spacing:.1em;color:#555;text-transform:uppercase">${esc(team().club || '')}</div><h2>${esc(matchTitle(m))}</h2></div></div>
     <div>${m.date ? fmtDate(m.date, {weekday:'long', day:'numeric', month:'long', year:'numeric'}) : ''} · ${settingsLine(m.settings)}</div>
     <div class="pg">${m.segments.map((lu, s) => `<div class="seg"><b>${blockLabel(m, s)} · ${times[s][0]}'–${times[s][1]}'</b>${pitchHTML(m, s, false)}<div style="font-size:12px;margin-top:4px">Reserve: ${benchIds(m, s).map(id => esc(pname(id))).join(', ') || '–'}</div></div>`).join('')}</div>
-    <table><tr><th>Speler</th>${times.map((t, i) => `<th>${blockLabel(m, i)}</th>`).join('')}<th>Minuten</th></tr>
-    ${Object.entries(stt).map(([id, r]) => `<tr><td style="text-align:left">${esc(pname(id))}</td>${r.per.map(c => `<td>${c || 'W'}</td>`).join('')}<td>${Math.round(r.mins)}'</td></tr>`).join('')}</table>`);
+    <table><thead><tr><th>Speler</th>${times.map((t, i) => `<th>${blockLabel(m, i)}</th>`).join('')}<th>Minuten</th></tr></thead><tbody>
+    ${Object.entries(stt).map(([id, r]) => `<tr><td style="text-align:left">${esc(pname(id))}</td>${r.per.map(c => `<td>${c || 'W'}</td>`).join('')}<td>${Math.round(r.mins)}'</td></tr>`).join('')}</tbody></table>`);
 }
 
 if (!S.active.team) S.active.team = S.teams[0].id;
