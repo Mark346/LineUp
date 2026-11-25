@@ -450,6 +450,11 @@
   .mhead .club{font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:800;color:var(--acc);margin-bottom:3px}
   .bigscore{font-size:52px;font-weight:900;text-align:center;margin-top:8px;letter-spacing:2px;background:linear-gradient(90deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent}
   .segs{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+  .pergroups{margin-bottom:12px}
+  .pergrp{margin-bottom:10px}
+  .perhd{display:flex;justify-content:space-between;align-items:baseline;margin:0 2px 5px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .perhd b{font-weight:800}
+  .pergrp .segs{margin-bottom:0;gap:5px;border-left:3px solid var(--line);padding-left:8px}
   .segs .pill{width:100%;text-align:left;font-size:15px;padding:11px 14px;border-radius:14px;display:flex;justify-content:space-between}
   .pill.now:not(.on){border-color:var(--acc);color:var(--acc)}
   .wissel{background:var(--soft);border-radius:12px;padding:10px 12px;margin-bottom:10px;font-size:15px}
@@ -750,6 +755,7 @@
   .fs1 .mhead .mt{font-size:26px}.fs1 .mhead .muted{font-size:16px}
   .fs1 .card h2{font-size:21px}
   .fs1 .segs .pill{font-size:18px;padding:13px 14px}
+  .fs1 .perhd{font-size:14px}
   .fs1 .wissel{font-size:19px;line-height:1.35}
   .fsz.fs1 .pitch .pl{width:112px}.fsz.fs1 .pitch .pl .dot{width:52px;height:52px;font-size:15px}.fsz.fs1 .pitch .pl .nm{font-size:17px;max-width:112px;padding:3px 9px}
   .fsz.fs1 .pitch.md .pl{width:96px}.fsz.fs1 .pitch.md .pl .nm{font-size:15px;max-width:96px}
@@ -765,6 +771,7 @@
   .fs2 .mhead .mt{font-size:30px}.fs2 .mhead .muted{font-size:18px}
   .fs2 .card h2{font-size:24px}
   .fs2 .segs .pill{font-size:21px;padding:15px 16px}
+  .fs2 .perhd{font-size:16px}
   .fs2 .wissel{font-size:22px;line-height:1.35}
   .fsz.fs2 .pitch .pl{width:130px}.fsz.fs2 .pitch .pl .dot{width:60px;height:60px;font-size:17px}.fsz.fs2 .pitch .pl .nm{font-size:21px;max-width:130px;padding:3px 10px}
   .fsz.fs2 .pitch.md .pl{width:108px}.fsz.fs2 .pitch.md .pl .nm{font-size:18px;max-width:108px}
@@ -1181,7 +1188,7 @@ const KMODES = [
   {v:'helft', t:'Wissel in rust', s:'2 kiepers'},
   {v:'blok',  t:'Elk wisselmoment', s:'per blok'}
 ];
-const LIMITS = {fieldPlayers:[4,11,1], subMoments:[0,12,1], matchMinutes:[10,120,5], maxSubs:[0,20,1]};
+const LIMITS = {fieldPlayers:[4,11,1], subMoments:[0,12,1], matchMinutes:[10,120,5], maxSubs:[0,20,1], periods:[1,8,1], perPeriod:[1,6,1]};
 
 function getFormation(fp, name){ const list = FORMATIONS[fp] || FORMATIONS[11]; return list.find(f => f.n === name) || list[0]; }
 function positions(fp, name){
@@ -1203,9 +1210,16 @@ function positions(fp, name){
   return out;
 }
 const hasKeeper = st => positions(st.fieldPlayers, st.formation)[0].line === 'K';
+// oude wedstrijden hadden alleen blokken: leid daar periodes uit af
+function splitPeriods(n, base){
+  if (base == null) return {periods: 1, perPeriod: n};              // niets bekend: alles in periode 1
+  if (base !== n) return {periods: base, perPeriod: Math.max(1, Math.round(n / base))};
+  const P = n <= 4 ? n : n % 4 === 0 ? 4 : n % 2 === 0 ? 2 : 1;     // 8 blokken was bijna altijd 4 periodes
+  return {periods: P, perPeriod: n / P};
+}
 
 function defaultSeason(name, fp, formation, subs, minutes){
-  return {id:uid(), name, fieldPlayers:fp, formation, subMoments:subs, matchMinutes:minutes, keeperMode:'vast', players:[], matches:[]};
+  return {id:uid(), name, fieldPlayers:fp, formation, subMoments:subs, matchMinutes:minutes, periods:subs + 1, perPeriod:1, keeperMode:'vast', players:[], matches:[]};
 }
 function seasonName(){ const d = new Date(), y = d.getFullYear(); return d.getMonth() >= 6 ? `${y}-${y+1}` : `${y-1}-${y}`; }
 function defaultState(){
@@ -1232,6 +1246,9 @@ function normalize(){
   S.teams.forEach(t => { if (t.club === undefined) t.club = ''; });
   if (!S.pal1){ const old = ['#c8102e', '#1b1b1f', '#9e0b23', '#2563eb', '#1f9d55', '#f5c518', '#ff7a1a']; const pal = ['#c6ff3d', '#22d3ee', '#ff8a1f', '#8b5cf6', '#ff4d8d', '#34f5a4']; S.teams.forEach((t, i) => { if (!t.color || old.includes(t.color)) t.color = pal[i % pal.length]; }); S.pal1 = true; }
   S.teams.forEach(t => { if (!t.color || ['#f5c518', '#ff7a1a'].includes(t.color)) t.color = '#c8102e'; });
+  S.teams.forEach(t => t.seasons.forEach(se => {
+    if (se.periods == null) Object.assign(se, splitPeriods((se.subMoments || 0) + 1, (se.subMoments || 0) + 1));
+  }));
   S.teams.forEach(t => t.seasons.forEach(se => se.matches.forEach(m => {
     if (!m.keepers){ m.keepers = {}; if (m.keeperId) m.keepers[0] = m.keeperId; }
     if (!m.settings.keeperMode) m.settings.keeperMode = se.keeperMode || 'vast';
@@ -1239,6 +1256,8 @@ function normalize(){
     if (!m.phase){ m.phase = scored && m.segments ? 'done' : 'prep'; if (m.phase !== 'prep') m.cutsLocked = true; }
     m.goals = m.goals || {};
     if (m.settings.base === undefined) m.settings.base = Array.isArray(m.settings.cuts) ? null : m.settings.subMoments + 1;
+    if (m.settings.periods == null) Object.assign(m.settings, splitPeriods((m.settings.subMoments || 0) + 1, m.settings.base));
+    m.settings.base = m.settings.periods;
     if (!m.segments){ const n = positions(m.settings.fieldPlayers, m.settings.formation).length; m.segments = Array.from({length: m.settings.subMoments + 1}, () => Array(n).fill(null)); }
   })));
 }
@@ -1466,7 +1485,7 @@ function tourNewMatch(t, round){
   const se = season();
   const m = {id: uid(), opponent: '', date: t.date, home: true, tourId: t.id, round: round || 'poule',
     present: (t.present || []).slice(), keepers: {}, goalsFor: '', goalsAgainst: '',
-    settings: {fieldPlayers: se.fieldPlayers, formation: se.formation, subMoments: se.subMoments, matchMinutes: se.matchMinutes, keeperMode: se.keeperMode, base: se.subMoments + 1},
+    settings: {fieldPlayers: se.fieldPlayers, formation: se.formation, subMoments: se.subMoments, matchMinutes: se.matchMinutes, keeperMode: se.keeperMode, periods: periodCount(se), perPeriod: Math.max(1, +se.perPeriod || 1), base: periodCount(se)},
     segments: Array.from({length: se.subMoments + 1}, () => Array(positions(se.fieldPlayers, se.formation).length).fill(null)),
     phase: 'prep', cur: 0, goals: {}};
   se.matches.push(m); ui.open = {}; ui.tourId = null; ui.matchId = m.id; ui.seg = 0; ui.sel = null; commit(); window.scrollTo(0, 0);
@@ -2063,17 +2082,34 @@ function kmodeSeg(st, scope){
   return `<div class="segc">${KMODES.map(o => `<button class="${st.keeperMode === o.v ? 'on' : ''}" data-act="kmode" data-v="${o.v}" data-scope="${scope}">${o.t}<br><span style="font-weight:400;font-size:11px">${o.s}</span></button>`).join('')}</div>`;
 }
 function settingsBlock(st, scope){
-  const blocks = st.subMoments + 1, len = Math.round(st.matchMinutes / blocks);
   return `
     ${stepper('⚽ Spelers in het veld', `${st.fieldPlayers} tegen ${st.fieldPlayers}, incl. kieper`, 'fieldPlayers', st.fieldPlayers, scope)}
-    ${stepper('🔁 Wisselmomenten', `${blocksText(blocks)} van ±${len} min`, 'subMoments', st.subMoments, scope)}
+    ${stepper('⏳ Periodes', periodsText(st), 'periods', periodCount(st), scope)}
+    ${stepper('🔁 Blokken per periode', blocksText(st), 'perPeriod', Math.max(1, +st.perPeriod || 1), scope)}
     ${stepper('⏱️ Speelduur', 'minuten totaal', 'matchMinutes', st.matchMinutes, scope)}
     ${scope === 'season' && st.fieldPlayers >= 11 ? stepper('🔢 Maximum wisselmomenten', (st.maxSubs ? 'KNVB-maximum bij doorwisselen; tussendoor wisselen telt mee' : 'Uit: geen teller tijdens de wedstrijd'), 'maxSubs', st.maxSubs || 0, scope) : ''}
     <div class="set"><div class="lbl">📐 Formatie</div><select data-act="formation" data-scope="${scope}" style="width:auto;flex:none">${FORMATIONS[st.fieldPlayers].map(f => `<option ${f.n === st.formation ? 'selected' : ''}>${esc(f.n)}</option>`).join('')}</select></div>
 `;
 }
+// de blokken op een rij, gegroepeerd onder hun periode
+function segStrip(m, times){
+  const st = m.settings, P = periodCount(st), per = periodOfSeg(st);
+  const groep = per.some(k => blocksIn(per, k) > 1);
+  const pill = i => `<button class="pill ${i === ui.seg ? 'on' : ''}" data-act="seg" data-i="${i}"><span>${esc(groep ? `Blok ${i + 1}` : blockLabel(m, i))}</span><span>${times[i][0]}'–${times[i][1]}'</span></button>`;
+  if (!groep) return `<div class="segs">${times.map((t, i) => pill(i)).join('')}</div>`;
+  let out = '';
+  for (let k = 0; k < P; k++){
+    const idx = per.map((x, i) => x === k ? i : -1).filter(i => i >= 0);
+    if (!idx.length) continue;
+    out += `<div class="pergrp"><div class="perhd"><b>${esc(periodName(k, P))}</b><span>${times[idx[0]][0]}'–${times[idx[idx.length - 1]][1]}'</span></div>
+      <div class="segs">${idx.map(pill).join('')}</div></div>`;
+  }
+  return `<div class="pergroups">${out}</div>`;
+}
 function settingsLine(st){
-  return `${st.fieldPlayers} tegen ${st.fieldPlayers} · ${esc(st.formation)} · ${st.matchMinutes} min · ${st.subMoments} wisselmoment${st.subMoments === 1 ? '' : 'en'}`;
+  const P = periodCount(st), bp = Math.max(1, +st.perPeriod || 1);
+  const pw = P === 2 ? '2 helften' : P === 4 ? '4 kwarten' : `${P} periode${P === 1 ? '' : 's'}`;
+  return `${st.fieldPlayers} tegen ${st.fieldPlayers} · ${esc(st.formation)} · ${st.matchMinutes} min · ${pw}${bp > 1 ? ` × ${bp} blokken` : ''}`;
 }
 const fmtDate = (d, o) => d ? new Date(d + 'T12:00').toLocaleDateString('nl-NL', o || {weekday:'short', day:'numeric', month:'short'}) : 'Geen datum';
 const hasScore = m => m.goalsFor !== '' && m.goalsFor != null && m.goalsAgainst !== '' && m.goalsAgainst != null;
@@ -2244,9 +2280,9 @@ function viewMatch(){
   const ph = m.phase || 'prep';
   if (ph === 'prep' && !m.cutsLocked){ // in de voorbereiding volgt de wedstrijd de instellingen
     let changed = false;
-    ['fieldPlayers', 'formation', 'subMoments', 'matchMinutes'].forEach(k => { if (m.settings[k] !== se[k]){ m.settings[k] = se[k]; changed = true; } });
+    ['fieldPlayers', 'formation', 'subMoments', 'matchMinutes', 'periods', 'perPeriod'].forEach(k => { if (m.settings[k] !== se[k]){ m.settings[k] = se[k]; changed = true; } });
     if (changed){ delete m.settings.cuts; delete m.posOverride; fitSegments(m); save(); }
-    if (m.settings.base !== se.subMoments + 1){ m.settings.base = se.subMoments + 1; save(); }
+    if (m.settings.base !== periodCount(m.settings)){ m.settings.base = periodCount(m.settings); save(); }
   }
   const st = m.settings, times = segTimes(st);
   if (ui.seg >= times.length) ui.seg = 0;
@@ -2292,7 +2328,7 @@ function viewMatch(){
            <div class="grid2" style="margin-bottom:6px"><button class="btn" data-act="autoAll">⚡ Alles automatisch</button><button class="btn" data-act="autoMix">🔀 Andere verdeling</button></div>
            ${usePos() ? '' : '<div class="muted" style="margin:-6px 0 12px;font-size:12px">Tip: zet bij Instellingen de voorkeursposities aan, dan kiest de app ook de plekken.</div>'}`
         : `<div class="muted" style="margin-bottom:10px">Zet per blok je spelers neer: eerst de start, dan de volgende wissels. Bij een nieuw blok wordt het vorige overgenomen. Tip: zet bij Instellingen de voorkeursposities aan, dan kan de app alles automatisch opstellen.</div>`) : ''}
-      ${ph === 'live' || ph === 'post' ? '' : `<div class="segs">${times.map((t, i) => `<button class="pill ${i === ui.seg ? 'on' : ''}" data-act="seg" data-i="${i}"><span>${blockLabel(m, i)}</span><span>${t[0]}'–${t[1]}'</span></button>`).join('')}</div>`}
+      ${ph === 'live' || ph === 'post' ? '' : segStrip(m, times)}
       ${ph === 'post' ? `<div class="segnow">Opstelling van <b>${esc(blockLabel(m, ui.seg))}</b> · ${times[ui.seg][0]}'–${times[ui.seg][1]}'</div>` : ''}
       ${ph === 'live' && ui.peek ? `<div class="peekbar"><span>👁️ Je kijkt alleen naar <b>${esc(blockLabel(m, ui.seg))}</b>. Nu loopt <b>${esc(blockLabel(m, cur))}</b>.</span><button class="btn sm" data-act="seg" data-i="${cur}">Terug naar ${esc(blockLabel(m, cur))}</button></div>` : ''}
       ${ui.seg > 0 && !(ph === 'live' && !ui.peek) ? (() => {
@@ -2539,8 +2575,10 @@ function vloopRow(it, m, opts){
   }
   return '';
 }
-const blockWord = m => /kwart/i.test(blockLabel(m, 0)) ? 'kwart' : /helft/i.test(blockLabel(m, 0)) ? 'helft' : 'blok';
-const shortBlock = (m, b) => { const l = blockLabel(m, b), mm = l.match(/^(\d+e)/); return mm ? mm[1] : String(b + 1); };
+const blockWord = m => { const st = m.settings, P = periodCount(st), per = periodOfSeg(st);
+  if (per.some((x, i) => blocksIn(per, x) > 1)) return 'blok';
+  return P === 4 ? 'kwart' : P === 2 ? 'helft' : 'blok'; };
+const shortBlock = (m, b) => { const l = blockShort(m, b), mm = l.match(/^(\d+e)/); return mm ? mm[1] : String(b + 1); };
 const teamOpp = m => (m.opponent || '').trim();
 
 /* ===================== LIVE: OPSTELLING NU, RESERVES EN STRAKS ===================== */
@@ -2845,7 +2883,7 @@ function liveOpCard(m, times, cur, last){
   const chips = times.map((t, i) => {
     if (i === cur) return chip('nu', !straks && !einde && viewB == null, 'Nu', esc(blockLabel(m, i)), 'wide');
     if (i === cur + 1) return chip('straks', straks, 'Straks', `${esc(blockLabel(m, i))} · ${actief.length} wissel${actief.length === 1 ? '' : 's'}`, 'wide');
-    return chip(String(i), viewB === i, esc(blockLabel(m, i)), i === cur - 1 ? 'vorige' : `${t[0]}'–${t[1]}'`);
+    return chip(String(i), viewB === i, esc(blockShort(m, i)), i === cur - 1 ? 'vorige' : `${t[0]}'–${t[1]}'`);
   });
   if (toB == null) chips.push(chip('straks', einde, 'Einde', 'eindminuten', 'wide'));
   const tabs = `<div class="lvtabs">${chips.join('')}</div>`;
@@ -4252,7 +4290,7 @@ function newMatch(){
   const se = season();
   const m = {id:uid(), opponent:'', date:new Date().toISOString().slice(0, 10), home:true,
     present: se.players.map(p => p.id), keepers:{}, goalsFor:'', goalsAgainst:'',
-    settings:{fieldPlayers:se.fieldPlayers, formation:se.formation, subMoments:se.subMoments, matchMinutes:se.matchMinutes, keeperMode:se.keeperMode, base:se.subMoments + 1},
+    settings:{fieldPlayers:se.fieldPlayers, formation:se.formation, subMoments:se.subMoments, matchMinutes:se.matchMinutes, keeperMode:se.keeperMode, periods:periodCount(se), perPeriod:Math.max(1, +se.perPeriod || 1), base:periodCount(se)},
     segments:Array.from({length: se.subMoments + 1}, () => Array(positions(se.fieldPlayers, se.formation).length).fill(null)),
     phase:'prep', cur:0, goals:{}};
   se.matches.push(m);
@@ -4284,6 +4322,14 @@ function swap(m, a, b){
   else { const f = a.type === 'f' ? a : b, bn = a.type === 'b' ? a : b; lu[f.i] = bn.id; }
   m.edited = true;
   if (ui.autoAt && Date.now() - ui.autoAt < 36e5){ ui.autoAt = 0; logMet('autoEdit'); }
+}
+// periodes × blokken per periode bepalen hoeveel blokken (en dus wisselmomenten) er zijn
+function syncBlocks(st){
+  st.periods = Math.max(1, +st.periods || 1);
+  st.perPeriod = Math.max(1, +st.perPeriod || 1);
+  st.subMoments = st.periods * st.perPeriod - 1;
+  st.base = st.periods;
+  delete st.cuts;
 }
 function fitSegments(m){
   const n = m.settings.subMoments + 1, len = positions(m.settings.fieldPlayers, m.settings.formation).length;
@@ -4479,7 +4525,8 @@ document.addEventListener('click', async e => {
       tgt[k] = Math.max(mn, Math.min(mx, (+tgt[k] || 0) + (+el.dataset.d) * stp));
       if (k === 'fieldPlayers') tgt.formation = FORMATIONS[tgt[k]][0].n;
       if (k !== 'fieldPlayers') delete tgt.cuts;
-      if (el.dataset.scope === 'match'){ if (k === 'fieldPlayers') delete m.posOverride; regenIfNeeded(m); }
+      if (k === 'periods' || k === 'perPeriod') syncBlocks(tgt);
+      if (el.dataset.scope === 'match'){ if (k === 'fieldPlayers') delete m.posOverride; if (k === 'periods' || k === 'perPeriod') fitSegments(m); regenIfNeeded(m); }
       commit(); break;
     }
     case 'kmode':
@@ -4881,7 +4928,7 @@ function applyKnvb(se, name){
   const fpChanged = se.fieldPlayers !== k.fp;
   se.fieldPlayers = k.fp; se.matchMinutes = k.min;
   if (fpChanged || !FORMATIONS[k.fp].some(f => f.n === se.formation)) se.formation = FORMATIONS[k.fp][0].n;
-  if (fpChanged) se.subMoments = k.fp >= 11 ? 1 : 3;
+  if (fpChanged){ se.periods = k.fp >= 11 ? 2 : 4; se.perPeriod = 1; syncBlocks(se); }
   return k;
 }
 const knvbMatches = (se, name) => { const k = knvbFor(name); return se.fieldPlayers === k.fp && se.matchMinutes === k.min; };
@@ -4925,15 +4972,38 @@ const canKeep = id => prefsOf(player(id)).includes('K');
 const prefTag = p => usePos() && prefsOf(p).length ? `<small class="pp">${prefsOf(p).map(c => c === 'K' ? '🧤' : prefName(c)).join(' · ')}</small>` : '';
 
 /* ===================== Wisselmomenten per wedstrijd ===================== */
-function periodName(k, base){ if (base === 2) return `${k + 1}e helft`; if (base === 4) return `${k + 1}e kwart`; return `${k + 1}e blok`; }
-function blockLabel(m, s){
-  const st = m.settings, times = segTimes(st), base = st.base || times.length;
-  if (base !== 2 && base !== 4) return `${s + 1}e blok`;
-  const plen = st.matchMinutes / base, start = times[s][0];
-  const k = Math.min(base - 1, Math.floor((start + 0.001) / plen));
-  return start === Math.round(k * plen) ? periodName(k, base) : `${periodName(k, base)} · wissel ${start}'`;
+function periodName(k, P){ return P === 2 ? `${k + 1}e helft` : P === 4 ? `${k + 1}e kwart` : `Periode ${k + 1}`; }
+const periodCount = st => Math.max(1, +st.periods || 1);
+// in welke periode valt elk blok? op speeltijd, zodat extra wissels blijven kloppen
+function periodOfSeg(st){
+  const times = segTimes(st), P = periodCount(st), plen = st.matchMinutes / P;
+  return times.map(t => Math.min(P - 1, Math.max(0, Math.floor((t[0] + 0.001) / plen))));
 }
-function blocksText(n){ return n === 2 ? '2 helften' : n === 4 ? '4 kwarten' : `${n} blokken`; }
+const blocksIn = (per, k) => per.reduce((a, x) => a + (x === k ? 1 : 0), 0);
+// vol label: "2e kwart · Blok 3" als een periode meer blokken heeft, anders de periode zelf
+function blockLabel(m, s){
+  const st = m.settings, P = periodCount(st), per = periodOfSeg(st);
+  if (P <= 1) return per.length <= 1 ? 'Hele wedstrijd' : `Blok ${s + 1}`;
+  const k = per[s] ?? 0;
+  return blocksIn(per, k) > 1 ? `${periodName(k, P)} · Blok ${s + 1}` : periodName(k, P);
+}
+// kort label voor smalle plekken
+function blockShort(m, s){
+  const st = m.settings, P = periodCount(st), per = periodOfSeg(st);
+  if (P <= 1) return per.length <= 1 ? 'Wedstrijd' : `Blok ${s + 1}`;
+  const k = per[s] ?? 0;
+  return blocksIn(per, k) > 1 ? `Blok ${s + 1}` : periodName(k, P);
+}
+function periodsText(st){
+  const P = periodCount(st), len = Math.round(st.matchMinutes / P);
+  return P === 1 ? `1 periode van ${st.matchMinutes} min` : `${P === 2 ? '2 helften' : P === 4 ? '4 kwarten' : P + ' periodes'} van ±${len} min`;
+}
+function blocksText(st){
+  const P = periodCount(st), bp = Math.max(1, +st.perPeriod || 1), n = P * bp;
+  const len = Math.round(st.matchMinutes / n);
+  return bp === 1 ? `elke periode is één blok · ${n - 1} wisselmoment${n - 1 === 1 ? '' : 'en'}`
+    : `${n} blokken van ±${len} min · ${n - 1} wisselmomenten`;
+}
 function addSubMoment(m, min, s, pairs){
   const times = segTimes(m.settings);
   if (!m.settings.base) m.settings.base = m.cutsLocked ? null : times.length;
@@ -6671,7 +6741,7 @@ document.addEventListener('click', async e => {
 });
 
 /* ===================== Online samenwerken (Firebase, met inloggen) ===================== */
-const APP_VERSION = '2026-11-25.1';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
+const APP_VERSION = '2026-11-25.2';    // bij elke nieuwe versie aanpassen: telefoons laden dan vanzelf opnieuw
 // nieuwe versie op GitHub? dan automatisch verversen (ook als de app op het beginscherm staat)
 async function checkNewVersion(){
   if (!/^https?:/.test(location.protocol)) return;
@@ -7673,7 +7743,7 @@ async function onbStep(k){
 // eerste wedstrijd: in een paar stappen door de instellingen
 function firstMatchWizard(){
   const se = season(), t = team();
-  const st = {i: 0, fp: se.fieldPlayers, form: se.formation, min: se.matchMinutes, subs: se.subMoments, arr: arriveCfg(se).min, opp: '', date: new Date().toISOString().slice(0, 10), ko: '', home: true};
+  const st = {i: 0, fp: se.fieldPlayers, form: se.formation, min: se.matchMinutes, per: periodCount(se), bp: Math.max(1, +se.perPeriod || 1), arr: arriveCfg(se).min, opp: '', date: new Date().toISOString().slice(0, 10), ko: '', home: true};
   const k = knvbFor(t.name);
   return new Promise(res => {
     const d = document.createElement('div'); d.className = 'modal';
@@ -7685,8 +7755,9 @@ function firstMatchWizard(){
         <label class="f">Spelers in het veld (met keeper)<select id="wzFp">${Object.keys(FORMATIONS).map(n => `<option value="${n}" ${+n === st.fp ? 'selected' : ''}>${n} tegen ${n}</option>`).join('')}</select></label>
         <label class="f">Formatie<select id="wzForm">${forms.map(f => `<option ${f.n === st.form ? 'selected' : ''}>${esc(f.n)}</option>`).join('')}</select></label>`;
       if (st.i === 1) body = `<label class="f">Speeltijd in minuten (hele wedstrijd)<input id="wzMin" type="number" inputmode="numeric" value="${st.min}"></label>
-        <label class="f">Wisselmomenten<select id="wzSubs">${[0, 1, 2, 3, 4, 5, 6, 7].map(n => `<option value="${n}" ${n === st.subs ? 'selected' : ''}>${n === 0 ? 'Geen' : n === 1 ? '1 (rust: twee helften)' : n === 3 ? '3 (vier kwarten)' : n}</option>`).join('')}</select></label>
-        <div class="muted" style="font-size:13px">Bij elk wisselmoment maakt de app een nieuwe opstelling, zodat iedereen ongeveer even lang speelt.</div>`;
+        <label class="f">Periodes (officiële speeltijd)<select id="wzPer">${[1, 2, 3, 4, 5, 6].map(n => `<option value="${n}" ${n === st.per ? 'selected' : ''}>${n === 2 ? '2 (twee helften)' : n === 4 ? '4 (vier kwarten)' : n === 1 ? '1 (doorspelen)' : n}</option>`).join('')}</select></label>
+        <label class="f">Blokken per periode<select id="wzBp">${[1, 2, 3, 4].map(n => `<option value="${n}" ${n === st.bp ? 'selected' : ''}>${n === 1 ? '1 (niet wisselen binnen een periode)' : n}</option>`).join('')}</select></label>
+        <div class="muted" style="font-size:13px">Een blok is het stukje tussen twee wisselmomenten. ${st.per * st.bp} blok${st.per * st.bp === 1 ? '' : 'ken'} van ±${Math.round(st.min / (st.per * st.bp))} min; bij elk blok maakt de app een nieuwe opstelling.</div>`;
       if (st.i === 2) body = `<label class="f">Hoeveel minuten voor de aftrap moeten de spelers er zijn?<input id="wzArr" type="number" inputmode="numeric" value="${st.arr}"></label>
         <div class="muted" style="font-size:13px">Per wedstrijd kun je het altijd nog aanpassen.</div>`;
       if (st.i === 3) body = `<label class="f">Tegenstander<input id="wzOpp" value="${esc(st.opp)}" placeholder="bv. VV Oranje"></label>
@@ -7700,13 +7771,14 @@ function firstMatchWizard(){
     const read = () => {
       const v = id => d.querySelector('#' + id);
       if (st.i === 0){ st.fp = +v('wzFp').value; st.form = v('wzForm').value; }
-      if (st.i === 1){ st.min = Math.max(10, +v('wzMin').value || st.min); st.subs = +v('wzSubs').value; }
+      if (st.i === 1){ st.min = Math.max(10, +v('wzMin').value || st.min); st.per = +v('wzPer').value || 1; st.bp = +v('wzBp').value || 1; }
       if (st.i === 2){ st.arr = Math.max(0, +v('wzArr').value || 0); }
       if (st.i === 3){ st.opp = v('wzOpp').value.trim(); st.date = v('wzDate').value; }
     };
     d.addEventListener('change', e => {
       e.stopPropagation();
       if (e.target.id === 'wzFp'){ st.fp = +e.target.value; st.form = (FORMATIONS[st.fp] || [{}])[0].n; draw(); }
+      if (e.target.id === 'wzPer' || e.target.id === 'wzBp'){ read(); draw(); }
       if (e.target.dataset.tsel === 'wz'){ let [h, mi] = st.ko ? st.ko.split(':') : ['', '']; if (e.target.dataset.part === 'h') h = e.target.value; else mi = e.target.value; if (h && !mi) mi = '00'; if (!h && mi) h = '10'; st.ko = h ? `${h}:${mi}` : ''; read(); draw(); }
     });
     d.addEventListener('click', e => {
@@ -7718,7 +7790,7 @@ function firstMatchWizard(){
       if (r === 'prev'){ st.i--; draw(); return; }
       if (st.i < 3){ st.i++; draw(); return; }
       d.remove(); res();
-      Object.assign(se, {fieldPlayers: st.fp, formation: st.form, matchMinutes: st.min, subMoments: st.subs});
+      Object.assign(se, {fieldPlayers: st.fp, formation: st.form, matchMinutes: st.min, periods: st.per, perPeriod: st.bp}); syncBlocks(se);
       se.arrive = {mode: 'std', min: st.arr};
       newMatch();
       const m = match(); Object.assign(m, {opponent: st.opp, date: st.date, kickoff: st.ko, home: st.home});
@@ -7983,7 +8055,7 @@ function buildPrint(m){
     <div style="display:flex;align-items:center;gap:12px">${logoSrc ? `<img src="${logoSrc}" style="width:54px;height:54px;object-fit:contain">` : ''}<div><div style="font-weight:800;letter-spacing:.1em;color:#555;text-transform:uppercase">${esc(team().club || '')}</div><h2>${esc(matchTitle(m))}</h2></div></div>
     <div>${m.date ? fmtDate(m.date, {weekday:'long', day:'numeric', month:'long', year:'numeric'}) : ''} · ${settingsLine(m.settings)}</div>
     <div class="pg">${m.segments.map((lu, s) => `<div class="seg"><b>${blockLabel(m, s)} · ${times[s][0]}'–${times[s][1]}'</b>${pitchHTML(m, s, false)}<div style="font-size:12px;margin-top:4px">Reserve: ${benchIds(m, s).map(id => esc(pname(id))).join(', ') || '–'}</div></div>`).join('')}</div>
-    <table><thead><tr><th>Speler</th>${times.map((t, i) => `<th>${blockLabel(m, i)}</th>`).join('')}<th>Minuten</th></tr></thead><tbody>
+    <table><thead><tr><th>Speler</th>${times.map((t, i) => `<th>${blockShort(m, i)}</th>`).join('')}<th>Minuten</th></tr></thead><tbody>
     ${Object.entries(stt).map(([id, r]) => `<tr><td style="text-align:left">${esc(pname(id))}</td>${r.per.map(c => `<td>${c || 'W'}</td>`).join('')}<td>${Math.round(r.mins)}'</td></tr>`).join('')}</tbody></table>`);
 }
 
